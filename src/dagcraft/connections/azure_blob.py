@@ -5,7 +5,6 @@ Requires the ``azure`` extra: ``pip install 'dagcraft[azure]'``.
 
 from __future__ import annotations
 
-import importlib.util
 import os
 import posixpath
 from pathlib import Path
@@ -14,8 +13,9 @@ from typing import Any, Self
 import fsspec
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from dagcraft.connections.base import read_variable, require_extra
 from dagcraft.connections.files import FileConnection
-from dagcraft.exceptions import ConfigError, ExecutionError
+from dagcraft.exceptions import ExecutionError
 from dagcraft.registry import register_connection
 
 # adlfs reads this itself and prefers it over every other kind of sign-in.
@@ -58,11 +58,7 @@ class AzureBlobConnection(FileConnection):
     config: AzureBlobConfig
 
     def __init__(self, name: str, config: Any, base_dir: Path) -> None:
-        if not adlfs_installed():
-            raise ConfigError(
-                "this connection type needs the 'azure' extra. "
-                "Install it with: pip install 'dagcraft[azure]'"
-            )
+        require_extra("adlfs", extra="azure")
         super().__init__(name, config, base_dir)
 
     def create_filesystem(self) -> fsspec.AbstractFileSystem:
@@ -73,7 +69,9 @@ class AzureBlobConnection(FileConnection):
 
         if variable is not None:
             return AzureBlobFileSystem(
-                connection_string=self._read_variable(variable),
+                connection_string=read_variable(
+                    variable, self.name, "connection string"
+                ),
                 skip_instance_cache=True,
             )
 
@@ -97,17 +95,3 @@ class AzureBlobConnection(FileConnection):
             self.config.prefix.strip("/"),
             path.lstrip("/"),
         )
-
-    def _read_variable(self, variable: str) -> str:
-        value = os.environ.get(variable)
-
-        if not value:
-            raise ExecutionError(
-                f"Connection '{self.name}' reads its connection string from "
-                f"the environment variable '{variable}', which is not set."
-            )
-        return value
-
-
-def adlfs_installed() -> bool:
-    return importlib.util.find_spec("adlfs") is not None

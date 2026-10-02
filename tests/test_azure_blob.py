@@ -7,7 +7,7 @@ from adlfs import AzureBlobFileSystem
 from azure.identity.aio import DefaultAzureCredential
 
 from dagcraft import ConfigError, Pipeline, PipelineError
-from dagcraft.connections import azure_blob
+from dagcraft.connections import base as connections_base
 from dagcraft.connections.azure_blob import AzureBlobConfig, AzureBlobConnection
 from dagcraft.exceptions import ExecutionError
 
@@ -95,7 +95,7 @@ def test_config_validation(lake, message):
 
 
 def test_missing_extra_is_a_config_error(monkeypatch):
-    monkeypatch.setattr(azure_blob, "adlfs_installed", lambda: False)
+    monkeypatch.setattr(connections_base, "module_available", lambda _module: False)
 
     with pytest.raises(ConfigError) as exc_info:
         make_pipeline(lake={"container": "raw", "account": "acct"})
