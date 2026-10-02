@@ -45,11 +45,16 @@ class PipelineResult:
         return self.artifacts[name].value
 
     @property
+    def failed_steps(self) -> list[StepResult]:
+        return [
+            step for step in self.steps.values() if step.status == StepStatus.FAILED
+        ]
+
+    @property
     def failed_step(self) -> StepResult | None:
-        for step in self.steps.values():
-            if step.status == StepStatus.FAILED:
-                return step
-        return None
+        """The first step that failed, if any."""
+        failed = self.failed_steps
+        return failed[0] if failed else None
 
 
 @dataclass

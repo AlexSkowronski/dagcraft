@@ -293,6 +293,23 @@ dagcraft.exceptions.ConfigError: Step 'orders': pth: Extra inputs are not permit
 Things that depend on the machine, such as environment variables, ODBC
 drivers and credentials, are checked when a connection is first used.
 
+## Running and failures
+
+Steps run in the order they're written, except where a step has to wait for
+its inputs.
+
+When a step fails, the steps that depend on it, directly or further down,
+are skipped, and every other step still runs. `run()` then raises
+`PipelineError` naming each failed step. Its `result` holds every step's
+status (`SUCCESS`, `FAILED` or `SKIPPED`), and the first failure's exception
+is chained, so the traceback shows the real cause.
+
+To stop at the first failure instead:
+
+```python
+pipeline.run(fail_fast=True)
+```
+
 ## Logging
 
 dagcraft logs to the `dagcraft` logger and, like any library, prints nothing
@@ -312,7 +329,7 @@ dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 ```
 
 `validate` is handy in CI. Both take `--param NAME=VALUE` (values are read
-as YAML) and exit with status 1 on failure.
+as YAML) and exit with status 1 on failure. `run` also takes `--fail-fast`.
 
 ## Extending dagcraft
 

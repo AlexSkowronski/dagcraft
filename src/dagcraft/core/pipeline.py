@@ -89,25 +89,36 @@ class Pipeline:
     def run(
         self,
         logger: logging.Logger | None = None,
+        fail_fast: bool = False,
     ) -> PipelineResult:
         """Run the pipeline and return the outcome of every step.
 
-        Raises ``PipelineError`` if a step fails. The error's ``result`` has
-        the same per-step outcome, and the step's exception is chained.
+        When a step fails, the steps that depend on it are skipped and the
+        rest still run; with ``fail_fast``, every later step is skipped.
+
+        Raises ``PipelineError`` if any step fails. The error's ``result``
+        has the per-step outcome, and the first failure's exception is
+        chained.
         """
         executor = Executor(
             pipeline=self.compiled,
             logger=logger,
+            fail_fast=fail_fast,
         )
 
         result = executor.run()
-        failed = result.failed_step
+        failed = result.failed_steps
 
-        if failed is not None:
-            raise PipelineError(
-                f"Pipeline '{result.name}' failed at step '{failed.id}': "
-                f"{failed.error}",
-                result,
-            ) from failed.exception
+        if failed:
+            first, others = failed[0], failed[1:]
+            message = (
+                f"Pipeline '{result.name}' failed at step '{first.id}': {first.error}"
+            )
+
+            if others:
+                names = ", ".join(step.id for step in others)
+                message += f" (also failed: {names})"
+
+            raise PipelineError(message, result) from first.exception
 
         return result

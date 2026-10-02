@@ -50,10 +50,15 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
         help="Validate a pipeline.",
     )
-    subparsers.add_parser(
+    run_parser = subparsers.add_parser(
         "run",
         parents=[common],
         help="Run a pipeline.",
+    )
+    run_parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Skip every remaining step after the first failure.",
     )
     return parser
 
@@ -103,7 +108,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "run":
         try:
-            result = pipeline.run()
+            result = pipeline.run(fail_fast=args.fail_fast)
         except PipelineError as exc:
             log_summary(exc.result)
             sys.exit(1)

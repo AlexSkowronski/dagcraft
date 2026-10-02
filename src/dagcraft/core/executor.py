@@ -15,13 +15,22 @@ from dagcraft.core.runtime import (
 
 
 class Executor:
+    """Runs a compiled pipeline's steps in graph order.
+
+    A step is skipped when a step it depends on didn't succeed; other steps
+    still run. With ``fail_fast``, every step after the first failure is
+    skipped instead.
+    """
+
     def __init__(
         self,
         pipeline: CompiledPipeline,
         logger: logging.Logger | None = None,
+        fail_fast: bool = False,
     ):
         self.pipeline = pipeline
         self.logger = logger or logging.getLogger("dagcraft")
+        self.fail_fast = fail_fast
 
     def run(self) -> PipelineResult:
         pipeline_start = perf_counter()
@@ -44,18 +53,22 @@ class Executor:
             self.pipeline.name,
         )
 
+        stopped = False
+
         try:
             for step_id in self.pipeline.graph.order:
-                if not self._run_step(step_id, context, step_results[step_id]):
+                result = step_results[step_id]
+                blocker = self._unsuccessful_upstream(step_id, step_results)
+
+                if stopped:
+                    self._skip(result, "an earlier step failed and fail_fast is on")
+                elif blocker is not None:
+                    self._skip(result, f"upstream step '{blocker}' did not succeed")
+                elif not self._run_step(step_id, context, result):
                     success = False
-                    break
+                    stopped = self.fail_fast
         finally:
             context.close_connections()
-
-        # Steps that never ran because an earlier step failed.
-        for result in step_results.values():
-            if result.status == StepStatus.PENDING:
-                result.status = StepStatus.SKIPPED
 
         pipeline_duration = perf_counter() - pipeline_start
 
@@ -78,6 +91,31 @@ class Executor:
             duration=pipeline_duration,
             steps=step_results,
             artifacts=context.artifacts,
+        )
+
+    def _unsuccessful_upstream(
+        self,
+        step_id: str,
+        step_results: dict[str, StepResult],
+    ) -> str | None:
+        """Return the first step this one depends on that didn't succeed."""
+        dependencies = self.pipeline.graph.dependencies[step_id]
+
+        for upstream in self.pipeline.graph.order:
+            if (
+                upstream in dependencies
+                and step_results[upstream].status != StepStatus.SUCCESS
+            ):
+                return upstream
+        return None
+
+    def _skip(self, result: StepResult, reason: str) -> None:
+        result.status = StepStatus.SKIPPED
+
+        self.logger.warning(
+            "Skipping step '%s': %s",
+            result.id,
+            reason,
         )
 
     def _run_step(
