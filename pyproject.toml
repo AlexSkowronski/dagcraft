@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75", "wheel"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,6 +8,24 @@ version = "0.1.0"
 description = "Config-driven DAG pipelines for Python."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "AlexSkowronski" }]
+keywords = ["pipeline", "dag", "etl", "yaml", "pandas", "azure", "sharepoint"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
 
 dependencies = [
     "pandas>=3.0",
@@ -34,6 +52,12 @@ azure = [
 all = [
     "dagcraft[azure,excel,sql]",
 ]
+
+[project.urls]
+Homepage = "https://github.com/AlexSkowronski/dagcraft"
+Repository = "https://github.com/AlexSkowronski/dagcraft"
+Issues = "https://github.com/AlexSkowronski/dagcraft/issues"
+Changelog = "https://github.com/AlexSkowronski/dagcraft/blob/main/CHANGELOG.md"
 
 [project.scripts]
 dagcraft = "dagcraft.cli:main"

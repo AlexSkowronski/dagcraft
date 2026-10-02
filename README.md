@@ -90,8 +90,8 @@ whose output it receives.
 
 ## Examples
 
-[`config/examples/`](config/examples) has pipelines that run on the sample
-data in [`data/sample/`](data/sample) and write to `output/`:
+[`config/examples/`](https://github.com/AlexSkowronski/dagcraft/tree/main/config/examples) has pipelines that run on the sample
+data in [`data/sample/`](https://github.com/AlexSkowronski/dagcraft/tree/main/data/sample) and write to `output/`:
 
 | Example              | Shows                                                         |
 | -------------------- | ------------------------------------------------------------- |
@@ -525,6 +525,26 @@ uv run pytest
 
 CI runs the same checks, builds the package, and runs the tests on
 Python 3.11 to 3.14 on Linux and on Windows.
+
+### Releasing
+
+1. Set `version` in `pyproject.toml`, and move the changes under
+   `[Unreleased]` in `CHANGELOG.md` into a section for that version with
+   today's date.
+2. Commit, then tag and push the tag:
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+The release workflow checks that the tag, `pyproject.toml` and the changelog
+agree, runs the tests, publishes to PyPI with trusted publishing, and
+creates a GitHub release with the changelog's notes.
+
+Before the first release, add a trusted publisher on PyPI (Your account →
+Publishing → Add a new pending publisher) with owner `AlexSkowronski`,
+repository `dagcraft`, workflow `release.yml` and environment `pypi`.
 
 ## License
 

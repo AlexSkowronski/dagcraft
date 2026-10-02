@@ -1,4 +1,5 @@
 import logging
+from importlib.metadata import PackageNotFoundError, version
 
 from dagcraft.connections import Connection, FileConnection, FsspecConnection
 from dagcraft.core.pipeline import Pipeline
@@ -16,6 +17,11 @@ from dagcraft.steps import BaseStep, StepConfig
 # Libraries leave logging configuration to the application.
 logging.getLogger("dagcraft").addHandler(logging.NullHandler())
 
+try:
+    __version__ = version("dagcraft")
+except PackageNotFoundError:  # running from a source tree that isn't installed
+    __version__ = "0+unknown"
+
 __all__ = [
     "BaseStep",
     "ConfigError",
@@ -28,6 +34,7 @@ __all__ = [
     "PipelineError",
     "PipelineResult",
     "StepConfig",
+    "__version__",
     "register_connection",
     "register_format",
     "register_operation",

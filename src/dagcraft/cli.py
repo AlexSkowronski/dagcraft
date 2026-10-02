@@ -10,6 +10,7 @@ from typing import Any
 
 import yaml
 
+from dagcraft import __version__
 from dagcraft.core.config import load_yaml
 from dagcraft.core.pipeline import Pipeline
 from dagcraft.core.runtime import PipelineResult
@@ -23,6 +24,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dagcraft",
         description="Config-driven DAG pipelines for Python.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(
         dest="command",
