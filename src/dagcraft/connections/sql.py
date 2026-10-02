@@ -138,7 +138,7 @@ class SQLConnection(Connection):
         with self.engine.connect() as connection:
             if options.query is not None:
                 return pd.read_sql(
-                    sa.text(options.query),
+                    sa.text(escape_non_code_colons(options.query)),
                     connection,
                     params=options.params,
                     **options.args,
@@ -219,6 +219,57 @@ class GenericSQLConnection(SQLConnection):
             url = url.set(database=str(database))
 
         return sa.create_engine(url, pool_pre_ping=True)
+
+
+def escape_non_code_colons(query: str) -> str:
+    r"""Escape colons in comments, strings and quoted names as ``\:``.
+
+    SQLAlchemy reads ``:name`` as a parameter anywhere in a query, even in
+    ``-- comments`` and ``'string literals'``, where the database doesn't
+    see a placeholder. Escaping those colons leaves parameters only in code.
+    """
+    pieces = []
+    position = 0
+    length = len(query)
+
+    while position < length:
+        character = query[position]
+
+        if query.startswith("--", position):
+            end = query.find("\n", position)
+            end = length if end == -1 else end
+        elif query.startswith("/*", position):
+            end = query.find("*/", position + 2)
+            end = length if end == -1 else end + 2
+        elif character in "'\"[":
+            end = closing_quote(query, position, "]" if character == "[" else character)
+        else:
+            pieces.append(character)
+            position += 1
+            continue
+
+        pieces.append(query[position:end].replace(":", "\\:"))
+        position = end
+
+    return "".join(pieces)
+
+
+def closing_quote(query: str, start: int, quote: str) -> int:
+    """Index just past the quote closing the one at ``start``.
+
+    A doubled quote inside (``'it''s'``) is part of the text.
+    """
+    position = start + 1
+
+    while position < len(query):
+        if query[position] == quote:
+            if query.startswith(quote * 2, position):
+                position += 2
+                continue
+            return position + 1
+        position += 1
+
+    return len(query)
 
 
 def split_table(table: str) -> tuple[str | None, str]:

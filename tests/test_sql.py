@@ -5,6 +5,7 @@ import pytest
 import sqlalchemy as sa
 
 from dagcraft import ConfigError, Pipeline, PipelineError, extras
+from dagcraft.connections.sql import escape_non_code_colons
 
 
 def make_pipeline(*steps, connections, base_dir):
@@ -275,3 +276,47 @@ def test_missing_extra_is_a_config_error(tmp_path, monkeypatch):
 
     with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[sql\]'"):
         make_pipeline(connections=database(), base_dir=tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("SELECT :a", "SELECT :a"),
+        ("SELECT :a -- uses :a\nFROM t", r"SELECT :a -- uses \:a" "\nFROM t"),
+        ("/* :a and :b */ SELECT :a", r"/* \:a and \:b */ SELECT :a"),
+        ("""SELECT ':a', "col:x", [b:c]""", r"""SELECT '\:a', "col\:x", [b\:c]"""),
+        ("SELECT 'it''s :a' AS x, :b", r"SELECT 'it''s \:a' AS x, :b"),
+        ("SELECT x::int, :a", "SELECT x::int, :a"),
+        ("SELECT 1 -- trailing :a", r"SELECT 1 -- trailing \:a"),
+    ],
+)
+def test_colons_outside_code_are_escaped(query, expected):
+    assert escape_non_code_colons(query) == expected
+
+
+def test_parameters_named_in_comments_and_strings(tmp_path):
+    write_rows(tmp_path, [("Ada", 9), ("Grace", 7)])
+    (tmp_path / "top.sql").write_text(
+        "-- Rows scoring at least :minimum.\n"
+        "/* :unused */\n"
+        "SELECT name, 'score >= :minimum' AS rule\n"
+        "FROM scores WHERE score >= :minimum ORDER BY name\n",
+        encoding="utf-8",
+    )
+
+    result = make_pipeline(
+        {
+            "id": "top",
+            "type": "read",
+            "connection": "db",
+            "query_file": "top.sql",
+            "params": {"minimum": 8},
+        },
+        connections=database(),
+        base_dir=tmp_path,
+    ).run()
+
+    assert result.artifact("top").to_dict("list") == {
+        "name": ["Ada"],
+        "rule": ["score >= :minimum"],
+    }
