@@ -198,7 +198,7 @@ steps:
     )
 
     with caplog.at_level(logging.INFO):
-        main(["validate", str(path), "--param", "minimum=3"])
+        main(["run", str(path), "--dry-run", "--param", "minimum=3"])
 
     assert "Pipeline 'cli' is valid." in caplog.text
 

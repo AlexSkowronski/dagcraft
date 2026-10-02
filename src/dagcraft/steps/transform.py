@@ -26,6 +26,9 @@ class TransformStep(BaseStep):
     def prepare(self, connections: dict[str, Connection]) -> None:
         self.function = OPERATIONS.get(self.config.operation)
 
+    def describe(self) -> str:
+        return f"transform with '{self.config.operation}'"
+
     def execute(
         self,
         context: ExecutionContext,

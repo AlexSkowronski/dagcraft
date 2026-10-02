@@ -29,13 +29,15 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
-    # Arguments shared by every command.
-    common = argparse.ArgumentParser(add_help=False)
-    common.add_argument(
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Check a pipeline, then run it.",
+    )
+    run_parser.add_argument(
         "pipeline",
         help="Path to the pipeline YAML file.",
     )
-    common.add_argument(
+    run_parser.add_argument(
         "--param",
         dest="params",
         metavar="NAME=VALUE",
@@ -44,16 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="Override a param from the file. Values are read as YAML. Repeatable.",
     )
-
-    subparsers.add_parser(
-        "validate",
-        parents=[common],
-        help="Validate a pipeline.",
-    )
-    run_parser = subparsers.add_parser(
-        "run",
-        parents=[common],
-        help="Run a pipeline.",
+    run_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Check the pipeline and show the steps it would run, without running.",
     )
     run_parser.add_argument(
         "--fail-fast",
@@ -98,22 +94,42 @@ def main(argv: list[str] | None = None) -> None:
         logger.error("%s", exc)  # noqa: TRY400
         sys.exit(1)
 
-    if args.command == "validate":
-        pipeline.validate()
-        logger.info(
-            "Pipeline '%s' is valid.",
-            pipeline.config.pipeline.name,
-        )
+    if args.dry_run:
+        log_plan(pipeline)
         return
 
-    if args.command == "run":
-        try:
-            result = pipeline.run(fail_fast=args.fail_fast)
-        except PipelineError as exc:
-            log_summary(exc.result)
-            sys.exit(1)
+    try:
+        result = pipeline.run(fail_fast=args.fail_fast)
+    except PipelineError as exc:
+        log_summary(exc.result)
+        sys.exit(1)
 
-        log_summary(result)
+    log_summary(result)
+
+
+def log_plan(pipeline: Pipeline) -> None:
+    logger.info("Pipeline '%s' is valid.", pipeline.config.pipeline.name)
+
+    if pipeline.params:
+        params = ", ".join(f"{name}={value}" for name, value in pipeline.params.items())
+        logger.info("Params: %s", params)
+
+    plan = pipeline.plan()
+    width = max((len(step.id) for step in plan), default=0)
+    logger.info("Steps, in run order:")
+
+    for number, step in enumerate(plan, start=1):
+        inputs = ", ".join(f"{name}: {source}" for name, source in step.inputs.items())
+        logger.info(
+            "%3d. %-*s  %s%s",
+            number,
+            width,
+            step.id,
+            step.description,
+            f"  <- {inputs}" if inputs else "",
+        )
+
+    logger.info("Dry run: nothing was run.")
 
 
 def log_summary(result: PipelineResult) -> None:

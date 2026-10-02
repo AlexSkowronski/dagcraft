@@ -31,6 +31,7 @@ class ReadStep(BaseStep):
     config_model = ReadConfig
     config: ReadConfig
     options: BaseModel
+    target: str
 
     def prepare(self, connections: dict[str, Connection]) -> None:
         connection = find_connection(connections, self.config.connection)
@@ -43,6 +44,11 @@ class ReadStep(BaseStep):
         self.options = connection.prepare_read(
             connection.read_options.model_validate(self.config.model_extra or {})
         )
+        self.target = connection.describe(self.options)
+
+    def describe(self) -> str:
+        target = f" {self.target}" if self.target else ""
+        return f"read{target} from '{self.config.connection}'"
 
     def execute(
         self,

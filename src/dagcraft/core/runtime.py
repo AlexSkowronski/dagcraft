@@ -33,6 +33,15 @@ class StepResult:
     exception: BaseException | None = field(default=None, repr=False)
 
 
+@dataclass(frozen=True)
+class PlannedStep:
+    """A step as it would run: see ``Pipeline.plan``."""
+
+    id: str
+    description: str
+    inputs: dict[str, str]
+
+
 @dataclass
 class PipelineResult:
     name: str

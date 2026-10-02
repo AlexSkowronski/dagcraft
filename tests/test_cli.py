@@ -86,23 +86,52 @@ steps:
     assert summary[-1].levelno == logging.ERROR
 
 
-def test_validate_valid_pipeline(tmp_path, input_csv, caplog):
+def test_dry_run_shows_the_plan_without_running(tmp_path, input_csv, caplog):
     pipeline = write_pipeline(
         tmp_path,
         f"""
 pipeline:
   name: demo
+params:
+  limit: 2
 steps:
+  - id: save
+    type: write
+    path: out/sorted.csv
+    inputs: {{data: sorted}}
   - id: source
     type: read
     path: {input_csv.as_posix()}
+  - id: sorted
+    type: transform
+    operation: sort
+    inputs: {{data: source}}
+    args: {{by: value}}
 """,
     )
 
     with caplog.at_level(logging.INFO):
-        main(["validate", str(pipeline)])
+        main(["run", str(pipeline), "--dry-run", "--param", "limit=5"])
 
-    assert "Pipeline 'demo' is valid." in caplog.text
+    lines = [r.getMessage() for r in caplog.records if r.name == "dagcraft.cli"]
+    assert lines == [
+        "Pipeline 'demo' is valid.",
+        "Params: limit=5",
+        "Steps, in run order:",
+        f"  1. source  read {input_csv.as_posix()} from 'local'",
+        "  2. sorted  transform with 'sort'  <- data: source",
+        "  3. save    write out/sorted.csv to 'local'  <- data: sorted",
+        "Dry run: nothing was run.",
+    ]
+    assert not (tmp_path / "out").exists()
+
+
+def test_validate_command_is_gone(tmp_path, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["validate", str(tmp_path / "pipeline.yaml")])
+
+    assert exc_info.value.code == 2
+    assert "invalid choice: 'validate'" in capsys.readouterr().err
 
 
 def test_invalid_config_exits_cleanly(tmp_path, caplog):
@@ -118,7 +147,7 @@ steps:
     )
 
     with pytest.raises(SystemExit) as exc_info:
-        main(["validate", str(pipeline)])
+        main(["run", str(pipeline), "--dry-run"])
 
     assert exc_info.value.code == 1
     assert "Step 'source': path: Field required" in caplog.text

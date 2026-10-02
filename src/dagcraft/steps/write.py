@@ -35,6 +35,7 @@ class WriteStep(BaseStep):
     config_model = WriteConfig
     config: WriteConfig
     options: BaseModel
+    target: str
 
     def prepare(self, connections: dict[str, Connection]) -> None:
         connection = find_connection(connections, self.config.connection)
@@ -48,6 +49,8 @@ class WriteStep(BaseStep):
             self.config.model_extra or {}
         )
 
+        self.target = connection.describe(self.options)
+
         if len(self.config.inputs) > 1 and not connection.accepts_multiple_inputs(
             self.options
         ):
@@ -55,6 +58,10 @@ class WriteStep(BaseStep):
                 "Only formats that hold several tables, such as excel (one "
                 "sheet per input), can write several inputs."
             )
+
+    def describe(self) -> str:
+        target = f" {self.target}" if self.target else ""
+        return f"write{target} to '{self.config.connection}'"
 
     def execute(
         self,

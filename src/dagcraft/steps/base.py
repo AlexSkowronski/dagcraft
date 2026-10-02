@@ -51,6 +51,10 @@ class BaseStep(ABC):
     def prepare(self, connections: dict[str, Connection]) -> None:  # noqa: B027
         """Resolve and check references. Raise ``ValueError`` if invalid."""
 
+    def describe(self) -> str:
+        """A one-line description of what the step does, for dry runs."""
+        return self.config.type
+
     @abstractmethod
     def execute(
         self,

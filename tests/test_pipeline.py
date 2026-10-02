@@ -133,3 +133,22 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
     assert result.steps["save"].status == StepStatus.SKIPPED
     assert "save" not in result.artifacts
     assert not (tmp_path / "out.csv").exists()
+
+
+def test_plan_lists_steps_in_run_order(people_csv, tmp_path):
+    pipeline = make_pipeline(
+        {
+            "id": "save",
+            "type": "write",
+            "path": str(tmp_path / "out.csv"),
+            "inputs": {"data": "people"},
+        },
+        {"id": "people", "type": "read", "path": str(people_csv)},
+    )
+
+    plan = pipeline.plan()
+
+    assert [step.id for step in plan] == ["people", "save"]
+    assert plan[1].description == f"write {tmp_path / 'out.csv'} to 'local'"
+    assert plan[1].inputs == {"data": "people"}
+    assert not (tmp_path / "out.csv").exists()

@@ -50,6 +50,10 @@ class Connection:
         """
         return options
 
+    def describe(self, options: Any) -> str:
+        """A short description of what a step reads or writes, for dry runs."""
+        return ""
+
     def accepts_multiple_inputs(self, options: Any) -> bool:
         """Whether a write step can pass several inputs, as a dict, to ``write``."""
         return False

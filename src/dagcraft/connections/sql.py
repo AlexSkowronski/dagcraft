@@ -108,6 +108,15 @@ class SQLConnection(Connection):
             raise ExecutionError(f"Connection '{self.name}' is not open.")
         return self._engine
 
+    def describe(self, options: SQLReadOptions | SQLWriteOptions) -> str:
+        if isinstance(options, SQLWriteOptions):
+            return f"table {options.table} (if it exists: {options.if_exists})"
+        if options.query_file is not None:
+            return f"the query in {options.query_file}"
+        if options.table is not None:
+            return f"table {options.table}"
+        return "a query"
+
     def prepare_read(self, options: SQLReadOptions) -> SQLReadOptions:
         if options.query_file is None:
             return options

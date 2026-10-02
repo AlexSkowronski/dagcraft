@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
 from dagcraft.core.config import PipelineConfig, format_validation_error, load_yaml
 from dagcraft.core.executor import Executor
-from dagcraft.core.runtime import PipelineResult
+from dagcraft.core.runtime import PipelineResult, PlannedStep
 from dagcraft.exceptions import ConfigError, PipelineError
 
 
@@ -80,11 +80,20 @@ class Pipeline:
 
         return cls(parsed, base_dir=base_dir, params=params)
 
-    def validate(self) -> bool:
-        # Everything is checked when the pipeline is compiled in __init__:
-        # the file structure, each step and connection against its registered
-        # type, references to operations and connections, and the graph.
-        return True
+    def plan(self) -> list[PlannedStep]:
+        """The steps in the order they would run, without running them.
+
+        Everything is already checked when the pipeline is created, so a
+        pipeline you can plan is one you can run.
+        """
+        return [
+            PlannedStep(
+                id=step_id,
+                description=self.compiled.steps[step_id].describe(),
+                inputs=dict(self.compiled.steps[step_id].config.inputs),
+            )
+            for step_id in self.compiled.graph.order
+        ]
 
     def run(
         self,

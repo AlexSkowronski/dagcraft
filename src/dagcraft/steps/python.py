@@ -28,6 +28,9 @@ class PythonStep(BaseStep):
     def prepare(self, connections: dict[str, Connection]) -> None:
         self.function = load_callable(self.config.callable)
 
+    def describe(self) -> str:
+        return f"call {self.config.callable}"
+
     def execute(
         self,
         context: ExecutionContext,

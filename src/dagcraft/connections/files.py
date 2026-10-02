@@ -106,6 +106,9 @@ class FileConnection(Connection):
 
         return pd.concat(frames, ignore_index=True)
 
+    def describe(self, options: FileReadOptions | FileWriteOptions) -> str:
+        return options.path
+
     def accepts_multiple_inputs(self, options: FileWriteOptions) -> bool:
         return resolve_format(options.path, options.format).multiple_inputs
 
