@@ -63,3 +63,14 @@ def join(
         on=on,
         **kwargs,
     )
+
+
+@register_operation("aggregate")
+def aggregate(
+    data: pd.DataFrame,
+    by: str | list[str],
+    columns: dict[str, str],
+) -> pd.DataFrame:
+    """Group rows by ``by`` and aggregate each column in ``columns`` with the
+    named function, such as ``sum``, ``mean``, ``count``, ``min`` or ``max``."""
+    return data.groupby(by, as_index=False).agg(columns)
