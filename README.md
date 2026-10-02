@@ -119,7 +119,7 @@ Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
 | ------------- | -------------------------------------------------------------- |
 | `pipeline`    | `name` of the pipeline.                                        |
 | `connections` | Optional. Named places to read from and write to (see below).  |
-| `steps`       | The steps. Every step has an `id`, a `type` and, optionally, `inputs`. |
+| `steps`       | The steps. Every step has an `id` and a `type`; optionally `inputs`, `retries` and `retry_delay`. |
 
 Relative paths in the file are relative to the file's directory, not to
 where the code runs.
@@ -441,6 +441,24 @@ To stop at the first failure instead:
 ```python
 pipeline.run(fail_fast=True)
 ```
+
+For steps that can fail for a moment, such as reading over a network or
+connecting to a database that's waking up, add retries. The step runs again
+up to `retries` more times, waiting `retry_delay` seconds (default 5) before
+the first retry and twice as long before each one after:
+
+```yaml
+  - id: orders
+    type: read
+    connection: warehouse
+    table: dbo.orders
+    retries: 3          # waits 10s, 20s, then 40s
+    retry_delay: 10
+```
+
+SQL writes run in a transaction, uploads to Azure Blob Storage and
+SharePoint replace the file in one go, and local files are written to a
+temporary name first, so retrying a write is safe.
 
 ## Logging
 

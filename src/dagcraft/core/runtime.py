@@ -29,6 +29,7 @@ class StepResult:
     id: str
     status: StepStatus = StepStatus.PENDING
     duration: float = 0.0
+    attempts: int = 0
     error: str | None = None
     exception: BaseException | None = field(default=None, repr=False)
 

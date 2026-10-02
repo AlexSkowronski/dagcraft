@@ -223,3 +223,46 @@ def test_write_to_read_only_connection_rejected():
             },
             connections={"rec": {"type": "recording"}},
         )
+
+
+def test_failed_local_write_leaves_the_old_file(tmp_path):
+    (tmp_path / "out.csv").write_text("old contents\n", encoding="utf-8")
+    write_csv(tmp_path / "in.csv", value=[1, 2])
+
+    pipeline = make_pipeline(
+        {"id": "source", "type": "read", "path": "in.csv"},
+        {
+            "id": "save",
+            "type": "write",
+            "path": "out.csv",
+            "inputs": {"data": "source"},
+            # An argument to_csv doesn't accept makes the write fail part-way.
+            "args": {"no_such_argument": True},
+        },
+        base_dir=tmp_path,
+    )
+
+    with pytest.raises(PipelineError):
+        pipeline.run()
+
+    assert (tmp_path / "out.csv").read_text(encoding="utf-8") == "old contents\n"
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["in.csv", "out.csv"]
+
+
+def test_local_write_replaces_the_file(tmp_path):
+    (tmp_path / "out.csv").write_text("old contents\n", encoding="utf-8")
+    write_csv(tmp_path / "in.csv", value=[1, 2])
+
+    make_pipeline(
+        {"id": "source", "type": "read", "path": "in.csv"},
+        {
+            "id": "save",
+            "type": "write",
+            "path": "out.csv",
+            "inputs": {"data": "source"},
+        },
+        base_dir=tmp_path,
+    ).run()
+
+    assert pd.read_csv(tmp_path / "out.csv")["value"].tolist() == [1, 2]
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["in.csv", "out.csv"]

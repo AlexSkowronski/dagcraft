@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from time import perf_counter
 
@@ -139,24 +140,44 @@ class Executor:
         )
 
         step_start = perf_counter()
+        attempts = step.config.retries + 1
 
-        try:
-            value = step.execute(
-                context=context,
-                inputs=resolved_inputs,
-            )
-        except Exception as exc:
-            result.duration = perf_counter() - step_start
-            result.status = StepStatus.FAILED
-            result.error = str(exc)
-            result.exception = exc
+        for attempt in range(1, attempts + 1):
+            result.attempts = attempt
 
-            self.logger.exception(
-                "Step '%s' failed",
-                step_id,
-            )
+            try:
+                value = step.execute(
+                    context=context,
+                    inputs=resolved_inputs,
+                )
+            except Exception as exc:
+                if attempt < attempts:
+                    delay = step.config.retry_delay * 2 ** (attempt - 1)
+                    self.logger.warning(
+                        "Step '%s' failed (attempt %d of %d), retrying in %.1fs: %s",
+                        step_id,
+                        attempt,
+                        attempts,
+                        delay,
+                        exc,
+                    )
+                    time.sleep(delay)
+                    continue
 
-            return False
+                result.duration = perf_counter() - step_start
+                result.status = StepStatus.FAILED
+                result.error = str(exc)
+                result.exception = exc
+
+                self.logger.exception(
+                    "Step '%s' failed%s",
+                    step_id,
+                    f" after {attempts} attempts" if attempts > 1 else "",
+                )
+
+                return False
+
+            break
 
         result.duration = perf_counter() - step_start
         result.status = StepStatus.SUCCESS

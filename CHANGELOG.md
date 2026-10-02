@@ -33,6 +33,9 @@ First release.
   `replace`.
 - Operations: `drop_nulls`, `filter`, `select`, `rename`, `sort`, `join`
   and `aggregate`.
+- Retries for any step, with a growing delay (`retries`, `retry_delay`).
+- Local files are written under a temporary name and then moved into place,
+  so a failed write leaves the previous file intact.
 - When a step fails, only the steps that depend on it are skipped;
   `PipelineError` names every failure. `fail_fast` stops at the first.
 - `dagcraft run` with `--dry-run`, `--check-connections`, `--param`,

@@ -11,13 +11,20 @@ if TYPE_CHECKING:
 
 
 class StepConfig(BaseModel):
-    """Fields every step has. Step types subclass this to add their own."""
+    """Fields every step has. Step types subclass this to add their own.
+
+    ``retries`` re-runs a failed step that many more times, waiting
+    ``retry_delay`` seconds before the first retry and twice as long before
+    each one after that.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(min_length=1)
     type: str = Field(min_length=1)
     inputs: dict[str, str] = Field(default_factory=dict)
+    retries: int = Field(default=0, ge=0)
+    retry_delay: float = Field(default=5.0, ge=0)
 
 
 class FunctionStepConfig(StepConfig):
