@@ -142,6 +142,7 @@ class Pipeline:
         self,
         logger: logging.Logger | None = None,
         fail_fast: bool = False,
+        run_id: str | None = None,
     ) -> PipelineResult:
         """Run the pipeline and return the outcome of every step.
 
@@ -151,11 +152,15 @@ class Pipeline:
         Raises ``PipelineError`` if any step fails. The error's ``result``
         has the per-step outcome, and the first failure's exception is
         chained.
+
+        ``run_id`` identifies the run in logs and the result; by default a
+        short random one is made. Pass your own to match an orchestrator's.
         """
         executor = Executor(
             pipeline=self.compiled,
             logger=logger,
             fail_fast=fail_fast,
+            run_id=run_id,
         )
 
         result = executor.run()

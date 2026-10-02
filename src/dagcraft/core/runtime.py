@@ -17,6 +17,17 @@ class StepStatus(StrEnum):
     SKIPPED = "SKIPPED"
 
 
+class RunLogger(logging.LoggerAdapter[logging.Logger]):
+    """Logs for one run: prefixes messages with the pipeline and run ID, and
+    adds them to each record as ``pipeline`` and ``run_id`` for log handlers
+    that store fields."""
+
+    def process(self, msg: Any, kwargs: Any) -> tuple[Any, Any]:
+        extra = self.extra or {}
+        kwargs["extra"] = {**extra, **kwargs.get("extra", {})}
+        return f"[{extra['pipeline']} {extra['run_id']}] {msg}", kwargs
+
+
 @dataclass
 class Artifact:
     name: str
@@ -56,6 +67,7 @@ class ConnectionCheck:
 @dataclass
 class PipelineResult:
     name: str
+    run_id: str
     success: bool
     duration: float
     steps: dict[str, StepResult]
@@ -80,7 +92,7 @@ class PipelineResult:
 @dataclass
 class ExecutionContext:
     run_id: str
-    logger: logging.Logger
+    logger: RunLogger
     params: dict[str, Any] = field(default_factory=dict)
     connections: dict[str, Connection] = field(default_factory=dict)
     artifacts: dict[str, Artifact] = field(default_factory=dict)

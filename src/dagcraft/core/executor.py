@@ -10,6 +10,7 @@ from dagcraft.core.runtime import (
     Artifact,
     ExecutionContext,
     PipelineResult,
+    RunLogger,
     StepResult,
     StepStatus,
 )
@@ -28,16 +29,21 @@ class Executor:
         pipeline: CompiledPipeline,
         logger: logging.Logger | None = None,
         fail_fast: bool = False,
+        run_id: str | None = None,
     ):
         self.pipeline = pipeline
-        self.logger = logger or logging.getLogger("dagcraft")
         self.fail_fast = fail_fast
+        self.run_id = run_id or uuid.uuid4().hex[:8]
+        self.logger = RunLogger(
+            logger or logging.getLogger("dagcraft"),
+            {"pipeline": pipeline.name, "run_id": self.run_id},
+        )
 
     def run(self) -> PipelineResult:
         pipeline_start = perf_counter()
 
         context = ExecutionContext(
-            run_id=str(uuid.uuid4()),
+            run_id=self.run_id,
             logger=self.logger,
             params=self.pipeline.params,
             connections=self.pipeline.connections,
@@ -49,10 +55,7 @@ class Executor:
 
         success = True
 
-        self.logger.info(
-            "Starting pipeline '%s'",
-            self.pipeline.name,
-        )
+        self.logger.info("Starting run")
 
         stopped = False
 
@@ -74,20 +77,13 @@ class Executor:
         pipeline_duration = perf_counter() - pipeline_start
 
         if success:
-            self.logger.info(
-                "Pipeline '%s' completed in %.3fs",
-                self.pipeline.name,
-                pipeline_duration,
-            )
+            self.logger.info("Run completed in %.3fs", pipeline_duration)
         else:
-            self.logger.error(
-                "Pipeline '%s' failed after %.3fs",
-                self.pipeline.name,
-                pipeline_duration,
-            )
+            self.logger.error("Run failed after %.3fs", pipeline_duration)
 
         return PipelineResult(
             name=self.pipeline.name,
+            run_id=self.run_id,
             success=success,
             duration=pipeline_duration,
             steps=step_results,

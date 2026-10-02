@@ -66,6 +66,10 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument(
+        "--run-id",
+        help="ID for this run in the logs, e.g. from an orchestrator. Random if unset.",
+    )
+    run_parser.add_argument(
         "--fail-fast",
         action="store_true",
         help="Skip every remaining step after the first failure.",
@@ -119,7 +123,7 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     try:
-        result = pipeline.run(fail_fast=args.fail_fast)
+        result = pipeline.run(fail_fast=args.fail_fast, run_id=args.run_id)
     except PipelineError as exc:
         log_summary(exc.result)
         sys.exit(1)

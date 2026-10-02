@@ -471,6 +471,23 @@ import logging
 logging.basicConfig(level=logging.INFO)
 ```
 
+Every run has an ID, and each message from the run starts with the pipeline
+and run ID, so runs can be told apart in shared logs:
+
+```
+INFO | [daily_sales 3f2a9c1b] Running step 'orders'
+```
+
+The records also carry `pipeline` and `run_id` attributes, for log
+handlers that store fields (such as Azure Monitor). The ID is random unless
+you pass one, for example your orchestrator's run ID, and it's on the
+result:
+
+```python
+result = pipeline.run(run_id="adf-5c1e")
+result.run_id
+```
+
 ## Command line
 
 ```bash
@@ -484,6 +501,7 @@ dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 | `--check-connections` | Check the pipeline and prove each connection it uses works (see below). |
 | `--param NAME=VALUE`  | Override a param. Values are read as YAML. Repeatable.     |
 | `--fail-fast`         | Skip every remaining step after the first failure.         |
+| `--run-id ID`         | ID for the run in the logs, e.g. from an orchestrator.     |
 
 The command exits with status 1 if the pipeline is invalid or a step fails.
 
