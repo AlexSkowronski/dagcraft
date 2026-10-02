@@ -120,6 +120,25 @@ def test_missing_query_file_is_a_config_error(tmp_path):
         )
 
 
+def test_sqlite_folder_is_created(tmp_path):
+    pd.DataFrame({"n": [1]}).to_csv(tmp_path / "rows.csv", index=False)
+
+    make_pipeline(
+        {"id": "rows", "type": "read", "path": "rows.csv"},
+        {
+            "id": "save",
+            "type": "write",
+            "connection": "db",
+            "table": "numbers",
+            "inputs": {"data": "rows"},
+        },
+        connections=database("new/folder/warehouse.db"),
+        base_dir=tmp_path,
+    ).run()
+
+    assert (tmp_path / "new" / "folder" / "warehouse.db").exists()
+
+
 def test_writing_to_an_existing_table_fails_by_default(tmp_path):
     write_rows(tmp_path, [("Ada", 9)])
 

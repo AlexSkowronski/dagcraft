@@ -191,7 +191,8 @@ class SQLConfig(BaseModel):
 class GenericSQLConnection(SQLConnection):
     """Any database SQLAlchemy supports, given a database URL.
 
-    A relative SQLite path is relative to the pipeline file's directory.
+    A relative SQLite path is relative to the pipeline file's directory, and
+    the folder for a new SQLite file is created.
     """
 
     config_model = SQLConfig
@@ -207,15 +208,15 @@ class GenericSQLConnection(SQLConnection):
                 read_variable(self.config.url_env or "", self.name, "URL")
             )
 
-        database = url.database
-
-        if (
-            url.get_backend_name() == "sqlite"
-            and database
-            and database != ":memory:"
-            and not Path(database).is_absolute()
+        if url.get_backend_name() == "sqlite" and url.database not in (
+            None,
+            "",
+            ":memory:",
         ):
-            url = url.set(database=str(self.base_dir / database))
+            database = self.base_dir / (url.database or "")
+            # SQLite creates the file but not its folder.
+            database.parent.mkdir(parents=True, exist_ok=True)
+            url = url.set(database=str(database))
 
         return sa.create_engine(url, pool_pre_ping=True)
 
