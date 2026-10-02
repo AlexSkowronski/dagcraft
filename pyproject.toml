@@ -17,6 +17,11 @@ dependencies = [
     "fsspec>=2024.6.0",
 ]
 
+[project.optional-dependencies]
+azure = [
+    "adlfs>=2024.7.0",
+]
+
 [project.scripts]
 dagcraft = "dagcraft.cli:main"
 
@@ -87,12 +92,13 @@ warn_redundant_casts = true
 enable_error_code = ["ignore-without-code"]
 
 [[tool.mypy.overrides]]
-# fsspec ships without type information.
-module = ["fsspec", "fsspec.*"]
+# These ship without type information.
+module = ["adlfs", "adlfs.*", "fsspec", "fsspec.*"]
 ignore_missing_imports = true
 
 [dependency-groups]
 dev = [
+    "adlfs>=2026.8.0",
     "mypy>=2.4.0",
     "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.6.2",

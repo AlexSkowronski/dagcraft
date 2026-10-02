@@ -66,10 +66,9 @@ def build_connections(
         try:
             connection_class = CONNECTIONS.get(connection_type)
             connection_config = connection_class.config_model.model_validate(fields)
+            connections[name] = connection_class(name, connection_config, base_dir)
         except (ValueError, DagcraftError) as exc:
             raise ConfigError(f"Connection '{name}': {describe(exc)}") from exc
-
-        connections[name] = connection_class(name, connection_config, base_dir)
 
     return connections
 
