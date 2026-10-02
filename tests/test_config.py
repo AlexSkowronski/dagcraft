@@ -1,6 +1,10 @@
+import io
+
+import pandas as pd
 import pytest
 
 from dagcraft import Pipeline
+from dagcraft.core.config import load_yaml
 from dagcraft.exceptions import ConfigError
 
 
@@ -178,3 +182,52 @@ def test_from_yaml_empty_file(tmp_path):
 
     with pytest.raises(ConfigError, match="Invalid pipeline"):
         Pipeline.from_yaml(path)
+
+
+def test_only_true_and_false_are_booleans_in_yaml():
+    loaded = load_yaml(
+        io.StringIO(
+            "on: id\n"
+            "values: [yes, no, on, off, NO, true, false, True]\n"
+            "ascending: false\n"
+        )
+    )
+
+    assert loaded == {
+        "on": "id",
+        "values": ["yes", "no", "on", "off", "NO", True, False, True],
+        "ascending": False,
+    }
+
+
+def test_join_on_works_from_yaml(tmp_path):
+    pd.DataFrame({"id": [1, 2], "a": ["x", "y"]}).to_csv(
+        tmp_path / "left.csv", index=False
+    )
+    pd.DataFrame({"id": [2, 1], "b": ["q", "p"]}).to_csv(
+        tmp_path / "right.csv", index=False
+    )
+    path = tmp_path / "pipeline.yaml"
+    path.write_text(
+        """
+pipeline:
+  name: join
+steps:
+  - id: left
+    type: read
+    path: left.csv
+  - id: right
+    type: read
+    path: right.csv
+  - id: joined
+    type: transform
+    operation: join
+    inputs: {left: left, right: right}
+    args: {on: id, how: left}
+""",
+        encoding="utf-8",
+    )
+
+    joined = Pipeline.from_yaml(path).run().artifact("joined")
+
+    assert joined.to_dict("list") == {"id": [1, 2], "a": ["x", "y"], "b": ["p", "q"]}

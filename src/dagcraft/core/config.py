@@ -1,8 +1,35 @@
 from __future__ import annotations
 
-from typing import Any
+import re
+from typing import IO, Any
 
+import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+BOOL_TAG = "tag:yaml.org,2002:bool"
+
+
+class PipelineLoader(yaml.SafeLoader):
+    """SafeLoader where only true/false are booleans, as in YAML 1.2.
+
+    PyYAML follows YAML 1.1, which also reads yes, no, on and off as
+    booleans, so ``on: customer_id`` would become ``{True: "customer_id"}``.
+    """
+
+
+PipelineLoader.yaml_implicit_resolvers = {
+    first: [(tag, pattern) for tag, pattern in resolvers if tag != BOOL_TAG]
+    for first, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
+}
+PipelineLoader.add_implicit_resolver(
+    BOOL_TAG,
+    re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"),
+    list("tTfF"),
+)
+
+
+def load_yaml(stream: IO[str]) -> Any:
+    return yaml.load(stream, Loader=PipelineLoader)  # noqa: S506 - a SafeLoader
 
 
 class PipelineMeta(BaseModel):

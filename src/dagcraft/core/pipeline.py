@@ -8,7 +8,7 @@ import yaml
 from pydantic import ValidationError
 
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
-from dagcraft.core.config import PipelineConfig, format_validation_error
+from dagcraft.core.config import PipelineConfig, format_validation_error, load_yaml
 from dagcraft.core.executor import Executor
 from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import ConfigError, PipelineError
@@ -42,7 +42,7 @@ class Pipeline:
                 "r",
                 encoding="utf-8",
             ) as file:
-                raw = yaml.safe_load(file)
+                raw = load_yaml(file)
 
         except OSError as exc:
             raise ConfigError(f"Could not read pipeline file: {path}") from exc
