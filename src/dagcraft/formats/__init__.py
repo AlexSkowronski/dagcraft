@@ -2,10 +2,11 @@
 
 from dagcraft.formats.base import Format, resolve_format
 from dagcraft.formats.documents import JSONFormat, JSONLinesFormat, YAMLFormat
-from dagcraft.formats.tabular import CSVFormat, ParquetFormat
+from dagcraft.formats.tabular import CSVFormat, ExcelFormat, ParquetFormat
 
 __all__ = [
     "CSVFormat",
+    "ExcelFormat",
     "Format",
     "JSONFormat",
     "JSONLinesFormat",

@@ -43,6 +43,10 @@ class Connection:
     def write(self, data: Any, options: Any) -> None:
         raise NotImplementedError
 
+    def accepts_multiple_inputs(self, options: Any) -> bool:
+        """Whether a write step can pass several inputs, as a dict, to ``write``."""
+        return False
+
 
 def read_variable(variable: str, connection: str, purpose: str) -> str:
     """Return an environment variable, or raise if it's unset or empty."""

@@ -36,7 +36,7 @@ class FileReadOptions(BaseModel):
 
     @model_validator(mode="after")
     def check_options(self) -> Self:
-        resolve_format(self.path, self.format)
+        resolve_format(self.path, self.format).check_available()
 
         if self.source_column is not None and not has_wildcards(self.path):
             raise ValueError("'source_column' only applies when 'path' has wildcards.")
@@ -57,7 +57,7 @@ class FileWriteOptions(BaseModel):
         if has_wildcards(self.path):
             raise ValueError(f"A path to write can't contain wildcards ({WILDCARDS}).")
 
-        resolve_format(self.path, self.format)
+        resolve_format(self.path, self.format).check_available()
         return self
 
 
@@ -105,6 +105,9 @@ class FileConnection(Connection):
             frames.append(frame)
 
         return pd.concat(frames, ignore_index=True)
+
+    def accepts_multiple_inputs(self, options: FileWriteOptions) -> bool:
+        return resolve_format(options.path, options.format).multiple_inputs
 
     def write(self, data: Any, options: FileWriteOptions) -> None:
         file_format = resolve_format(options.path, options.format)

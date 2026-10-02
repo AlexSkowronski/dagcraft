@@ -71,7 +71,16 @@ def test_valid_config_compiles():
         ),
         (
             {"id": "a", "type": "write", "path": "x.csv"},
-            "A write step needs exactly one input.",
+            "A write step needs at least one input.",
+        ),
+        (
+            {
+                "id": "a",
+                "type": "write",
+                "path": "x.csv",
+                "inputs": {"first": "b", "second": "c"},
+            },
+            "Only formats that hold several tables, such as excel",
         ),
         (
             {"id": "a", "type": "transform"},

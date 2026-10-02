@@ -13,16 +13,20 @@ if TYPE_CHECKING:
 
 
 class WriteConfig(StepConfig):
-    """Fields beyond these are defined by the connection's type."""
+    """Fields beyond these are defined by the connection's type.
+
+    Usually one input; formats that hold several tables, such as Excel,
+    accept more.
+    """
 
     model_config = ConfigDict(extra="allow")
 
     connection: str = "local"
 
     @model_validator(mode="after")
-    def check_one_input(self) -> Self:
-        if len(self.inputs) != 1:
-            raise ValueError("A write step needs exactly one input.")
+    def check_inputs(self) -> Self:
+        if not self.inputs:
+            raise ValueError("A write step needs at least one input.")
         return self
 
 
@@ -44,12 +48,21 @@ class WriteStep(BaseStep):
             self.config.model_extra or {}
         )
 
+        if len(self.config.inputs) > 1 and not connection.accepts_multiple_inputs(
+            self.options
+        ):
+            raise ValueError(
+                "Only formats that hold several tables, such as excel (one "
+                "sheet per input), can write several inputs."
+            )
+
     def execute(
         self,
         context: ExecutionContext,
         inputs: dict[str, Any],
     ) -> Any:
-        (data,) = inputs.values()
+        # Several inputs are passed on by name, e.g. as Excel sheets.
+        data = next(iter(inputs.values())) if len(inputs) == 1 else dict(inputs)
 
         connection = context.connection(self.config.connection)
         connection.write(data, self.options)
