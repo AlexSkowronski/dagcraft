@@ -1,0 +1,10 @@
+pipeline:
+  name: example
+
+steps:
+  - id: test
+    type: read
+    connector: csv
+    args:
+      filepath_or_buffer: test.csv
+      
