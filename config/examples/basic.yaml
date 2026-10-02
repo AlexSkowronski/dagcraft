@@ -1,0 +1,39 @@
+# The smallest useful pipeline: read a CSV, drop incomplete rows, write it out.
+#
+#   dagcraft run config/examples/basic.yaml
+
+pipeline:
+  name: basic
+
+params:
+  data_dir: ../../data/sample
+  output_dir: ../../output
+
+connections:
+  data:
+    type: local
+    root: ${params.data_dir}
+  output:
+    type: local
+    root: ${params.output_dir}
+
+steps:
+  - id: employees
+    type: read
+    connection: data
+    path: employees.csv
+
+  - id: salaried
+    type: transform
+    operation: drop_nulls
+    inputs:
+      data: employees
+    args:
+      subset: [salary]
+
+  - id: save
+    type: write
+    connection: output
+    path: basic/salaried.csv
+    inputs:
+      data: salaried

@@ -1,0 +1,113 @@
+{
+  "batch_id": "web-2026-10-01",
+  "source": {
+    "system": "web",
+    "version": "2.1"
+  },
+  "events": [
+    {
+      "event_id": 1,
+      "type": "view",
+      "timestamp": "2026-10-01T17:16:00",
+      "user": {
+        "id": "u4",
+        "region": "North"
+      },
+      "properties": {
+        "product_id": 5,
+        "duration_ms": 4533
+      }
+    },
+    {
+      "event_id": 2,
+      "type": "click",
+      "timestamp": "2026-10-01T17:27:00",
+      "user": {
+        "id": "u1",
+        "region": "South"
+      },
+      "properties": {
+        "product_id": 5,
+        "duration_ms": 1048
+      }
+    },
+    {
+      "event_id": 3,
+      "type": "view",
+      "timestamp": "2026-10-01T09:49:00",
+      "user": {
+        "id": "u12",
+        "region": "North"
+      },
+      "properties": {
+        "product_id": 3,
+        "duration_ms": 2431
+      }
+    },
+    {
+      "event_id": 4,
+      "type": "click",
+      "timestamp": "2026-10-01T13:51:00",
+      "user": {
+        "id": "u7",
+        "region": "West"
+      },
+      "properties": {
+        "product_id": 4,
+        "duration_ms": 2362
+      }
+    },
+    {
+      "event_id": 5,
+      "type": "view",
+      "timestamp": "2026-10-01T08:52:00",
+      "user": {
+        "id": "u9",
+        "region": "South"
+      },
+      "properties": {
+        "product_id": 2,
+        "duration_ms": 3669
+      }
+    },
+    {
+      "event_id": 6,
+      "type": "view",
+      "timestamp": "2026-10-01T13:41:00",
+      "user": {
+        "id": "u2",
+        "region": "East"
+      },
+      "properties": {
+        "product_id": 3,
+        "duration_ms": 2345
+      }
+    },
+    {
+      "event_id": 7,
+      "type": "click",
+      "timestamp": "2026-10-01T17:24:00",
+      "user": {
+        "id": "u6",
+        "region": "East"
+      },
+      "properties": {
+        "product_id": 7,
+        "duration_ms": 4794
+      }
+    },
+    {
+      "event_id": 8,
+      "type": "view",
+      "timestamp": "2026-10-01T10:32:00",
+      "user": {
+        "id": "u11",
+        "region": "West"
+      },
+      "properties": {
+        "product_id": 1,
+        "duration_ms": 3224
+      }
+    }
+  ]
+}

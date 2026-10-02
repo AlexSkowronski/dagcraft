@@ -1,0 +1,53 @@
+# Run SQL from a .sql file with parameters, read a whole table, and write
+# results to another database. Uses SQLite, so it runs anywhere.
+#
+#   dagcraft run config/examples/sql_reports.yaml --param status=pending
+
+pipeline:
+  name: sql_reports
+
+params:
+  data_dir: ../../data/sample
+  output_dir: ../../output
+  # Quoted so it stays text: SQLite stores these dates as text.
+  since: "2026-09-15"
+  status: shipped
+
+connections:
+  warehouse:
+    type: sql
+    url: sqlite:///${params.data_dir}/warehouse.db
+  reports:
+    type: sql
+    url: sqlite:///${params.output_dir}/sql_reports/reports.db
+
+steps:
+  # :since and :status in the file are filled from params here.
+  - id: revenue_by_region
+    type: read
+    connection: warehouse
+    query_file: sql/revenue_by_region.sql
+    params:
+      since: ${params.since}
+      status: ${params.status}
+
+  - id: products
+    type: read
+    connection: warehouse
+    table: products
+
+  - id: save_revenue
+    type: write
+    connection: reports
+    table: revenue_by_region
+    if_exists: replace
+    inputs:
+      data: revenue_by_region
+
+  - id: save_products
+    type: write
+    connection: reports
+    table: products
+    if_exists: replace
+    inputs:
+      data: products

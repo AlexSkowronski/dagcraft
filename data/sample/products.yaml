@@ -1,0 +1,80 @@
+- product_id: 1
+  name: Desk lamp
+  category: Lighting
+  price: 24.99
+  attributes:
+    colour: black
+    weight_kg: 1.2
+  tags:
+  - lighting
+  - black
+- product_id: 2
+  name: Floor lamp
+  category: Lighting
+  price: 79.0
+  attributes:
+    colour: white
+    weight_kg: 4.5
+  tags:
+  - lighting
+  - white
+- product_id: 3
+  name: Office chair
+  category: Furniture
+  price: 149.0
+  attributes:
+    colour: grey
+    weight_kg: 12.0
+  tags:
+  - furniture
+  - grey
+- product_id: 4
+  name: Standing desk
+  category: Furniture
+  price: 399.0
+  attributes:
+    colour: oak
+    weight_kg: 28.0
+  tags:
+  - furniture
+  - oak
+- product_id: 5
+  name: Monitor arm
+  category: Accessories
+  price: 59.5
+  attributes:
+    colour: black
+    weight_kg: 2.1
+  tags:
+  - accessories
+  - black
+- product_id: 6
+  name: Cable tray
+  category: Accessories
+  price: 14.0
+  attributes:
+    colour: white
+    weight_kg: 0.6
+  tags:
+  - accessories
+  - white
+- product_id: 7
+  name: Bookshelf
+  category: Furniture
+  price: 119.0
+  attributes:
+    colour: walnut
+    weight_kg: 18.5
+  tags:
+  - furniture
+  - walnut
+- product_id: 8
+  name: Notebook set
+  category: Stationery
+  price: 9.99
+  attributes:
+    colour: blue
+    weight_kg: 0.4
+  tags:
+  - stationery
+  - blue

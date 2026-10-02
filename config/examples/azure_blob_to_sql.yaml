@@ -1,0 +1,60 @@
+# Template: ingest a day of JSON files from Azure Blob Storage into Azure SQL.
+# Replace the account, container, server and database with your own; needs
+# `pip install 'dagcraft[azure]'`, the ODBC driver, and `az login` (or a
+# managed identity / service principal).
+#
+#   dagcraft run config/examples/azure_blob_to_sql.yaml --dry-run
+#   dagcraft run config/examples/azure_blob_to_sql.yaml --param run_date=2026-10-03
+
+pipeline:
+  name: azure_blob_to_sql
+
+params:
+  run_date: "2026-10-02"
+
+connections:
+  lake:
+    type: azure_blob
+    account: mystorageaccount
+    container: raw
+    prefix: events
+  warehouse:
+    type: azure_sql
+    server: myserver.database.windows.net
+    database: analytics
+
+steps:
+  - id: events
+    type: read
+    connection: lake
+    path: ${params.run_date}/*.json
+    source_column: source_file
+    args:
+      record_path: events
+      meta: [batch_id]
+
+  - id: purchases
+    type: transform
+    operation: filter
+    inputs:
+      data: events
+    args:
+      expression: type == 'purchase'
+
+  - id: tidy
+    type: transform
+    operation: rename
+    inputs:
+      data: purchases
+    args:
+      columns:
+        user.id: user_id
+        properties.product_id: product_id
+
+  - id: load
+    type: write
+    connection: warehouse
+    table: staging.purchases
+    if_exists: append
+    inputs:
+      data: tidy

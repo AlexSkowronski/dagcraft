@@ -1,0 +1,84 @@
+# Ingest many nested JSON files, plus JSON Lines and YAML, into flat tables.
+#
+#   dagcraft run config/examples/json_events.yaml
+
+pipeline:
+  name: json_events
+
+params:
+  data_dir: ../../data/sample
+  output_dir: ../../output
+
+connections:
+  data:
+    type: local
+    root: ${params.data_dir}
+  output:
+    type: local
+    root: ${params.output_dir}
+
+steps:
+  # One file per day, each a batch document with the events under "events".
+  # Nested objects become dotted columns: user.id, properties.product_id, ...
+  - id: events
+    type: read
+    connection: data
+    path: events/*.json
+    source_column: source_file
+    args:
+      record_path: events
+      meta: [batch_id, [source, system]]
+
+  - id: clicks
+    type: read
+    connection: data
+    path: clicks.jsonl
+
+  - id: products
+    type: read
+    connection: data
+    path: products.yaml
+
+  - id: purchases
+    type: transform
+    operation: filter
+    inputs:
+      data: events
+    args:
+      expression: type == 'purchase'
+
+  - id: tidy
+    type: transform
+    operation: rename
+    inputs:
+      data: purchases
+    args:
+      columns:
+        user.id: user_id
+        user.region: region
+        properties.product_id: product_id
+
+  - id: with_products
+    type: transform
+    operation: join
+    inputs:
+      left: tidy
+      right: products
+    args:
+      on: product_id
+      how: left
+      suffixes: ["", "_product"]
+
+  - id: save_purchases
+    type: write
+    connection: output
+    path: json_events/purchases.parquet
+    inputs:
+      data: with_products
+
+  - id: save_clicks
+    type: write
+    connection: output
+    path: json_events/clicks.csv
+    inputs:
+      data: clicks

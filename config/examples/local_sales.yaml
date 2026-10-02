@@ -1,0 +1,89 @@
+# Join CSV and Parquet files, filter, reshape and write the result twice.
+#
+#   dagcraft run config/examples/local_sales.yaml --param min_quantity=3
+
+pipeline:
+  name: local_sales
+
+params:
+  data_dir: ../../data/sample
+  output_dir: ../../output
+  min_quantity: 2
+
+connections:
+  data:
+    type: local
+    root: ${params.data_dir}
+  output:
+    type: local
+    root: ${params.output_dir}
+
+steps:
+  - id: customers
+    type: read
+    connection: data
+    path: customers.csv
+
+  - id: orders
+    type: read
+    connection: data
+    path: orders.parquet
+
+  - id: shipped
+    type: transform
+    operation: filter
+    inputs:
+      data: orders
+    args:
+      expression: status == 'shipped' and quantity >= ${params.min_quantity}
+
+  - id: with_customers
+    type: transform
+    operation: join
+    inputs:
+      left: shipped
+      right: customers
+    args:
+      on: customer_id
+      how: left
+
+  - id: columns
+    type: transform
+    operation: select
+    inputs:
+      data: with_customers
+    args:
+      columns: [order_id, order_date, name, region, product_id, quantity, unit_price]
+
+  - id: sorted
+    type: transform
+    operation: sort
+    inputs:
+      data: columns
+    args:
+      by: [region, order_date]
+
+  - id: by_region
+    type: transform
+    operation: aggregate
+    inputs:
+      data: sorted
+    args:
+      by: region
+      columns:
+        order_id: count
+        quantity: sum
+
+  - id: save_orders
+    type: write
+    connection: output
+    path: local_sales/shipped_orders.parquet
+    inputs:
+      data: sorted
+
+  - id: save_summary
+    type: write
+    connection: output
+    path: local_sales/orders_by_region.csv
+    inputs:
+      data: by_region

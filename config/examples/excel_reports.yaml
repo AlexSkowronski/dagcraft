@@ -1,0 +1,67 @@
+# Read several Excel sheets into one table, compare with targets from another
+# sheet, and write a workbook with one sheet per input.
+#
+#   dagcraft run config/examples/excel_reports.yaml
+
+pipeline:
+  name: excel_reports
+
+params:
+  data_dir: ../../data/sample
+  output_dir: ../../output
+
+connections:
+  data:
+    type: local
+    root: ${params.data_dir}
+  output:
+    type: local
+    root: ${params.output_dir}
+
+steps:
+  # The region sheets share columns, so read them into one table with a
+  # "region" column saying which sheet each row came from.
+  - id: monthly
+    type: read
+    connection: data
+    path: regional_sales.xlsx
+    args:
+      sheet_name: [North, South, East, West]
+      sheet_column: region
+
+  # The Targets sheet has different columns, so it gets its own step.
+  - id: targets
+    type: read
+    connection: data
+    path: regional_sales.xlsx
+    args:
+      sheet_name: Targets
+
+  - id: totals
+    type: transform
+    operation: aggregate
+    inputs:
+      data: monthly
+    args:
+      by: region
+      columns:
+        revenue: sum
+        units: sum
+
+  - id: against_targets
+    type: transform
+    operation: join
+    inputs:
+      left: totals
+      right: targets
+    args:
+      on: region
+
+  # Each input becomes a sheet, named after the input.
+  - id: report
+    type: write
+    connection: output
+    path: excel_reports/regional_report.xlsx
+    inputs:
+      Summary: against_targets
+      Monthly: monthly

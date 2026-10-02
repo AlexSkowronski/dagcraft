@@ -1,0 +1,13 @@
+customer_id,name,region,segment,signup_date
+1,Ada Lovelace,South,Business,2025-11-24
+2,Grace Hopper,East,Retail,2025-05-06
+3,Donald Liskov,West,Retail,2025-12-13
+4,Edsger Lovelace,North,Retail,2025-10-30
+5,Grace Hopper,South,Retail,2025-02-17
+6,Grace Knuth,East,Business,2025-10-15
+7,Edsger Liskov,West,Business,2025-04-23
+8,Frances Allen,North,Retail,2025-01-04
+9,Edsger Turing,South,Business,2025-12-24
+10,Grace Allen,East,Business,2025-03-21
+11,Ada Dijkstra,West,Retail,2025-02-22
+12,Frances Turing,North,Business,2025-07-03
