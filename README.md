@@ -17,12 +17,15 @@ result = Pipeline.from_yaml("pipelines/daily_sales.yaml").run()
 ## Installation
 
 ```bash
-pip install dagcraft            # local files: CSV, Parquet, JSON, JSON Lines, YAML
-pip install 'dagcraft[excel]'   # + Excel workbooks
-pip install 'dagcraft[sql]'     # + SQL databases through SQLAlchemy
-pip install 'dagcraft[azure]'   # + Azure Blob Storage, Azure SQL and SharePoint
-pip install 'dagcraft[all]'     # everything
+pip install dagcraft-pipelines            # local files: CSV, Parquet, JSON, JSON Lines, YAML
+pip install 'dagcraft-pipelines[excel]'   # + Excel workbooks
+pip install 'dagcraft-pipelines[sql]'     # + SQL databases through SQLAlchemy
+pip install 'dagcraft-pipelines[azure]'   # + Azure Blob Storage, Azure SQL and SharePoint
+pip install 'dagcraft-pipelines[all]'     # everything
 ```
+
+The package is called `dagcraft-pipelines` on PyPI; you import it and run it
+as `dagcraft`.
 
 The `azure_sql` connection also needs Microsoft's
 [ODBC Driver 18 for SQL Server](https://learn.microsoft.com/sql/connect/odbc/download-odbc-driver-for-sql-server)
@@ -228,7 +231,7 @@ Read and write steps on file connections take:
 | --------- | ------------------ | -------------------------------------------------- |
 | `csv`     | `.csv`             | `args` go to `pandas.read_csv` / `to_csv`.         |
 | `parquet` | `.parquet`, `.pq`  | `args` go to `pandas.read_parquet` / `to_parquet`. |
-| `excel`   | `.xlsx`, `.xlsm`   | Needs `dagcraft[excel]`. See below.                |
+| `excel`   | `.xlsx`, `.xlsm`   | Needs `dagcraft-pipelines[excel]`. See below.                |
 | `json`    | `.json`            | Nested objects become dotted columns (`user.id`). `args` go to `pandas.json_normalize`, e.g. `record_path` and `meta`. |
 | `jsonl`   | `.jsonl`, `.ndjson`| One JSON record per line; read like `json`.        |
 | `yaml`    | `.yaml`, `.yml`    | Read like `json`.                                  |
@@ -283,7 +286,7 @@ input, named after the input:
 | `root` | Directory paths are relative to. Defaults to the file's directory. |
 
 **`azure_blob`**: Azure Blob Storage, including ADLS Gen2 accounts.
-Requires `dagcraft[azure]`.
+Requires `dagcraft-pipelines[azure]`.
 
 | Field                   | Description                                             |
 | ----------------------- | ------------------------------------------------------- |
@@ -300,7 +303,7 @@ refused: the underlying library would quietly use that connection string
 instead, possibly for a different account.
 
 **`sharepoint`**: a SharePoint document library, through Microsoft Graph.
-Requires `dagcraft[azure]`.
+Requires `dagcraft-pipelines[azure]`.
 
 | Field     | Description                                                     |
 | --------- | --------------------------------------------------------------- |
@@ -349,7 +352,7 @@ table as it was.
       since: ${params.run_date}
 ```
 
-**`sql`**: any database SQLAlchemy supports. Requires `dagcraft[sql]` and
+**`sql`**: any database SQLAlchemy supports. Requires `dagcraft-pipelines[sql]` and
 a driver for your database (SQLite needs none).
 
 | Field     | Description                                                     |
@@ -358,7 +361,7 @@ a driver for your database (SQLite needs none).
 | `url_env` | Or: environment variable holding the URL, for URLs with passwords. |
 
 **`azure_sql`**: Azure SQL Database or SQL Server. Requires
-`dagcraft[azure]` and the ODBC driver.
+`dagcraft-pipelines[azure]` and the ODBC driver.
 
 | Field                   | Description                                             |
 | ----------------------- | ------------------------------------------------------- |
@@ -543,8 +546,9 @@ agree, runs the tests, publishes to PyPI with trusted publishing, and
 creates a GitHub release with the changelog's notes.
 
 Before the first release, add a trusted publisher on PyPI (Your account →
-Publishing → Add a new pending publisher) with owner `AlexSkowronski`,
-repository `dagcraft`, workflow `release.yml` and environment `pypi`.
+Publishing → Add a new pending publisher) with project name
+`dagcraft-pipelines`, owner `AlexSkowronski`, repository `dagcraft`, workflow
+`release.yml` and environment `pypi`.
 
 ## License
 

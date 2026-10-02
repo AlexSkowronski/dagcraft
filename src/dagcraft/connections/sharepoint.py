@@ -1,6 +1,6 @@
 """SharePoint document libraries, through Microsoft Graph.
 
-Requires the ``azure`` extra (``pip install 'dagcraft[azure]'``).
+Requires the ``azure`` extra (``pip install 'dagcraft-pipelines[azure]'``).
 """
 
 from __future__ import annotations

@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/dagcraft/
+      url: https://pypi.org/project/dagcraft-pipelines/
     permissions:
       # Trusted publishing: PyPI accepts a short-lived token from GitHub.
       id-token: write

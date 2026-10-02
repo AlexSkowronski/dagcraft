@@ -1,6 +1,6 @@
 # Template: ingest a day of JSON files from Azure Blob Storage into Azure SQL.
 # Replace the account, container, server and database with your own; needs
-# `pip install 'dagcraft[azure]'`, the ODBC driver, and `az login` (or a
+# `pip install 'dagcraft-pipelines[azure]'`, the ODBC driver, and `az login` (or a
 # managed identity / service principal).
 #
 #   dagcraft run config/examples/azure_blob_to_sql.yaml --dry-run

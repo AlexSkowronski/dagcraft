@@ -100,7 +100,7 @@ def test_missing_extra_is_a_config_error(monkeypatch):
         make_pipeline(lake={"container": "raw", "account": "acct"})
 
     assert "Connection 'lake'" in str(exc_info.value)
-    assert "pip install 'dagcraft[azure]'" in str(exc_info.value)
+    assert "pip install 'dagcraft-pipelines[azure]'" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(

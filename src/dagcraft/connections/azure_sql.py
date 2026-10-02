@@ -1,6 +1,6 @@
 """Azure SQL Database and SQL Server, through pyodbc and SQLAlchemy.
 
-Requires the ``azure`` extra (``pip install 'dagcraft[azure]'``) and
+Requires the ``azure`` extra (``pip install 'dagcraft-pipelines[azure]'``) and
 Microsoft's ODBC Driver for SQL Server installed on the machine.
 """
 

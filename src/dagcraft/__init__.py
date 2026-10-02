@@ -18,7 +18,7 @@ from dagcraft.steps import BaseStep, StepConfig
 logging.getLogger("dagcraft").addHandler(logging.NullHandler())
 
 try:
-    __version__ = version("dagcraft")
+    __version__ = version("dagcraft-pipelines")
 except PackageNotFoundError:  # running from a source tree that isn't installed
     __version__ = "0+unknown"
 

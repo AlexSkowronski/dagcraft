@@ -649,7 +649,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dagcraft"
+name = "dagcraft-pipelines"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -703,7 +703,7 @@ dev = [
 requires-dist = [
     { name = "adlfs", marker = "extra == 'azure'", specifier = ">=2024.7.0" },
     { name = "azure-identity", marker = "extra == 'azure'", specifier = ">=1.15.0" },
-    { name = "dagcraft", extras = ["azure", "excel", "sql"], marker = "extra == 'all'" },
+    { name = "dagcraft-pipelines", extras = ["azure", "excel", "sql"], marker = "extra == 'all'" },
     { name = "fsspec", specifier = ">=2024.6.0" },
     { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=3.0" },

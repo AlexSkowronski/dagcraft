@@ -19,7 +19,7 @@ def require_extra(
         raise ConfigError(
             f"{feature} needs the '{extra}' extra "
             f"({', '.join(missing)} not installed). "
-            f"Install it with: pip install 'dagcraft[{extra}]'"
+            f"Install it with: pip install 'dagcraft-pipelines[{extra}]'"
         )
 
 

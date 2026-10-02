@@ -90,7 +90,7 @@ def test_config_validation(config, message):
 def test_missing_extra_is_a_config_error(monkeypatch):
     monkeypatch.setattr(extras, "module_available", lambda _module: False)
 
-    with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[azure\]'"):
+    with pytest.raises(ConfigError, match=r"pip install 'dagcraft-pipelines\[azure\]'"):
         signed_in()
 
 

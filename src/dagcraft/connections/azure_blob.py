@@ -1,6 +1,6 @@
 """Azure Blob Storage, including ADLS Gen2 accounts, via adlfs.
 
-Requires the ``azure`` extra: ``pip install 'dagcraft[azure]'``.
+Requires the ``azure`` extra: ``pip install 'dagcraft-pipelines[azure]'``.
 """
 
 from __future__ import annotations

@@ -274,7 +274,7 @@ def test_connection_needs_a_url(tmp_path):
 def test_missing_extra_is_a_config_error(tmp_path, monkeypatch):
     monkeypatch.setattr(extras, "module_available", lambda _module: False)
 
-    with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[sql\]'"):
+    with pytest.raises(ConfigError, match=r"pip install 'dagcraft-pipelines\[sql\]'"):
         make_pipeline(connections=database(), base_dir=tmp_path)
 
 

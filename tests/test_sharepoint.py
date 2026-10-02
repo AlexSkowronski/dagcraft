@@ -234,5 +234,5 @@ def test_site_must_be_an_address(tmp_path):
 def test_missing_extra_is_a_config_error(tmp_path, monkeypatch):
     monkeypatch.setattr(extras, "module_available", lambda _module: False)
 
-    with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[azure\]'"):
+    with pytest.raises(ConfigError, match=r"pip install 'dagcraft-pipelines\[azure\]'"):
         make_pipeline(tmp_path)

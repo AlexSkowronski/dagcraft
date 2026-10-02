@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dagcraft"
+name = "dagcraft-pipelines"
 version = "0.1.0"
 description = "Config-driven DAG pipelines for Python."
 readme = "README.md"
@@ -50,7 +50,7 @@ azure = [
     "sqlalchemy>=2.0",
 ]
 all = [
-    "dagcraft[azure,excel,sql]",
+    "dagcraft-pipelines[azure,excel,sql]",
 ]
 
 [project.urls]

@@ -1,6 +1,6 @@
 """SQL databases through SQLAlchemy.
 
-Requires the ``sql`` extra (``pip install 'dagcraft[sql]'``) plus a driver
+Requires the ``sql`` extra (``pip install 'dagcraft-pipelines[sql]'``) plus a driver
 for your database. SQLite works out of the box.
 """
 

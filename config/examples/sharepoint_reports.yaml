@@ -1,7 +1,7 @@
 # Template: read a multi-sheet budget workbook from SharePoint, compare it
 # with actuals from Azure SQL, and publish a workbook back to SharePoint.
 # Replace the site, server and database with your own; needs
-# `pip install 'dagcraft[azure,excel]'` and an identity with Microsoft Graph
+# `pip install 'dagcraft-pipelines[azure,excel]'` and an identity with Microsoft Graph
 # access to the site's files.
 #
 #   dagcraft run config/examples/sharepoint_reports.yaml --dry-run
