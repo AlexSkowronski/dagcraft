@@ -1,5 +1,7 @@
 # dagcraft
 
+[![CI](https://github.com/AlexSkowronski/dagcraft/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexSkowronski/dagcraft/actions/workflows/ci.yml)
+
 Config-driven DAG pipelines for Python. Describe your pipeline's steps in
 YAML: read data, transform it, write it somewhere. dagcraft validates the
 whole file up front, works out the order to run steps in, and runs them.
@@ -385,6 +387,9 @@ uv sync                    # installs dev tools, including the optional extras
 uv run pre-commit install  # lint, format and type checks on commit; tests on push
 uv run pytest
 ```
+
+CI runs the same checks, builds the package, and runs the tests on
+Python 3.11 to 3.14 on Linux and on Windows.
 
 ## License
 
