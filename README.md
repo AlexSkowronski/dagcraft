@@ -332,6 +332,39 @@ Read steps take a `query`, a `query_file` or a `table`:
 Only `:name` in SQL code is a placeholder; inside comments and string
 literals it's left alone, so a `.sql` file can document its parameters.
 
+#### Large reads in parallel parts
+
+`partition` splits a big read into ranges of a whole-number column (such as
+an ID) and reads them at the same time, each on its own connection, then
+combines them. It's typically a few times faster on a large table, if the
+database has the capacity; it isn't linear, because turning rows into a
+DataFrame still happens on one CPU core.
+
+```yaml
+  - id: orders
+    type: read
+    connection: warehouse
+    table: dbo.orders
+    partition:
+      column: order_id   # its MIN and MAX set the range
+      parts: 8           # 2 to 32
+```
+
+Rows where the column is NULL are read too. Set `lower` and `upper` to read
+only that range instead of finding it with MIN and MAX.
+
+For a `query` or `query_file`, put `:partition_start` and `:partition_end`
+where the range belongs and give the bounds; dagcraft never rewrites your
+SQL, so this works with CTEs and anything else:
+
+```yaml
+    query_file: sql/orders.sql   # ... WHERE o.order_id BETWEEN :partition_start AND :partition_end
+    partition:
+      parts: 8
+      lower: 1
+      upper: 50000000
+```
+
 Write steps take:
 
 | Field       | Description                                                    |

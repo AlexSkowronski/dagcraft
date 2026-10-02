@@ -6,6 +6,9 @@ for your database. SQLite works out of the box.
 
 from __future__ import annotations
 
+import re
+from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self
 
@@ -21,13 +24,53 @@ if TYPE_CHECKING:
     import sqlalchemy as sa
 
 
+PARTITION_PLACEHOLDERS = ("partition_start", "partition_end")
+
+# Extra pooled connections allowed beyond the usual 5, for partitioned reads
+# and parallel steps.
+POOL_OVERFLOW = 40
+
+
+class SQLPartition(BaseModel):
+    """Split a read into ranges of a whole-number column, read at the same time.
+
+    Reading a ``table``, set ``column``: its range comes from the column's
+    MIN and MAX unless ``lower`` and ``upper`` are set, and rows where it's
+    NULL are read too. Reading a query, put ``:partition_start`` and
+    ``:partition_end`` where the range belongs (for example ``WHERE
+    order_id BETWEEN :partition_start AND :partition_end``) and set
+    ``lower`` and ``upper``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    parts: int = Field(ge=2, le=32)
+    column: str | None = Field(default=None, min_length=1)
+    lower: int | None = None
+    upper: int | None = None
+
+    @model_validator(mode="after")
+    def check_bounds(self) -> Self:
+        if (self.lower is None) != (self.upper is None):
+            raise ValueError("Set both 'lower' and 'upper', or neither.")
+
+        if (
+            self.lower is not None
+            and self.upper is not None
+            and self.lower > self.upper
+        ):
+            raise ValueError("'lower' can't be greater than 'upper'.")
+        return self
+
+
 class SQLReadOptions(BaseModel):
     """Fields of a read step that uses a SQL connection.
 
     Set one of ``query``, ``query_file`` (a ``.sql`` file, relative to the
     pipeline file) or ``table`` (``name`` or ``schema.name``). Queries take
     ``:name`` placeholders filled from ``params``. ``args`` go to
-    ``pandas.read_sql``.
+    ``pandas.read_sql``. ``partition`` splits a large read into ranges that
+    are read at the same time.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -37,6 +80,7 @@ class SQLReadOptions(BaseModel):
     table: str | None = Field(default=None, min_length=1)
     params: dict[str, Any] = Field(default_factory=dict)
     args: dict[str, Any] = Field(default_factory=dict)
+    partition: SQLPartition | None = None
 
     @model_validator(mode="after")
     def check_source(self) -> Self:
@@ -50,7 +94,35 @@ class SQLReadOptions(BaseModel):
 
         if self.table is not None:
             split_table(self.table)
+
+        if self.partition is not None:
+            self.check_partition(self.partition)
         return self
+
+    def check_partition(self, partition: SQLPartition) -> None:
+        if self.table is not None:
+            if partition.column is None:
+                raise ValueError("Partitioning a table needs 'partition.column'.")
+            return
+
+        if partition.column is not None:
+            raise ValueError(
+                "'partition.column' only applies to tables; put :partition_start "
+                "and :partition_end in the query instead."
+            )
+
+        if partition.lower is None:
+            raise ValueError(
+                "Partitioning a query needs 'partition.lower' and 'partition.upper'."
+            )
+
+        reserved = sorted(set(self.params) & set(PARTITION_PLACEHOLDERS))
+
+        if reserved:
+            raise ValueError(f"'params' can't set {', '.join(reserved)} here.")
+
+        if self.query is not None:
+            check_partition_placeholders(self.query)
 
 
 class SQLWriteOptions(BaseModel):
@@ -120,10 +192,19 @@ class SQLConnection(Connection):
         if isinstance(options, SQLWriteOptions):
             return f"table {options.table} (if it exists: {options.if_exists})"
         if options.query_file is not None:
-            return f"the query in {options.query_file}"
-        if options.table is not None:
-            return f"table {options.table}"
-        return "a query"
+            source = f"the query in {options.query_file}"
+        elif options.table is not None:
+            source = f"table {options.table}"
+        else:
+            source = "a query"
+
+        partition = options.partition
+
+        if partition is None:
+            return source
+
+        by = f" by {partition.column}" if partition.column else ""
+        return f"{source} in {partition.parts} parallel parts{by}"
 
     def prepare_read(self, options: SQLReadOptions) -> SQLReadOptions:
         if options.query_file is None:
@@ -138,22 +219,22 @@ class SQLConnection(Connection):
                 f"Query file '{options.query_file}' not found (looked for {path})."
             ) from None
 
+        if options.partition is not None:
+            check_partition_placeholders(query)
+
         return options.model_copy(update={"query": query})
 
     def read(self, options: SQLReadOptions) -> pd.DataFrame:
-        import sqlalchemy as sa  # noqa: PLC0415
+        if options.partition is not None:
+            return self._read_partitioned(options, options.partition)
 
-        with self.engine.connect() as connection:
-            if options.query is not None:
-                return pd.read_sql(
-                    sa.text(escape_non_code_colons(options.query)),
-                    connection,
-                    params=options.params,
-                    **options.args,
-                )
+        if options.query is not None:
+            return self._read_query(options.query, options.params, options.args)
 
-            if options.table is not None:
-                schema, table = split_table(options.table)
+        if options.table is not None:
+            schema, table = split_table(options.table)
+
+            with self.engine.connect() as connection:
                 return pd.read_sql_table(
                     table,
                     connection,
@@ -162,6 +243,94 @@ class SQLConnection(Connection):
                 )
 
         raise ExecutionError("A SQL read needs a 'query' or a 'table'.")
+
+    def _read_query(
+        self,
+        query: str,
+        params: dict[str, Any],
+        args: dict[str, Any],
+    ) -> pd.DataFrame:
+        import sqlalchemy as sa  # noqa: PLC0415
+
+        with self.engine.connect() as connection:
+            return pd.read_sql(
+                sa.text(escape_non_code_colons(query)),
+                connection,
+                params=params,
+                **args,
+            )
+
+    def _read_partitioned(
+        self,
+        options: SQLReadOptions,
+        partition: SQLPartition,
+    ) -> pd.DataFrame:
+        """Read each range on its own connection, all at once, then combine."""
+        extra_jobs: list[tuple[str, dict[str, Any]]] = []
+        lower, upper = partition.lower, partition.upper
+
+        if options.table is not None:
+            source, column = self._quoted_names(options.table, partition.column or "")
+
+            if lower is None or upper is None:
+                lower, upper = self._column_range(source, column)
+
+            if lower is None or upper is None:
+                # Empty table, or no values to split by: read it whole.
+                return self.read(options.model_copy(update={"partition": None}))
+
+            # Names come from the pipeline file, quoted by the database's own
+            # rules; values are bound parameters.
+            query = (
+                f"SELECT * FROM {source} "  # noqa: S608
+                f"WHERE {column} BETWEEN :partition_start AND :partition_end"
+            )
+            params: dict[str, Any] = {}
+            nulls = f"SELECT * FROM {source} WHERE {column} IS NULL"  # noqa: S608
+            extra_jobs.append((nulls, {}))
+        else:
+            query, params = options.query or "", options.params
+
+        if lower is None or upper is None:
+            raise ExecutionError("A partitioned read needs 'lower' and 'upper'.")
+
+        jobs = [
+            (query, {**params, "partition_start": start, "partition_end": end})
+            for start, end in split_range(lower, upper, partition.parts)
+        ]
+        jobs += extra_jobs
+
+        with ThreadPoolExecutor(len(jobs), thread_name_prefix="dagcraft-sql") as pool:
+            frames = list(
+                pool.map(
+                    lambda job: self._read_query(job[0], job[1], options.args),
+                    jobs,
+                )
+            )
+
+        # The NULL part's key column is all-empty (object dtype); infer types
+        # again so the result matches an unpartitioned read.
+        return pd.concat(frames, ignore_index=True).infer_objects()
+
+    def _quoted_names(self, table: str, column: str) -> tuple[str, str]:
+        """``schema.table`` and ``column``, quoted for this database."""
+        preparer = self.engine.dialect.identifier_preparer
+        schema, name = split_table(table)
+        source = preparer.quote(name)
+
+        if schema is not None:
+            source = f"{preparer.quote_schema(schema)}.{source}"
+        return source, preparer.quote(column)
+
+    def _column_range(self, source: str, column: str) -> tuple[int | None, int | None]:
+        import sqlalchemy as sa  # noqa: PLC0415
+
+        with self.engine.connect() as connection:
+            # Names quoted by the database's own rules, as above.
+            bounds = f"SELECT MIN({column}), MAX({column}) FROM {source}"  # noqa: S608
+            lower, upper = connection.execute(sa.text(bounds)).one()
+
+        return whole_number(lower, column), whole_number(upper, column)
 
     def write(self, data: pd.DataFrame, options: SQLWriteOptions) -> None:
         schema, table = split_table(options.table)
@@ -226,7 +395,14 @@ class GenericSQLConnection(SQLConnection):
             database.parent.mkdir(parents=True, exist_ok=True)
             url = url.set(database=str(database))
 
-        return sa.create_engine(url, pool_pre_ping=True)
+        if url.get_backend_name() == "sqlite" and url.database in (
+            None,
+            "",
+            ":memory:",
+        ):
+            return sa.create_engine(url)
+
+        return sa.create_engine(url, pool_pre_ping=True, max_overflow=POOL_OVERFLOW)
 
 
 def escape_non_code_colons(query: str) -> str:
@@ -278,6 +454,53 @@ def closing_quote(query: str, start: int, quote: str) -> int:
         position += 1
 
     return len(query)
+
+
+def check_partition_placeholders(query: str) -> None:
+    """A partitioned query must use both :partition_start and :partition_end."""
+    code = escape_non_code_colons(query)
+    missing = [
+        name
+        for name in PARTITION_PLACEHOLDERS
+        if not re.search(rf"(?<![\\\w:]):{name}\b", code)
+    ]
+
+    if missing:
+        placeholders = " and ".join(f":{name}" for name in missing)
+        raise ValueError(f"A partitioned query must use {placeholders}.")
+
+
+def split_range(lower: int, upper: int, parts: int) -> list[tuple[int, int]]:
+    """Split ``lower..upper`` (inclusive) into up to ``parts`` similar ranges."""
+    total = upper - lower + 1
+    parts = min(parts, total)
+    size, extra = divmod(total, parts)
+    ranges = []
+    start = lower
+
+    for index in range(parts):
+        end = start + size - 1 + (1 if index < extra else 0)
+        ranges.append((start, end))
+        start = end + 1
+
+    return ranges
+
+
+def whole_number(value: Any, column: str) -> int | None:
+    """``value`` as an int, for a partition boundary."""
+    if value is None:
+        return None
+
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+
+    if isinstance(value, Decimal) and value == value.to_integral_value():
+        return int(value)
+
+    raise ExecutionError(
+        f"Partition column {column} must hold whole numbers, "
+        f"not {type(value).__name__}."
+    )
 
 
 def split_table(table: str) -> tuple[str | None, str]:

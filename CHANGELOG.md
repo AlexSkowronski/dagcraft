@@ -31,6 +31,8 @@ First release.
 - SQL reads from inline queries, `.sql` files or whole tables, with bound
   parameters; transactional writes with `fail`, `append`, `delete_rows` or
   `replace`.
+- Partitioned SQL reads: split a large read into ranges of a whole-number
+  column, read in parallel on separate connections (`partition`).
 - Operations: `drop_nulls`, `filter`, `select`, `rename`, `sort`, `join`
   and `aggregate`.
 - Retries for any step, with a growing delay (`retries`, `retry_delay`).
