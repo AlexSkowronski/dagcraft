@@ -7,13 +7,10 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from dagcraft.config import PipelineConfig
+from dagcraft.compiler import CompiledPipeline, compile_pipeline
+from dagcraft.config import PipelineConfig, format_validation_error
 from dagcraft.exceptions import ConfigError
 from dagcraft.executor import Executor
-from dagcraft.graph import (
-    CompiledGraph,
-    compile_graph,
-)
 from dagcraft.runtime import PipelineResult
 
 
@@ -21,9 +18,17 @@ class Pipeline:
     def __init__(
         self,
         config: PipelineConfig,
+        base_dir: str | Path | None = None,
     ):
+        """Compile ``config``.
+
+        ``base_dir`` is where relative paths in the config are resolved from;
+        it defaults to the current directory, or the file's directory when
+        loaded with ``from_yaml``.
+        """
         self.config = config
-        self.graph: CompiledGraph = compile_graph(config)
+        self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
+        self.compiled: CompiledPipeline = compile_pipeline(config, self.base_dir)
 
     @classmethod
     def from_yaml(
@@ -45,25 +50,28 @@ class Pipeline:
         except yaml.YAMLError as exc:
             raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
-        return cls.from_dict(raw)
+        return cls.from_dict(raw, base_dir=path.resolve().parent)
 
     @classmethod
     def from_dict(
         cls,
         config: dict[str, Any],
+        base_dir: str | Path | None = None,
     ) -> Pipeline:
         try:
             parsed = PipelineConfig.model_validate(config)
 
         except ValidationError as exc:
-            raise ConfigError(str(exc)) from exc
+            raise ConfigError(
+                f"Invalid pipeline: {format_validation_error(exc)}"
+            ) from exc
 
-        return cls(parsed)
+        return cls(parsed, base_dir=base_dir)
 
     def validate(self) -> bool:
-        # Configuration validation occurs through
-        # Pydantic, and graph validation occurs when
-        # the Pipeline is constructed.
+        # Everything is checked when the pipeline is compiled in __init__:
+        # the file structure, each step and connection against its registered
+        # type, references to operations and connections, and the graph.
         return True
 
     def run(
@@ -71,8 +79,7 @@ class Pipeline:
         logger: logging.Logger | None = None,
     ) -> PipelineResult:
         executor = Executor(
-            config=self.config,
-            graph=self.graph,
+            pipeline=self.compiled,
             logger=logger,
         )
 

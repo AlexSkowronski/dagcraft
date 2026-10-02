@@ -28,9 +28,7 @@ pipeline:
 steps:
   - id: source
     type: read
-    connector: csv
-    args:
-      filepath_or_buffer: {input_csv.as_posix()}
+    path: {input_csv.as_posix()}
   - id: sorted
     type: transform
     operation: sort
@@ -64,9 +62,7 @@ pipeline:
 steps:
   - id: source
     type: read
-    connector: csv
-    args:
-      filepath_or_buffer: {(tmp_path / "missing.csv").as_posix()}
+    path: {(tmp_path / "missing.csv").as_posix()}
   - id: sorted
     type: transform
     operation: sort
@@ -99,9 +95,7 @@ pipeline:
 steps:
   - id: source
     type: read
-    connector: csv
-    args:
-      filepath_or_buffer: {input_csv.as_posix()}
+    path: {input_csv.as_posix()}
 """,
     )
 
@@ -127,4 +121,4 @@ steps:
         main(["validate", str(pipeline)])
 
     assert exc_info.value.code == 1
-    assert "Read step 'source' requires a connector." in caplog.text
+    assert "Step 'source': path: Field required" in caplog.text

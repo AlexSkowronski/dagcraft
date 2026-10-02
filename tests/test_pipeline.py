@@ -33,12 +33,7 @@ def test_read_transform_write(people_csv, tmp_path):
     output = tmp_path / "out.csv"
 
     pipeline = make_pipeline(
-        {
-            "id": "people",
-            "type": "read",
-            "connector": "csv",
-            "args": {"filepath_or_buffer": str(people_csv)},
-        },
+        {"id": "people", "type": "read", "path": str(people_csv)},
         {
             "id": "clean",
             "type": "transform",
@@ -62,9 +57,8 @@ def test_read_transform_write(people_csv, tmp_path):
         {
             "id": "save",
             "type": "write",
-            "connector": "csv",
+            "path": str(output),
             "inputs": {"data": "names"},
-            "args": {"path_or_buf": str(output), "index": False},
         },
     )
 
@@ -72,14 +66,12 @@ def test_read_transform_write(people_csv, tmp_path):
 
     assert result.success
     assert all(step.status == StepStatus.SUCCESS for step in result.steps.values())
-    assert result.artifact("names")["name"].tolist() == [
-        "Ada",
-        "Grace",
-    ]
-    assert pd.read_csv(output)["name"].tolist() == [
-        "Ada",
-        "Grace",
-    ]
+    assert result.artifact("names")["name"].tolist() == ["Ada", "Grace"]
+
+    # The index is not written by default, so only the selected column remains.
+    written = pd.read_csv(output)
+    assert written.columns.tolist() == ["name"]
+    assert written["name"].tolist() == ["Ada", "Grace"]
 
 
 def test_python_step(people_csv, monkeypatch):
@@ -93,12 +85,7 @@ def test_python_step(people_csv, monkeypatch):
     monkeypatch.setitem(sys.modules, module.__name__, module)
 
     pipeline = make_pipeline(
-        {
-            "id": "people",
-            "type": "read",
-            "connector": "csv",
-            "args": {"filepath_or_buffer": str(people_csv)},
-        },
+        {"id": "people", "type": "read", "path": str(people_csv)},
         {
             "id": "count",
             "type": "python",
@@ -116,12 +103,7 @@ def test_python_step(people_csv, monkeypatch):
 
 def test_failure_skips_remaining_steps(people_csv, tmp_path):
     pipeline = make_pipeline(
-        {
-            "id": "people",
-            "type": "read",
-            "connector": "csv",
-            "args": {"filepath_or_buffer": str(people_csv)},
-        },
+        {"id": "people", "type": "read", "path": str(people_csv)},
         {
             "id": "broken",
             "type": "transform",
@@ -132,9 +114,8 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
         {
             "id": "save",
             "type": "write",
-            "connector": "csv",
+            "path": str(tmp_path / "out.csv"),
             "inputs": {"data": "broken"},
-            "args": {"path_or_buf": str(tmp_path / "out.csv")},
         },
     )
 
@@ -143,33 +124,7 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
     assert not result.success
     assert result.steps["people"].status == StepStatus.SUCCESS
     assert result.steps["broken"].status == StepStatus.FAILED
-    assert "no_such_column" in result.steps["broken"].error
+    assert "no_such_column" in (result.steps["broken"].error or "")
     assert result.steps["save"].status == StepStatus.SKIPPED
     assert "save" not in result.artifacts
-
-
-def test_unknown_step_type_fails_step_instead_of_raising():
-    pipeline = make_pipeline(
-        {"id": "mystery", "type": "does_not_exist"},
-    )
-
-    result = pipeline.run()
-
-    assert not result.success
-    assert result.steps["mystery"].status == StepStatus.FAILED
-    assert "Unknown step type" in result.steps["mystery"].error
-
-
-def test_unknown_operation_fails_step():
-    pipeline = make_pipeline(
-        {
-            "id": "t",
-            "type": "transform",
-            "operation": "does_not_exist",
-        },
-    )
-
-    result = pipeline.run()
-
-    assert not result.success
-    assert "Unknown operation" in result.steps["t"].error
+    assert not (tmp_path / "out.csv").exists()

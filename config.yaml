@@ -1,9 +1,21 @@
 pipeline:
   name: example
 
+# Optional: steps use the built-in "local" connection (rooted at this file's
+# directory) unless they name another one.
+connections:
+  project:
+    type: local
+    root: .
+
 steps:
-  - id: test
+  - id: employees
     type: read
-    connector: csv
-    args:
-      filepath_or_buffer: test.csv
+    connection: project
+    path: test.csv
+
+  - id: salaried
+    type: transform
+    operation: drop_nulls
+    inputs:
+      data: employees

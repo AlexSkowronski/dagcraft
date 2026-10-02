@@ -4,55 +4,78 @@ from dagcraft import Pipeline
 from dagcraft.exceptions import ConfigError
 
 
-def make_config(*steps):
-    return {
+def make_config(*steps, connections=None):
+    config = {
         "pipeline": {"name": "test"},
         "steps": list(steps),
     }
+    if connections is not None:
+        config["connections"] = connections
+    return config
 
 
-def test_valid_config_parses():
+def test_valid_config_compiles():
     pipeline = Pipeline.from_dict(
         make_config(
-            {"id": "src", "type": "read", "connector": "csv"},
+            {"id": "src", "type": "read", "path": "data.csv"},
         )
     )
 
     assert pipeline.config.pipeline.name == "test"
-    assert pipeline.config.steps[0].id == "src"
+    assert list(pipeline.compiled.steps) == ["src"]
+    assert "local" in pipeline.compiled.connections
 
 
 @pytest.mark.parametrize(
     ("step", "message"),
     [
         (
-            {"id": "a", "type": "read"},
-            "Read step 'a' requires a connector.",
+            {"id": "a"},
+            "Step 'a' needs a 'type'.",
         ),
         (
-            {
-                "id": "a",
-                "type": "read",
-                "connector": "csv",
-                "inputs": {"data": "b"},
-            },
-            "Read step 'a' cannot have upstream inputs.",
+            {"type": "read", "path": "x.csv"},
+            "Step #1: id: Field required",
+        ),
+        (
+            {"id": "a", "type": "nope"},
+            "Step 'a': Unknown step type: 'nope'",
+        ),
+        (
+            {"id": "a", "type": "read"},
+            "Step 'a': path: Field required",
+        ),
+        (
+            {"id": "a", "type": "read", "path": "x.csv", "pth": "y.csv"},
+            "pth: Extra inputs are not permitted",
+        ),
+        (
+            {"id": "a", "type": "read", "path": "x.csv", "inputs": {"data": "b"}},
+            "A read step cannot have inputs.",
+        ),
+        (
+            {"id": "a", "type": "read", "path": "notes.txt"},
+            "Cannot infer a format from 'notes.txt'",
+        ),
+        (
+            {"id": "a", "type": "read", "path": "x.csv", "format": "xml"},
+            "Unknown format: 'xml'",
+        ),
+        (
+            {"id": "a", "type": "read", "path": "x.csv", "connection": "nope"},
+            "Unknown connection 'nope'",
+        ),
+        (
+            {"id": "a", "type": "write", "path": "x.csv"},
+            "A write step needs exactly one input.",
         ),
         (
             {"id": "a", "type": "transform"},
-            "Transform step 'a' requires an operation.",
+            "operation: Field required",
         ),
         (
-            {"id": "a", "type": "python"},
-            "Python step 'a' requires a callable.",
-        ),
-        (
-            {"id": "a", "type": "write", "inputs": {"data": "b"}},
-            "Write step 'a' requires a connector.",
-        ),
-        (
-            {"id": "a", "type": "write", "connector": "csv"},
-            "Write step 'a' requires at least one input.",
+            {"id": "a", "type": "transform", "operation": "nope"},
+            "Unknown operation: 'nope'",
         ),
         (
             {
@@ -62,7 +85,23 @@ def test_valid_config_parses():
                 "inputs": {"data": "b"},
                 "args": {"data": 1},
             },
-            "Step 'a' contains names in both inputs and args: data",
+            "Names used in both inputs and args: data",
+        ),
+        (
+            {"id": "a", "type": "python"},
+            "callable: Field required",
+        ),
+        (
+            {"id": "a", "type": "python", "callable": "no_colon"},
+            "must use the format 'module.path:function_name'",
+        ),
+        (
+            {"id": "a", "type": "python", "callable": "dagcraft_no_such_module:f"},
+            "Could not import module 'dagcraft_no_such_module'",
+        ),
+        (
+            {"id": "a", "type": "python", "callable": "dagcraft:no_such_function"},
+            "has no callable named 'no_such_function'",
         ),
     ],
 )
@@ -73,28 +112,48 @@ def test_step_validation_messages(step, message):
     assert message in str(exc_info.value)
 
 
-def test_duplicate_step_ids_rejected():
-    step = {"id": "a", "type": "read", "connector": "csv"}
+@pytest.mark.parametrize(
+    ("connections", "message"),
+    [
+        (
+            {"data": {"root": "x"}},
+            "Connection 'data' needs a 'type'.",
+        ),
+        (
+            {"data": {"type": "nope"}},
+            "Connection 'data': Unknown connection type: 'nope'",
+        ),
+        (
+            {"data": {"type": "local", "rooot": "x"}},
+            "Connection 'data': rooot: Extra inputs are not permitted",
+        ),
+    ],
+)
+def test_connection_validation_messages(connections, message):
+    step = {"id": "a", "type": "read", "path": "x.csv"}
 
-    with pytest.raises(
-        ConfigError,
-        match="Duplicate step ids found: a",
-    ):
+    with pytest.raises(ConfigError) as exc_info:
+        Pipeline.from_dict(make_config(step, connections=connections))
+
+    assert message in str(exc_info.value)
+
+
+def test_duplicate_step_ids_rejected():
+    step = {"id": "a", "type": "read", "path": "x.csv"}
+
+    with pytest.raises(ConfigError, match="Duplicate step id: 'a'"):
         Pipeline.from_dict(make_config(step, step))
 
 
-def test_unknown_fields_rejected():
-    with pytest.raises(ConfigError, match="extra_forbidden"):
-        Pipeline.from_dict(
-            make_config(
-                {
-                    "id": "a",
-                    "type": "read",
-                    "connector": "csv",
-                    "unexpected": True,
-                },
-            )
-        )
+def test_unknown_top_level_fields_rejected():
+    config = make_config()
+    config["schedule"] = "daily"
+
+    with pytest.raises(
+        ConfigError,
+        match="schedule: Extra inputs are not permitted",
+    ):
+        Pipeline.from_dict(config)
 
 
 def test_from_yaml_missing_file(tmp_path):
@@ -117,5 +176,5 @@ def test_from_yaml_empty_file(tmp_path):
     path = tmp_path / "empty.yaml"
     path.write_text("", encoding="utf-8")
 
-    with pytest.raises(ConfigError):
+    with pytest.raises(ConfigError, match="Invalid pipeline"):
         Pipeline.from_yaml(path)

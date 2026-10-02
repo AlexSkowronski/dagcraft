@@ -1,31 +1,20 @@
 import pytest
 
-from dagcraft.config import PipelineConfig
+from dagcraft.config import StepConfig
 from dagcraft.exceptions import GraphError
 from dagcraft.graph import compile_graph, topological_sort
 
 
 def compile_steps(*steps):
-    config = PipelineConfig.model_validate(
-        {
-            "pipeline": {"name": "test"},
-            "steps": list(steps),
-        }
-    )
-    return compile_graph(config)
+    return compile_graph([StepConfig.model_validate(step) for step in steps])
 
 
 def read(step_id):
-    return {"id": step_id, "type": "read", "connector": "csv"}
+    return {"id": step_id, "type": "read"}
 
 
 def transform(step_id, **inputs):
-    return {
-        "id": step_id,
-        "type": "transform",
-        "operation": "filter",
-        "inputs": inputs,
-    }
+    return {"id": step_id, "type": "transform", "inputs": inputs}
 
 
 def test_dependencies_come_before_dependents():

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 
-from dagcraft.config import PipelineConfig
+from dagcraft.config import StepConfig
 from dagcraft.exceptions import GraphError
 
 
@@ -13,12 +13,12 @@ class CompiledGraph:
     order: list[str]
 
 
-def compile_graph(config: PipelineConfig) -> CompiledGraph:
-    step_ids = {step.id for step in config.steps}
+def compile_graph(steps: list[StepConfig]) -> CompiledGraph:
+    step_ids = {step.id for step in steps}
 
     dependencies: dict[str, set[str]] = {}
 
-    for step in config.steps:
+    for step in steps:
         deps = set(step.inputs.values())
 
         unknown = deps - step_ids

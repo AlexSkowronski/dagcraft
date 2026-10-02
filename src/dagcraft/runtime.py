@@ -3,7 +3,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dagcraft.connections import Connection
 
 
 class StepStatus(StrEnum):
@@ -45,4 +48,29 @@ class PipelineResult:
 class ExecutionContext:
     run_id: str
     logger: logging.Logger
+    connections: dict[str, Connection] = field(default_factory=dict)
     artifacts: dict[str, Artifact] = field(default_factory=dict)
+    opened: list[Connection] = field(default_factory=list)
+
+    def connection(self, name: str) -> Connection:
+        """Return a connection, opening it on first use in this run."""
+        connection = self.connections[name]
+
+        if connection not in self.opened:
+            connection.open()
+            self.opened.append(connection)
+
+        return connection
+
+    def close_connections(self) -> None:
+        """Close every connection opened during this run, newest first."""
+        while self.opened:
+            connection = self.opened.pop()
+
+            try:
+                connection.close()
+            except Exception:
+                self.logger.exception(
+                    "Failed to close connection '%s'",
+                    connection.name,
+                )
