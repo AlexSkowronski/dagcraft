@@ -87,3 +87,17 @@ def test_cycle_error_shows_only_the_cycle():
     cycle = message.removeprefix("Cycle detected in pipeline DAG: ").split(" -> ")
     assert set(cycle) == {"a", "b", "c"}
     assert cycle[0] == cycle[-1]
+
+
+def test_ready_steps_run_in_declared_order():
+    # "unrelated" could run first, but it's declared last.
+    order = topological_sort(
+        {
+            "source": set(),
+            "first": {"source"},
+            "second": {"source"},
+            "unrelated": set(),
+        }
+    )
+
+    assert order == ["source", "first", "second", "unrelated"]

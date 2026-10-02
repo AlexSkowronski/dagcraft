@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import heapq
 from dataclasses import dataclass
 from graphlib import CycleError, TopologicalSorter
 
@@ -48,19 +49,28 @@ def topological_sort(
 ) -> list[str]:
     """Order steps so each comes after the steps it depends on.
 
-    Steps that could run at the same point keep the order they're declared in.
+    Whenever several steps are ready, the one declared first goes next, so
+    steps run in the order they're written unless a dependency says
+    otherwise.
     """
-    sorter: TopologicalSorter[str] = TopologicalSorter()
-
-    # Adding every step before any dependency fixes the tie-breaking order.
-    for node in dependencies:
-        sorter.add(node)
-
-    for node, deps in dependencies.items():
-        sorter.add(node, *deps)
+    position = {node: index for index, node in enumerate(dependencies)}
+    sorter: TopologicalSorter[str] = TopologicalSorter(dependencies)
 
     try:
-        return list(sorter.static_order())
+        sorter.prepare()
     except CycleError as exc:
         cycle = " -> ".join(exc.args[1])
         raise GraphError(f"Cycle detected in pipeline DAG: {cycle}") from None
+
+    ready: list[tuple[int, str]] = []
+    order: list[str] = []
+
+    while sorter.is_active():
+        for node in sorter.get_ready():
+            heapq.heappush(ready, (position[node], node))
+
+        _, node = heapq.heappop(ready)
+        order.append(node)
+        sorter.done(node)
+
+    return order
