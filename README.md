@@ -17,9 +17,11 @@ result = Pipeline.from_yaml("pipelines/daily_sales.yaml").run()
 ## Installation
 
 ```bash
-pip install dagcraft            # local files: CSV and Parquet
+pip install dagcraft            # local files: CSV, Parquet, JSON, JSON Lines, YAML
+pip install 'dagcraft[excel]'   # + Excel workbooks
 pip install 'dagcraft[sql]'     # + SQL databases through SQLAlchemy
-pip install 'dagcraft[azure]'   # + Azure Blob Storage and Azure SQL
+pip install 'dagcraft[azure]'   # + Azure Blob Storage, Azure SQL and SharePoint
+pip install 'dagcraft[all]'     # everything
 ```
 
 The `azure_sql` connection also needs Microsoft's
@@ -86,6 +88,28 @@ result.artifact("enriched")  # the DataFrame produced by a step
 takes input from. Each entry maps a parameter name to the id of the step
 whose output it receives.
 
+## Examples
+
+[`config/examples/`](config/examples) has pipelines that run on the sample
+data in [`data/sample/`](data/sample) and write to `output/`:
+
+| Example              | Shows                                                         |
+| -------------------- | ------------------------------------------------------------- |
+| `basic`              | Read a CSV, drop incomplete rows, write it out.               |
+| `local_sales`        | Join CSV and Parquet, filter, aggregate, params.              |
+| `json_events`        | Many nested JSON files at once, JSON Lines, YAML.             |
+| `excel_reports`      | Several sheets into one table; a workbook with one sheet per input. |
+| `sql_reports`        | A `.sql` query file with parameters, reading and writing tables. |
+| `azure_blob_to_sql`  | Template: JSON from Azure Blob Storage into Azure SQL.        |
+| `sharepoint_reports` | Template: Excel from SharePoint, compared with Azure SQL, published back. |
+
+```bash
+dagcraft run config/examples/json_events.yaml
+dagcraft run config/examples/sharepoint_reports.yaml --dry-run
+```
+
+Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
+
 ## Pipeline file
 
 | Key           | Description                                                    |
@@ -148,13 +172,13 @@ connections' `*_env` fields, which read the variable only when connecting.
 | `connection` | Connection name. Defaults to `local`.                         |
 | ...          | The remaining fields depend on the connection type (see below). |
 
-**`write`**: saves its single input to a connection, and passes it on as its
-own output.
+**`write`**: saves its input to a connection, and passes it on as its own
+output.
 
 | Field        | Description                                                   |
 | ------------ | ------------------------------------------------------------- |
 | `connection` | Connection name. Defaults to `local`.                         |
-| `inputs`     | Exactly one input, e.g. `{data: enriched}`.                   |
+| `inputs`     | One input, e.g. `{data: enriched}`. Formats that hold several tables, such as Excel, take several. |
 | ...          | The remaining fields depend on the connection type.           |
 
 **`transform`**: calls a registered operation with its inputs and `args` as
@@ -182,23 +206,75 @@ keyword arguments.
 | `rename`     | `data`          | `columns` (mapping of old name to new name)  |
 | `sort`       | `data`          | `by` (column or list), `ascending` (default `true`) |
 | `join`       | `left`, `right` | `on`, plus any `DataFrame.merge` argument, such as `how` |
+| `aggregate`  | `data`          | `by` (column or list), `columns` (mapping of column to `sum`, `mean`, `count`, `min`, `max`, ...) |
 
 ## Connections
 
 A `local` connection, rooted at the pipeline file's directory, is always
 available. Define others under `connections`, each with a `type`.
 
-### File connections: `local` and `azure_blob`
+### File connections: `local`, `azure_blob` and `sharepoint`
 
 Read and write steps on file connections take:
 
-| Field    | Description                                                        |
-| -------- | ------------------------------------------------------------------ |
-| `path`   | File path, relative to the connection's root.                      |
-| `format` | `csv` or `parquet`. Optional when the extension says which.        |
-| `args`   | Passed to pandas (`read_csv`, `to_parquet`, ...), e.g. `{sep: ";"}`. |
+| Field           | Description                                                 |
+| --------------- | ----------------------------------------------------------- |
+| `path`          | File path, relative to the connection's root. Reads can use wildcards. |
+| `format`        | Optional when the extension says which (see below).        |
+| `args`          | Passed to the format's reader or writer, e.g. `{sep: ";"}`. |
+| `source_column` | Reads with wildcards: a column naming each row's file.      |
+
+| Format    | Extensions         | Notes                                              |
+| --------- | ------------------ | -------------------------------------------------- |
+| `csv`     | `.csv`             | `args` go to `pandas.read_csv` / `to_csv`.         |
+| `parquet` | `.parquet`, `.pq`  | `args` go to `pandas.read_parquet` / `to_parquet`. |
+| `excel`   | `.xlsx`, `.xlsm`   | Needs `dagcraft[excel]`. See below.                |
+| `json`    | `.json`            | Nested objects become dotted columns (`user.id`). `args` go to `pandas.json_normalize`, e.g. `record_path` and `meta`. |
+| `jsonl`   | `.jsonl`, `.ndjson`| One JSON record per line; read like `json`.        |
+| `yaml`    | `.yaml`, `.yml`    | Read like `json`.                                  |
 
 Writes leave out the DataFrame index unless `args` sets `index: true`.
+
+#### Many files at once
+
+A read `path` with wildcards (`*`, `?`, `[...]`, and `**` for any depth)
+reads every matching file into one table, in path order. No matching files
+is an error.
+
+```yaml
+  - id: events
+    type: read
+    connection: lake
+    path: events/2026-10-*.json
+    source_column: source_file    # which file each row came from
+    args:
+      record_path: events         # the records inside each document
+      meta: [batch_id]            # document fields to copy onto each record
+```
+
+#### Excel sheets
+
+| `args`                        | Reads                                                   |
+| ----------------------------- | ------------------------------------------------------- |
+| (none)                        | The first sheet.                                        |
+| `sheet_name: Targets`         | One sheet.                                              |
+| `sheet_name: [North, South]`  | Those sheets, as one table with a `sheet` column naming each row's sheet. |
+| `sheet_name: null`            | Every sheet, as one table.                              |
+| `sheet_column: region`        | With several sheets: renames the `sheet` column.        |
+
+Sheets with different columns are best read by separate steps.
+
+A write step with several inputs writes a workbook with one sheet per
+input, named after the input:
+
+```yaml
+  - id: report
+    type: write
+    path: reports/regional.xlsx
+    inputs:
+      Summary: totals
+      Monthly: monthly
+```
 
 **`local`**
 
@@ -223,16 +299,35 @@ Azure, or service principal environment variables. If
 refused: the underlying library would quietly use that connection string
 instead, possibly for a different account.
 
+**`sharepoint`**: a SharePoint document library, through Microsoft Graph.
+Requires `dagcraft[azure]`.
+
+| Field     | Description                                                     |
+| --------- | --------------------------------------------------------------- |
+| `site`    | The site's address, e.g. `contoso.sharepoint.com/sites/Finance`. |
+| `library` | Document library name. Defaults to `Documents`.                 |
+| `folder`  | Optional folder inside the library.                             |
+
+dagcraft signs in with `DefaultAzureCredential`, so the identity (usually a
+service principal) needs Microsoft Graph permission to the site's files,
+such as `Sites.Selected` or `Sites.ReadWrite.All`. Wildcards work in file
+names but not folder names, uploads are limited to 250 MB, and throttled
+requests are retried.
+
 ### SQL connections: `sql` and `azure_sql`
 
-Read steps take a `query` or a `table`:
+Read steps take a `query`, a `query_file` or a `table`:
 
-| Field    | Description                                                    |
-| -------- | -------------------------------------------------------------- |
-| `query`  | SQL to run. Use `:name` placeholders for `params`.             |
-| `params` | Values for the query's placeholders.                           |
-| `table`  | Or: a whole table, as `name` or `schema.name`.                 |
-| `args`   | Passed to `pandas.read_sql`.                                   |
+| Field        | Description                                                 |
+| ------------ | ----------------------------------------------------------- |
+| `query`      | SQL to run. Use `:name` placeholders for `params`.          |
+| `query_file` | Or: a `.sql` file, relative to the pipeline file. Same placeholders. |
+| `table`      | Or: a whole table, as `name` or `schema.name`.              |
+| `params`     | Values for the query's placeholders.                        |
+| `args`       | Passed to `pandas.read_sql`.                                |
+
+Only `:name` in SQL code is a placeholder; inside comments and string
+literals it's left alone, so a `.sql` file can document its parameters.
 
 Write steps take:
 
@@ -249,12 +344,9 @@ table as it was.
   - id: customers
     type: read
     connection: warehouse
-    query: |
-      SELECT id, region
-      FROM dbo.customers
-      WHERE created_at >= :since
+    query_file: sql/new_customers.sql   # ... WHERE created_at >= :since
     params:
-      since: 2026-01-01
+      since: ${params.run_date}
 ```
 
 **`sql`**: any database SQLAlchemy supports. Requires `dagcraft[sql]` and
@@ -295,6 +387,20 @@ dagcraft.exceptions.ConfigError: Step 'orders': pth: Extra inputs are not permit
 Things that depend on the machine, such as environment variables, ODBC
 drivers and credentials, are checked when a connection is first used.
 
+To check a pipeline and see what it would do without running it, use
+`dagcraft run ... --dry-run`, or `pipeline.plan()` from Python:
+
+```
+INFO | Pipeline 'sql_reports' is valid.
+INFO | Params: data_dir=../../data/sample, output_dir=../../output, since=2026-09-15, status=shipped
+INFO | Steps, in run order:
+INFO |   1. revenue_by_region  read the query in sql/revenue_by_region.sql from 'warehouse'
+INFO |   2. products           read table products from 'warehouse'
+INFO |   3. save_revenue       write table revenue_by_region (if it exists: replace) to 'reports'  <- data: revenue_by_region
+INFO |   4. save_products      write table products (if it exists: replace) to 'reports'  <- data: products
+INFO | Dry run: nothing was run.
+```
+
 ## Running and failures
 
 Steps run in the order they're written, except where a step has to wait for
@@ -326,12 +432,17 @@ logging.basicConfig(level=logging.INFO)
 ## Command line
 
 ```bash
-dagcraft validate pipelines/daily_sales.yaml
+dagcraft run pipelines/daily_sales.yaml --dry-run
 dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 ```
 
-`validate` is handy in CI. Both take `--param NAME=VALUE` (values are read
-as YAML) and exit with status 1 on failure. `run` also takes `--fail-fast`.
+| Option                | Effect                                                     |
+| --------------------- | ---------------------------------------------------------- |
+| `--dry-run`           | Check the pipeline and show the steps it would run. Handy in CI. |
+| `--param NAME=VALUE`  | Override a param. Values are read as YAML. Repeatable.     |
+| `--fail-fast`         | Skip every remaining step after the first failure.         |
+
+The command exits with status 1 if the pipeline is invalid or a step fails.
 
 ## Extending dagcraft
 
@@ -369,10 +480,11 @@ class SampleStep(BaseStep):
         return data.sample(frac=self.config.fraction, random_state=0)
 ```
 
-**Connections**: subclass `FileConnection` for anything
-[fsspec](https://filesystem-spec.readthedocs.io/) can reach, or `Connection`
-for anything else. **Formats**: subclass `Format` and use
-`register_format`.
+**Connections**: subclass `FsspecConnection` for anything
+[fsspec](https://filesystem-spec.readthedocs.io/) can reach, `FileConnection`
+for other file storage (implement `open_file`, and `glob` for wildcards), or
+`Connection` for anything else, and use `register_connection`.
+**Formats**: subclass `Format` and use `register_format`.
 
 ## Security
 
