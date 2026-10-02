@@ -10,6 +10,7 @@ from dagcraft.connections.files import (
     FsspecConnection,
 )
 from dagcraft.connections.local import LocalConfig, LocalConnection
+from dagcraft.connections.sharepoint import SharePointConfig, SharePointConnection
 from dagcraft.connections.sql import (
     GenericSQLConnection,
     SQLConfig,
@@ -35,4 +36,6 @@ __all__ = [
     "SQLConnection",
     "SQLReadOptions",
     "SQLWriteOptions",
+    "SharePointConfig",
+    "SharePointConnection",
 ]
