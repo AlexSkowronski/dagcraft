@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections import deque
 from dataclasses import dataclass
+from graphlib import CycleError, TopologicalSorter
 
 from dagcraft.exceptions import GraphError
 from dagcraft.steps.base import StepConfig
@@ -46,34 +46,21 @@ def compile_graph(steps: list[StepConfig]) -> CompiledGraph:
 def topological_sort(
     dependencies: dict[str, set[str]],
 ) -> list[str]:
-    remaining = {node: set(deps) for node, deps in dependencies.items()}
+    """Order steps so each comes after the steps it depends on.
 
-    ready = deque(node for node, deps in remaining.items() if not deps)
+    Steps that could run at the same point keep the order they're declared in.
+    """
+    sorter: TopologicalSorter[str] = TopologicalSorter()
 
-    result: list[str] = []
+    # Adding every step before any dependency fixes the tie-breaking order.
+    for node in dependencies:
+        sorter.add(node)
 
-    while ready:
-        node = ready.popleft()
+    for node, deps in dependencies.items():
+        sorter.add(node, *deps)
 
-        if node in result:
-            continue
-
-        result.append(node)
-
-        for candidate, deps in remaining.items():
-            if node not in deps:
-                continue
-
-            deps.remove(node)
-
-            if not deps and candidate not in result:
-                ready.append(candidate)
-
-    if len(result) != len(dependencies):
-        unresolved = [node for node in dependencies if node not in result]
-
-        raise GraphError(
-            f"Cycle detected in pipeline DAG. Unresolved nodes: {', '.join(unresolved)}"
-        )
-
-    return result
+    try:
+        return list(sorter.static_order())
+    except CycleError as exc:
+        cycle = " -> ".join(exc.args[1])
+        raise GraphError(f"Cycle detected in pipeline DAG: {cycle}") from None

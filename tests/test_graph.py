@@ -71,3 +71,19 @@ def test_topological_sort_diamond():
     assert order[0] == "src"
     assert order[-1] == "sink"
     assert set(order) == {"src", "left", "right", "sink"}
+
+
+def test_cycle_error_shows_only_the_cycle():
+    with pytest.raises(GraphError) as exc_info:
+        compile_steps(
+            read("source"),
+            transform("a", data="c"),
+            transform("b", data="a"),
+            transform("c", data="b"),
+            transform("downstream", data="c"),
+        )
+
+    message = str(exc_info.value)
+    cycle = message.removeprefix("Cycle detected in pipeline DAG: ").split(" -> ")
+    assert set(cycle) == {"a", "b", "c"}
+    assert cycle[0] == cycle[-1]
