@@ -1,6 +1,6 @@
 import logging
 
-from dagcraft.connections import Connection, FileConnection
+from dagcraft.connections import Connection, FileConnection, FsspecConnection
 from dagcraft.core.pipeline import Pipeline
 from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import ConfigError, DagcraftError, PipelineError
@@ -23,6 +23,7 @@ __all__ = [
     "DagcraftError",
     "FileConnection",
     "Format",
+    "FsspecConnection",
     "Pipeline",
     "PipelineError",
     "PipelineResult",

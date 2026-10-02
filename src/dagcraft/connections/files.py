@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, BinaryIO, Self
 
 import fsspec
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -27,14 +28,37 @@ class FileOptions(BaseModel):
 
 
 class FileConnection(Connection):
-    """Base for connections backed by an fsspec filesystem.
+    """Base for connections to storage that holds files.
 
-    Subclasses implement ``create_filesystem`` and ``resolve``; reading and
-    writing any registered format is handled here.
+    Subclasses implement ``open_file``; formats turn the files into data
+    and back.
     """
 
     read_options = FileOptions
     write_options = FileOptions
+
+    def open_file(self, path: str, mode: str) -> AbstractContextManager[BinaryIO]:
+        """Open ``path`` (relative to the connection) as ``"rb"`` or ``"wb"``."""
+        raise NotImplementedError
+
+    def read(self, options: FileOptions) -> Any:
+        file_format = resolve_format(options.path, options.format)
+
+        with self.open_file(options.path, "rb") as file:
+            return file_format.read(file, **options.args)
+
+    def write(self, data: Any, options: FileOptions) -> None:
+        file_format = resolve_format(options.path, options.format)
+
+        with self.open_file(options.path, "wb") as file:
+            file_format.write(data, file, **options.args)
+
+
+class FsspecConnection(FileConnection):
+    """Base for file connections backed by an fsspec filesystem.
+
+    Subclasses implement ``create_filesystem`` and ``resolve``.
+    """
 
     def __init__(self, name: str, config: Any, base_dir: Path) -> None:
         super().__init__(name, config, base_dir)
@@ -59,14 +83,9 @@ class FileConnection(Connection):
             raise ExecutionError(f"Connection '{self.name}' is not open.")
         return self._filesystem
 
-    def read(self, options: FileOptions) -> Any:
-        file_format = resolve_format(options.path, options.format)
-
-        with self.filesystem.open(self.resolve(options.path), "rb") as file:
-            return file_format.read(file, **options.args)
-
-    def write(self, data: Any, options: FileOptions) -> None:
-        file_format = resolve_format(options.path, options.format)
-
-        with self.filesystem.open(self.resolve(options.path), "wb") as file:
-            file_format.write(data, file, **options.args)
+    def open_file(self, path: str, mode: str) -> AbstractContextManager[BinaryIO]:
+        file: AbstractContextManager[BinaryIO] = self.filesystem.open(
+            self.resolve(path),
+            mode,
+        )
+        return file

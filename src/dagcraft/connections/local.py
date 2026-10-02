@@ -3,7 +3,7 @@ from __future__ import annotations
 import fsspec
 from pydantic import BaseModel, ConfigDict
 
-from dagcraft.connections.files import FileConnection
+from dagcraft.connections.files import FsspecConnection
 from dagcraft.registry import register_connection
 
 
@@ -14,7 +14,7 @@ class LocalConfig(BaseModel):
 
 
 @register_connection("local")
-class LocalConnection(FileConnection):
+class LocalConnection(FsspecConnection):
     """Files on the local filesystem.
 
     Step paths are relative to ``root``, and a relative ``root`` is relative

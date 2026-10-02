@@ -4,8 +4,7 @@ import pandas as pd
 import pytest
 import sqlalchemy as sa
 
-from dagcraft import ConfigError, Pipeline, PipelineError
-from dagcraft.connections import base as connections_base
+from dagcraft import ConfigError, Pipeline, PipelineError, extras
 
 
 def make_pipeline(*steps, connections, base_dir):
@@ -212,7 +211,7 @@ def test_connection_needs_a_url(tmp_path):
 
 
 def test_missing_extra_is_a_config_error(tmp_path, monkeypatch):
-    monkeypatch.setattr(connections_base, "module_available", lambda _module: False)
+    monkeypatch.setattr(extras, "module_available", lambda _module: False)
 
     with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[sql\]'"):
         make_pipeline(connections=database(), base_dir=tmp_path)

@@ -13,9 +13,10 @@ from typing import Any, Self
 import fsspec
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from dagcraft.connections.base import read_variable, require_extra
-from dagcraft.connections.files import FileConnection
+from dagcraft.connections.base import read_variable
+from dagcraft.connections.files import FsspecConnection
 from dagcraft.exceptions import ExecutionError
+from dagcraft.extras import require_extra
 from dagcraft.registry import register_connection
 
 # adlfs reads this itself and prefers it over every other kind of sign-in.
@@ -43,7 +44,7 @@ class AzureBlobConfig(BaseModel):
 
 
 @register_connection("azure_blob")
-class AzureBlobConnection(FileConnection):
+class AzureBlobConnection(FsspecConnection):
     """Files in an Azure Blob Storage container.
 
     With ``account``, sign-in uses ``DefaultAzureCredential``: an Azure CLI

@@ -7,8 +7,7 @@ import pyodbc
 import pytest
 import sqlalchemy as sa
 
-from dagcraft import ConfigError, Pipeline
-from dagcraft.connections import base as connections_base
+from dagcraft import ConfigError, Pipeline, extras
 from dagcraft.connections.azure_sql import (
     AZURE_SQL_SCOPE,
     SQL_COPT_SS_ACCESS_TOKEN,
@@ -89,7 +88,7 @@ def test_config_validation(config, message):
 
 
 def test_missing_extra_is_a_config_error(monkeypatch):
-    monkeypatch.setattr(connections_base, "module_available", lambda _module: False)
+    monkeypatch.setattr(extras, "module_available", lambda _module: False)
 
     with pytest.raises(ConfigError, match=r"pip install 'dagcraft\[azure\]'"):
         signed_in()

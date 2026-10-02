@@ -3,7 +3,7 @@
 from dagcraft.connections.azure_blob import AzureBlobConfig, AzureBlobConnection
 from dagcraft.connections.azure_sql import AzureSQLConfig, AzureSQLConnection
 from dagcraft.connections.base import Connection
-from dagcraft.connections.files import FileConnection, FileOptions
+from dagcraft.connections.files import FileConnection, FileOptions, FsspecConnection
 from dagcraft.connections.local import LocalConfig, LocalConnection
 from dagcraft.connections.sql import (
     GenericSQLConnection,
@@ -21,6 +21,7 @@ __all__ = [
     "Connection",
     "FileConnection",
     "FileOptions",
+    "FsspecConnection",
     "GenericSQLConnection",
     "LocalConfig",
     "LocalConnection",

@@ -12,9 +12,10 @@ from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from dagcraft.connections.base import read_variable, require_extra
+from dagcraft.connections.base import read_variable
 from dagcraft.connections.sql import SQLConnection
 from dagcraft.exceptions import ExecutionError
+from dagcraft.extras import require_extra
 from dagcraft.registry import register_connection
 
 if TYPE_CHECKING:

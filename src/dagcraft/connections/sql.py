@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from dagcraft.connections.base import Connection, read_variable, require_extra
+from dagcraft.connections.base import Connection, read_variable
 from dagcraft.exceptions import ExecutionError
+from dagcraft.extras import require_extra
 from dagcraft.registry import register_connection
 
 if TYPE_CHECKING:

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 import os
 from pathlib import Path
 from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
-from dagcraft.exceptions import ConfigError, ExecutionError
+from dagcraft.exceptions import ExecutionError
 
 
 class Connection:
@@ -43,26 +42,6 @@ class Connection:
 
     def write(self, data: Any, options: Any) -> None:
         raise NotImplementedError
-
-
-def require_extra(*modules: str, extra: str) -> None:
-    """Raise ``ConfigError`` naming the extra to install if a module is missing."""
-    missing = [module for module in modules if not module_available(module)]
-
-    if missing:
-        raise ConfigError(
-            f"this connection type needs the '{extra}' extra "
-            f"({', '.join(missing)} not installed). "
-            f"Install it with: pip install 'dagcraft[{extra}]'"
-        )
-
-
-def module_available(module: str) -> bool:
-    try:
-        return importlib.util.find_spec(module) is not None
-    except ModuleNotFoundError:
-        # Raised instead of returning None when a parent package is missing.
-        return False
 
 
 def read_variable(variable: str, connection: str, purpose: str) -> str:
