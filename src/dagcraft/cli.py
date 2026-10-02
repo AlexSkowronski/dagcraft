@@ -123,7 +123,12 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     try:
-        result = pipeline.run(fail_fast=args.fail_fast, run_id=args.run_id)
+        # The command line never reads outputs, so don't keep them.
+        result = pipeline.run(
+            fail_fast=args.fail_fast,
+            run_id=args.run_id,
+            keep_artifacts=False,
+        )
     except PipelineError as exc:
         log_summary(exc.result)
         sys.exit(1)

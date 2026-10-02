@@ -74,7 +74,13 @@ class PipelineResult:
     artifacts: dict[str, Artifact]
 
     def artifact(self, name: str) -> Any:
-        return self.artifacts[name].value
+        try:
+            return self.artifacts[name].value
+        except KeyError:
+            raise KeyError(
+                f"No output for step '{name}': it didn't succeed, or the run was "
+                "made with keep_artifacts=False."
+            ) from None
 
     @property
     def failed_steps(self) -> list[StepResult]:

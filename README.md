@@ -460,6 +460,14 @@ SQL writes run in a transaction, uploads to Azure Blob Storage and
 SharePoint replace the file in one go, and local files are written to a
 temporary name first, so retrying a write is safe.
 
+Every step's output stays available on the result (`result.artifact(id)`)
+until the run ends. For large data, drop each output as soon as the steps
+that use it have finished instead (the command line always does this):
+
+```python
+pipeline.run(keep_artifacts=False)
+```
+
 ## Logging
 
 dagcraft logs to the `dagcraft` logger and, like any library, prints nothing

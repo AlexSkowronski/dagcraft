@@ -30,9 +30,11 @@ class Executor:
         logger: logging.Logger | None = None,
         fail_fast: bool = False,
         run_id: str | None = None,
+        keep_artifacts: bool = True,
     ):
         self.pipeline = pipeline
         self.fail_fast = fail_fast
+        self.keep_artifacts = keep_artifacts
         self.run_id = run_id or uuid.uuid4().hex[:8]
         self.logger = RunLogger(
             logger or logging.getLogger("dagcraft"),
@@ -58,6 +60,7 @@ class Executor:
         self.logger.info("Starting run")
 
         stopped = False
+        consumers = self._count_consumers()
 
         try:
             for step_id in self.pipeline.graph.order:
@@ -71,6 +74,8 @@ class Executor:
                 elif not self._run_step(step_id, context, result):
                     success = False
                     stopped = self.fail_fast
+
+                self._release_outputs(step_id, consumers, context)
         finally:
             context.close_connections()
 
@@ -89,6 +94,35 @@ class Executor:
             steps=step_results,
             artifacts=context.artifacts,
         )
+
+    def _count_consumers(self) -> dict[str, int]:
+        """How many steps take each step's output as an input."""
+        consumers = dict.fromkeys(self.pipeline.graph.order, 0)
+
+        for dependencies in self.pipeline.graph.dependencies.values():
+            for upstream in dependencies:
+                consumers[upstream] += 1
+
+        return consumers
+
+    def _release_outputs(
+        self,
+        step_id: str,
+        consumers: dict[str, int],
+        context: ExecutionContext,
+    ) -> None:
+        """Without keep_artifacts, drop outputs no remaining step needs."""
+        if self.keep_artifacts:
+            return
+
+        for upstream in self.pipeline.graph.dependencies[step_id]:
+            consumers[upstream] -= 1
+
+            if consumers[upstream] == 0:
+                context.artifacts.pop(upstream, None)
+
+        if consumers[step_id] == 0:
+            context.artifacts.pop(step_id, None)
 
     def _unsuccessful_upstream(
         self,
