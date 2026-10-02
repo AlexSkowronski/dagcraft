@@ -30,6 +30,7 @@ class StepResult:
     status: StepStatus = StepStatus.PENDING
     duration: float = 0.0
     error: str | None = None
+    exception: BaseException | None = field(default=None, repr=False)
 
 
 @dataclass
@@ -42,6 +43,13 @@ class PipelineResult:
 
     def artifact(self, name: str) -> Any:
         return self.artifacts[name].value
+
+    @property
+    def failed_step(self) -> StepResult | None:
+        for step in self.steps.values():
+            if step.status == StepStatus.FAILED:
+                return step
+        return None
 
 
 @dataclass

@@ -20,6 +20,9 @@ dependencies = [
 [project.scripts]
 dagcraft = "dagcraft.cli:main"
 
+[tool.setuptools.package-data]
+dagcraft = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra"]

@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from dagcraft.compiler import CompiledPipeline, compile_pipeline
 from dagcraft.config import PipelineConfig, format_validation_error
-from dagcraft.exceptions import ConfigError
+from dagcraft.exceptions import ConfigError, PipelineError
 from dagcraft.executor import Executor
 from dagcraft.runtime import PipelineResult
 
@@ -78,9 +78,24 @@ class Pipeline:
         self,
         logger: logging.Logger | None = None,
     ) -> PipelineResult:
+        """Run the pipeline and return the outcome of every step.
+
+        Raises ``PipelineError`` if a step fails. The error's ``result`` has
+        the same per-step outcome, and the step's exception is chained.
+        """
         executor = Executor(
             pipeline=self.compiled,
             logger=logger,
         )
 
-        return executor.run()
+        result = executor.run()
+        failed = result.failed_step
+
+        if failed is not None:
+            raise PipelineError(
+                f"Pipeline '{result.name}' failed at step '{failed.id}': "
+                f"{failed.error}",
+                result,
+            ) from failed.exception
+
+        return result

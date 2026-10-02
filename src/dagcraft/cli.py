@@ -6,8 +6,9 @@ import argparse
 import logging
 import sys
 
-from dagcraft.exceptions import DagcraftError
+from dagcraft.exceptions import DagcraftError, PipelineError
 from dagcraft.pipeline import Pipeline
+from dagcraft.runtime import PipelineResult
 
 logger = logging.getLogger(__name__)
 
@@ -64,32 +65,39 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.command == "run":
-        result = pipeline.run()
-        logger.info("Pipeline: %s", result.name)
-        logger.info("-" * 50)
+        try:
+            result = pipeline.run()
+        except PipelineError as exc:
+            log_summary(exc.result)
+            sys.exit(1)
 
-        for step in result.steps.values():
-            logger.info(
-                "%-10s %-25s %.3fs",
-                step.status.value,
-                step.id,
-                step.duration,
-            )
+        log_summary(result)
 
-        logger.info("-" * 50)
 
-        if result.success:
-            logger.info(
-                "SUCCESS in %.3fs",
-                result.duration,
-            )
-            return
+def log_summary(result: PipelineResult) -> None:
+    logger.info("Pipeline: %s", result.name)
+    logger.info("-" * 50)
 
+    for step in result.steps.values():
+        logger.info(
+            "%-10s %-25s %.3fs",
+            step.status.value,
+            step.id,
+            step.duration,
+        )
+
+    logger.info("-" * 50)
+
+    if result.success:
+        logger.info(
+            "SUCCESS in %.3fs",
+            result.duration,
+        )
+    else:
         logger.error(
             "FAILED in %.3fs",
             result.duration,
         )
-        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -110,6 +110,7 @@ class Executor:
             result.duration = perf_counter() - step_start
             result.status = StepStatus.FAILED
             result.error = str(exc)
+            result.exception = exc
 
             self.logger.exception(
                 "Step '%s' failed",

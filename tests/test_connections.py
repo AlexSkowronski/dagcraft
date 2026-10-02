@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pydantic import BaseModel, ConfigDict
 
-from dagcraft import Connection, Pipeline, register_connection
+from dagcraft import Connection, Pipeline, PipelineError, register_connection
 from dagcraft.exceptions import ConfigError
 
 
@@ -197,9 +197,9 @@ def test_connection_closed_when_a_step_fails():
         connections={"rec": {"type": "recording"}},
     )
 
-    result = pipeline.run()
+    with pytest.raises(PipelineError):
+        pipeline.run()
 
-    assert not result.success
     assert RecordingConnection.events[-1] == "close rec"
 
 

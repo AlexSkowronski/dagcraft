@@ -4,7 +4,7 @@ import types
 import pandas as pd
 import pytest
 
-from dagcraft import Pipeline
+from dagcraft import Pipeline, PipelineError
 from dagcraft.runtime import StepStatus
 
 
@@ -119,12 +119,17 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
         },
     )
 
-    result = pipeline.run()
+    with pytest.raises(PipelineError, match="failed at step 'broken'") as exc_info:
+        pipeline.run()
 
+    # The step's own exception is chained, so tracebacks show the real cause.
+    assert "no_such_column" in str(exc_info.value.__cause__)
+
+    result = exc_info.value.result
     assert not result.success
     assert result.steps["people"].status == StepStatus.SUCCESS
     assert result.steps["broken"].status == StepStatus.FAILED
-    assert "no_such_column" in (result.steps["broken"].error or "")
+    assert result.steps["broken"].exception is exc_info.value.__cause__
     assert result.steps["save"].status == StepStatus.SKIPPED
     assert "save" not in result.artifacts
     assert not (tmp_path / "out.csv").exists()
