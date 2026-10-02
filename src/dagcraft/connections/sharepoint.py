@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 GRAPH_URL = "https://graph.microsoft.com/v1.0"
 GRAPH_SCOPE = "https://graph.microsoft.com/.default"
 TIMEOUT_SECONDS = 120
+HTTP_NOT_FOUND = 404
 
 
 class SharePointConfig(BaseModel):
@@ -146,6 +147,24 @@ class SharePointConnection(FileConnection):
 
         return matches
 
+    def check(self) -> str:
+        # Opening already found the site and library; list the folder too.
+        library = f"library '{self.config.library}' on {self.config.site}"
+        response = self._request(
+            "GET",
+            self._item_url("", "children"),
+            not_found_ok=True,
+        )
+
+        if not self.config.folder.strip("/"):
+            return f"{library} is reachable"
+
+        folder = self.config.folder.strip("/")
+
+        if response.status_code == HTTP_NOT_FOUND:
+            return f"{library} is reachable; folder '{folder}' doesn't exist yet"
+        return f"{library} is reachable; folder '{folder}' found"
+
     def _find_drive_id(self) -> str:
         hostname, _, site_path = self.config.site.partition("/")
         site_url = f"{GRAPH_URL}/sites/{hostname}"
@@ -177,7 +196,14 @@ class SharePointConnection(FileConnection):
             return f"{self._drive_url}/root/{action}"
         return f"{self._drive_url}/root:/{quote(full_path)}:/{action}"
 
-    def _request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
+    def _request(
+        self,
+        method: str,
+        url: str,
+        *,
+        not_found_ok: bool = False,
+        **kwargs: Any,
+    ) -> requests.Response:
         if self._session is None or self._credential is None:
             raise ExecutionError(f"Connection '{self.name}' is not open.")
 
@@ -191,6 +217,9 @@ class SharePointConnection(FileConnection):
             timeout=TIMEOUT_SECONDS,
             **kwargs,
         )
+
+        if response.status_code == HTTP_NOT_FOUND and not_found_ok:
+            return response
 
         if not response.ok:
             raise ExecutionError(

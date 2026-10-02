@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import fsspec
 from pydantic import BaseModel, ConfigDict
 
@@ -29,4 +31,5 @@ class LocalConnection(FsspecConnection):
         return fsspec.filesystem("file", auto_mkdir=True)
 
     def resolve(self, path: str) -> str:
-        return str(self.base_dir / self.config.root / path)
+        # normpath tidies away '..' without touching the filesystem.
+        return os.path.normpath(self.base_dir / self.config.root / path)

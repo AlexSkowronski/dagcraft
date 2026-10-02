@@ -102,6 +102,14 @@ class SQLConnection(Connection):
             self._engine.dispose()
             self._engine = None
 
+    def check(self) -> str:
+        import sqlalchemy as sa  # noqa: PLC0415
+
+        with self.engine.connect() as connection:
+            connection.execute(sa.select(sa.literal(1)))
+
+        return "connected"
+
     @property
     def engine(self) -> sa.Engine:
         if self._engine is None:

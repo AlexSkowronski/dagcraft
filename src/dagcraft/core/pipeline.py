@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from pathlib import Path
 from typing import Any
@@ -10,8 +11,10 @@ from pydantic import ValidationError
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
 from dagcraft.core.config import PipelineConfig, format_validation_error, load_yaml
 from dagcraft.core.executor import Executor
-from dagcraft.core.runtime import PipelineResult, PlannedStep
+from dagcraft.core.runtime import ConnectionCheck, PipelineResult, PlannedStep
 from dagcraft.exceptions import ConfigError, PipelineError
+
+logger = logging.getLogger(__name__)
 
 
 class Pipeline:
@@ -94,6 +97,46 @@ class Pipeline:
             )
             for step_id in self.compiled.graph.order
         ]
+
+    def connections_in_use(self) -> list[str]:
+        """Names of the connections the steps use, in the order they're used."""
+        names: list[str] = []
+
+        for step_id in self.compiled.graph.order:
+            name = getattr(self.compiled.steps[step_id].config, "connection", None)
+
+            if isinstance(name, str) and name not in names:
+                names.append(name)
+
+        return names
+
+    def check_connections(self) -> list[ConnectionCheck]:
+        """Open each connection the steps use and prove it works.
+
+        Each connection does one cheap real operation, such as listing a
+        folder or running ``SELECT 1``, so problems with credentials,
+        permissions, network or drivers show up without running any steps.
+        A failure is reported in the result rather than raised.
+        """
+        checks = []
+
+        for name in self.connections_in_use():
+            connection = self.compiled.connections[name]
+            connection_type = self.config.connections.get(name, {}).get("type", "local")
+
+            try:
+                connection.open()
+                message = connection.check()
+            except Exception as exc:
+                logger.debug("Checking connection '%s' failed", name, exc_info=True)
+                checks.append(ConnectionCheck(name, connection_type, False, str(exc)))
+            else:
+                checks.append(ConnectionCheck(name, connection_type, True, message))
+            finally:
+                with contextlib.suppress(Exception):
+                    connection.close()
+
+        return checks
 
     def run(
         self,

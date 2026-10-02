@@ -401,6 +401,27 @@ INFO |   4. save_products      write table products (if it exists: replace) to '
 INFO | Dry run: nothing was run.
 ```
 
+To prove the connections work before a run, use `--check-connections`, or
+`pipeline.check_connections()` from Python. Each connection the steps use is
+opened and does one cheap real operation, so problems with credentials,
+permissions, network or drivers show up in seconds without touching data:
+
+| Connection   | Check                                                         |
+| ------------ | ------------------------------------------------------------- |
+| `local`      | The folder exists (or will be created when writing).          |
+| `azure_blob` | Lists the container, and whether the prefix has files.        |
+| `sharepoint` | Finds the site and library, and lists the folder.             |
+| `sql`        | Runs `SELECT 1`.                                              |
+| `azure_sql`  | Connects and reports the login and database, so you can see which identity `DefaultAzureCredential` picked. |
+
+```
+INFO | Checking 3 connection(s):
+INFO |   lake       azure_blob  OK      container 'raw' is reachable; prefix 'events' has files
+ERROR|   finance    sharepoint  FAILED  SharePoint returned 403 for GET https://graph.microsoft.com/...: Access denied.
+INFO |   warehouse  azure_sql   OK      connected to analytics as etl-app@contoso.com
+ERROR| 1 of 3 connection(s) failed.
+```
+
 ## Running and failures
 
 Steps run in the order they're written, except where a step has to wait for
@@ -439,6 +460,7 @@ dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 | Option                | Effect                                                     |
 | --------------------- | ---------------------------------------------------------- |
 | `--dry-run`           | Check the pipeline and show the steps it would run. Handy in CI. |
+| `--check-connections` | Check the pipeline and prove each connection it uses works (see below). |
 | `--param NAME=VALUE`  | Override a param. Values are read as YAML. Repeatable.     |
 | `--fail-fast`         | Skip every remaining step after the first failure.         |
 
@@ -483,7 +505,8 @@ class SampleStep(BaseStep):
 **Connections**: subclass `FsspecConnection` for anything
 [fsspec](https://filesystem-spec.readthedocs.io/) can reach, `FileConnection`
 for other file storage (implement `open_file`, and `glob` for wildcards), or
-`Connection` for anything else, and use `register_connection`.
+`Connection` for anything else, and use `register_connection`. Override
+`check()` so `--check-connections` can prove the connection works.
 **Formats**: subclass `Format` and use `register_format`.
 
 ## Security

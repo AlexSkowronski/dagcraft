@@ -52,6 +52,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Check the pipeline and show the steps it would run, without running.",
     )
     run_parser.add_argument(
+        "--check-connections",
+        action="store_true",
+        help=(
+            "Check the pipeline and prove each connection it uses works, "
+            "without running."
+        ),
+    )
+    run_parser.add_argument(
         "--fail-fast",
         action="store_true",
         help="Skip every remaining step after the first failure.",
@@ -94,8 +102,14 @@ def main(argv: list[str] | None = None) -> None:
         logger.error("%s", exc)  # noqa: TRY400
         sys.exit(1)
 
-    if args.dry_run:
-        log_plan(pipeline)
+    if args.dry_run or args.check_connections:
+        if args.dry_run:
+            log_plan(pipeline)
+        else:
+            logger.info("Pipeline '%s' is valid.", pipeline.config.pipeline.name)
+
+        if args.check_connections and not log_checks(pipeline):
+            sys.exit(1)
         return
 
     try:
@@ -105,6 +119,37 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     log_summary(result)
+
+
+def log_checks(pipeline: Pipeline) -> bool:
+    """Check the pipeline's connections and log the outcome. True if all pass."""
+    names = pipeline.connections_in_use()
+    logger.info("Checking %d connection(s):", len(names))
+
+    checks = pipeline.check_connections()
+    name_width = max((len(check.name) for check in checks), default=0)
+    type_width = max((len(check.type) for check in checks), default=0)
+
+    for check in checks:
+        logger.log(
+            logging.INFO if check.ok else logging.ERROR,
+            "  %-*s  %-*s  %-6s  %s",
+            name_width,
+            check.name,
+            type_width,
+            check.type,
+            "OK" if check.ok else "FAILED",
+            check.message,
+        )
+
+    failed = sum(not check.ok for check in checks)
+
+    if failed:
+        logger.error("%d of %d connection(s) failed.", failed, len(checks))
+        return False
+
+    logger.info("All connections work.")
+    return True
 
 
 def log_plan(pipeline: Pipeline) -> None:

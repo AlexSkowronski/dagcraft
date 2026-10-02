@@ -72,6 +72,7 @@ class AzureSQLConnection(SQLConnection):
     config_model = AzureSQLConfig
     config: AzureSQLConfig
     extra = "azure"
+    check_query = "SELECT SUSER_SNAME(), DB_NAME()"
 
     def __init__(self, name: str, config: Any, base_dir: Path) -> None:
         require_extra("pyodbc", "azure.identity", extra=self.extra)
@@ -102,6 +103,16 @@ class AzureSQLConnection(SQLConnection):
         if self._credential is not None:
             self._credential.close()
             self._credential = None
+
+    def check(self) -> str:
+        import sqlalchemy as sa  # noqa: PLC0415
+
+        # Report who we signed in as: DefaultAzureCredential may not pick
+        # the identity you expect.
+        with self.engine.connect() as connection:
+            login, database = connection.execute(sa.text(self.check_query)).one()
+
+        return f"connected to {database} as {login}"
 
     def odbc_connection_string(self) -> str:
         server = self.config.server or ""

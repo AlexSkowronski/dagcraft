@@ -90,6 +90,24 @@ class AzureBlobConnection(FsspecConnection):
             skip_instance_cache=True,
         )
 
+    def check(self) -> str:
+        container = self.config.container
+
+        # Listing really fails on bad credentials or permissions; adlfs's
+        # exists() assumes a container exists when it can't tell.
+        try:
+            self.filesystem.ls(container, detail=False)
+        except FileNotFoundError:
+            raise ExecutionError(f"Container '{container}' wasn't found.") from None
+
+        prefix = self.config.prefix.strip("/")
+
+        if not prefix:
+            return f"container '{container}' is reachable"
+
+        state = "has files" if self.filesystem.exists(self.resolve("")) else "is empty"
+        return f"container '{container}' is reachable; prefix '{prefix}' {state}"
+
     def resolve(self, path: str) -> str:
         return posixpath.join(
             self.config.container,

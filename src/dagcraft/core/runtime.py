@@ -42,6 +42,16 @@ class PlannedStep:
     inputs: dict[str, str]
 
 
+@dataclass(frozen=True)
+class ConnectionCheck:
+    """The outcome of checking one connection: see ``Pipeline.check_connections``."""
+
+    name: str
+    type: str
+    ok: bool
+    message: str
+
+
 @dataclass
 class PipelineResult:
     name: str

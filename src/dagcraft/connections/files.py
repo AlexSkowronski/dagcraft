@@ -148,6 +148,13 @@ class FsspecConnection(FileConnection):
             raise ExecutionError(f"Connection '{self.name}' is not open.")
         return self._filesystem
 
+    def check(self) -> str:
+        root = self.resolve("")
+
+        if self.filesystem.exists(root):
+            return f"{root} is reachable"
+        return f"{root} doesn't exist yet; writing will create it"
+
     def open_file(self, path: str, mode: str) -> AbstractContextManager[BinaryIO]:
         file: AbstractContextManager[BinaryIO] = self.filesystem.open(
             self.resolve(path),

@@ -37,6 +37,15 @@ class Connection:
     def close(self) -> None:
         """Release anything acquired in ``open``."""
 
+    def check(self) -> str:
+        """Prove the connection works with one cheap real operation.
+
+        Called after ``open``, to catch problems with credentials,
+        permissions, network or drivers before a run. Raises if something
+        is wrong; returns a short description of what was checked.
+        """
+        return "opened"
+
     def read(self, options: Any) -> Any:
         raise NotImplementedError
 
