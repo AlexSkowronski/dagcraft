@@ -328,6 +328,7 @@ Read steps take a `query`, a `query_file` or a `table`:
 | `table`      | Or: a whole table, as `name` or `schema.name`.              |
 | `params`     | Values for the query's placeholders.                        |
 | `args`       | Passed to `pandas.read_sql`.                                |
+| `partition`  | Read a large result in parallel parts (see below).          |
 
 Only `:name` in SQL code is a placeholder; inside comments and string
 literals it's left alone, so a `.sql` file can document its parameters.
