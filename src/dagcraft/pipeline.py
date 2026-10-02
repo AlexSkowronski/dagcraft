@@ -23,15 +23,13 @@ class Pipeline:
         config: PipelineConfig,
     ):
         self.config = config
-        self.graph: CompiledGraph = compile_graph(
-            config
-        )
+        self.graph: CompiledGraph = compile_graph(config)
 
     @classmethod
     def from_yaml(
         cls,
         path: str | Path,
-    ) -> "Pipeline":
+    ) -> Pipeline:
         path = Path(path)
 
         try:
@@ -42,14 +40,10 @@ class Pipeline:
                 raw = yaml.safe_load(file)
 
         except OSError as exc:
-            raise ConfigError(
-                f"Could not read pipeline file: {path}"
-            ) from exc
+            raise ConfigError(f"Could not read pipeline file: {path}") from exc
 
         except yaml.YAMLError as exc:
-            raise ConfigError(
-                f"Invalid YAML in pipeline file {path}: {exc}"
-            ) from exc
+            raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
         return cls.from_dict(raw)
 
@@ -57,16 +51,12 @@ class Pipeline:
     def from_dict(
         cls,
         config: dict[str, Any],
-    ) -> "Pipeline":
+    ) -> Pipeline:
         try:
-            parsed = PipelineConfig.model_validate(
-                config
-            )
+            parsed = PipelineConfig.model_validate(config)
 
         except ValidationError as exc:
-            raise ConfigError(
-                str(exc)
-            ) from exc
+            raise ConfigError(str(exc)) from exc
 
         return cls(parsed)
 

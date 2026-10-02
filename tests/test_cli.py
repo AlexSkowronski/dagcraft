@@ -82,11 +82,7 @@ steps:
 
     assert exc_info.value.code == 1
 
-    summary = [
-        record
-        for record in caplog.records
-        if record.name == "dagcraft.cli"
-    ]
+    summary = [record for record in caplog.records if record.name == "dagcraft.cli"]
     messages = [record.getMessage() for record in summary]
     assert any(line.startswith("FAILED     source") for line in messages)
     assert any(line.startswith("SKIPPED    sorted") for line in messages)

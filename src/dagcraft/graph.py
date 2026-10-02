@@ -31,9 +31,7 @@ def compile_graph(config: PipelineConfig) -> CompiledGraph:
             )
 
         if step.id in deps:
-            raise GraphError(
-                f"Step '{step.id}' cannot depend on itself."
-            )
+            raise GraphError(f"Step '{step.id}' cannot depend on itself.")
 
         dependencies[step.id] = deps
 
@@ -48,16 +46,9 @@ def compile_graph(config: PipelineConfig) -> CompiledGraph:
 def topological_sort(
     dependencies: dict[str, set[str]],
 ) -> list[str]:
-    remaining = {
-        node: set(deps)
-        for node, deps in dependencies.items()
-    }
+    remaining = {node: set(deps) for node, deps in dependencies.items()}
 
-    ready = deque(
-        node
-        for node, deps in remaining.items()
-        if not deps
-    )
+    ready = deque(node for node, deps in remaining.items() if not deps)
 
     result: list[str] = []
 
@@ -79,15 +70,10 @@ def topological_sort(
                 ready.append(candidate)
 
     if len(result) != len(dependencies):
-        unresolved = [
-            node
-            for node in dependencies
-            if node not in result
-        ]
+        unresolved = [node for node in dependencies if node not in result]
 
         raise GraphError(
-            "Cycle detected in pipeline DAG. "
-            f"Unresolved nodes: {', '.join(unresolved)}"
+            f"Cycle detected in pipeline DAG. Unresolved nodes: {', '.join(unresolved)}"
         )
 
     return result

@@ -4,6 +4,8 @@ import logging
 import uuid
 from time import perf_counter
 
+# Importing steps registers the built-in step types.
+from dagcraft import steps as _steps  # noqa: F401
 from dagcraft.config import PipelineConfig
 from dagcraft.graph import CompiledGraph
 from dagcraft.registry import get_step
@@ -14,9 +16,6 @@ from dagcraft.runtime import (
     StepResult,
     StepStatus,
 )
-
-# Importing steps registers the built-in step types.
-from dagcraft import steps as _steps
 
 
 class Executor:
@@ -29,14 +28,9 @@ class Executor:
         self.config = config
         self.graph = graph
 
-        self.logger = logger or logging.getLogger(
-            "dagcraft"
-        )
+        self.logger = logger or logging.getLogger("dagcraft")
 
-        self.step_configs = {
-            step.id: step
-            for step in config.steps
-        }
+        self.step_configs = {step.id: step for step in config.steps}
 
     def run(self) -> PipelineResult:
         pipeline_start = perf_counter()
@@ -46,10 +40,7 @@ class Executor:
             logger=self.logger,
         )
 
-        step_results = {
-            step.id: StepResult(id=step.id)
-            for step in self.config.steps
-        }
+        step_results = {step.id: StepResult(id=step.id) for step in self.config.steps}
 
         success = True
 
@@ -63,11 +54,8 @@ class Executor:
             result = step_results[step_id]
 
             resolved_inputs = {
-                parameter_name: context.artifacts[
-                    upstream_step
-                ].value
-                for parameter_name, upstream_step
-                in config.inputs.items()
+                parameter_name: context.artifacts[upstream_step].value
+                for parameter_name, upstream_step in config.inputs.items()
             }
 
             result.status = StepStatus.RUNNING
@@ -80,9 +68,7 @@ class Executor:
             step_start = perf_counter()
 
             try:
-                step_class = get_step(
-                    config.type
-                )
+                step_class = get_step(config.type)
 
                 step = step_class(config)
 
@@ -91,9 +77,7 @@ class Executor:
                     inputs=resolved_inputs,
                 )
 
-                result.duration = (
-                    perf_counter() - step_start
-                )
+                result.duration = perf_counter() - step_start
 
                 result.status = StepStatus.SUCCESS
 
@@ -113,9 +97,7 @@ class Executor:
                 )
 
             except Exception as exc:
-                result.duration = (
-                    perf_counter() - step_start
-                )
+                result.duration = perf_counter() - step_start
 
                 result.status = StepStatus.FAILED
                 result.error = str(exc)
@@ -134,9 +116,7 @@ class Executor:
             if result.status == StepStatus.PENDING:
                 result.status = StepStatus.SKIPPED
 
-        pipeline_duration = (
-            perf_counter() - pipeline_start
-        )
+        pipeline_duration = perf_counter() - pipeline_start
 
         if success:
             self.logger.info(

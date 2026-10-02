@@ -7,4 +7,3 @@ steps:
     connector: csv
     args:
       filepath_or_buffer: test.csv
-      

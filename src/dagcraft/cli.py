@@ -1,28 +1,22 @@
-"""
+"""Command-line interface for dagcraft."""
 
-"""
 from __future__ import annotations
 
 import argparse
 import logging
 import sys
 
-from .exceptions import DagcraftError
-from .pipeline import Pipeline
-
+from dagcraft.exceptions import DagcraftError
+from dagcraft.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """
-    
-    """
+    """Build the argument parser for the ``dagcraft`` command."""
     parser = argparse.ArgumentParser(
         prog="dagcraft",
-        description=(
-            "Config-driven DAG pipelines for Python."
-        ),
+        description="Config-driven DAG pipelines for Python.",
     )
     subparsers = parser.add_subparsers(
         dest="command",
@@ -40,10 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
         "run",
         help="Run a pipeline",
     )
-    run_parser.add_argument(
-        "pipeline",
-        help="Path to the pipeline YAML file."
-    )
+    run_parser.add_argument("pipeline", help="Path to the pipeline YAML file.")
     return parser
 
 
@@ -60,7 +51,8 @@ def main(argv: list[str] | None = None) -> None:
             args.pipeline,
         )
     except DagcraftError as exc:
-        logger.error("%s", exc)
+        # User-facing config error: show the message, not a traceback.
+        logger.error("%s", exc)  # noqa: TRY400
         sys.exit(1)
 
     if args.command == "validate":

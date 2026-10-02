@@ -71,10 +71,7 @@ def test_read_transform_write(people_csv, tmp_path):
     result = pipeline.run()
 
     assert result.success
-    assert all(
-        step.status == StepStatus.SUCCESS
-        for step in result.steps.values()
-    )
+    assert all(step.status == StepStatus.SUCCESS for step in result.steps.values())
     assert result.artifact("names")["name"].tolist() == [
         "Ada",
         "Grace",
@@ -87,7 +84,12 @@ def test_read_transform_write(people_csv, tmp_path):
 
 def test_python_step(people_csv, monkeypatch):
     module = types.ModuleType("dagcraft_test_helpers")
-    module.count_rows = lambda data, offset=0: len(data) + offset
+    monkeypatch.setattr(
+        module,
+        "count_rows",
+        lambda data, offset=0: len(data) + offset,
+        raising=False,
+    )
     monkeypatch.setitem(sys.modules, module.__name__, module)
 
     pipeline = make_pipeline(

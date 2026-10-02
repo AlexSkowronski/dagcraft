@@ -10,16 +10,10 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
-    "pandas>=2.2",
+    "pandas>=3.0",
     "pydantic>=2.7",
     "PyYAML>=6.0",
     "pyarrow>=16.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "ruff>=0.7",
 ]
 
 [project.scripts]
@@ -27,4 +21,76 @@ dagcraft = "dagcraft.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = ["-ra"]
+strict = true
+filterwarnings = ["error"]
 
+[tool.ruff]
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RET",   # flake8-return
+    "PIE",   # flake8-pie
+    "PT",    # flake8-pytest-style
+    "PTH",   # flake8-use-pathlib
+    "ARG",   # flake8-unused-arguments
+    "BLE",   # flake8-blind-except
+    "S",     # flake8-bandit
+    "T20",   # flake8-print
+    "G",     # flake8-logging-format
+    "LOG",   # flake8-logging
+    "TRY",   # tryceratops
+    "TID",   # flake8-tidy-imports
+    "ERA",   # eradicate (commented-out code)
+    "PL",    # pylint
+    "PERF",  # perflint
+    "FURB",  # refurb
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "TRY003",  # descriptive messages at the raise site are fine
+    "ARG002",  # step methods share a fixed signature and may ignore arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",     # assert is how pytest works
+    "PLR2004",  # literal values in assertions are fine
+]
+"src/dagcraft/steps.py" = [
+    "S101",  # asserts narrow optional config fields that validation guarantees
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.mypy]
+mypy_path = "src"
+files = ["src", "tests"]
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+enable_error_code = ["ignore-without-code"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pandas-stubs>=3.0.5.260914",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
+]

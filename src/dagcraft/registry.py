@@ -5,7 +5,6 @@ from typing import Any
 
 from dagcraft.exceptions import RegistryError
 
-
 STEP_REGISTRY: dict[str, type[Any]] = {}
 CONNECTOR_REGISTRY: dict[str, Any] = {}
 OPERATION_REGISTRY: dict[str, Callable[..., Any]] = {}
@@ -39,24 +38,18 @@ def get_step(name: str):
     try:
         return STEP_REGISTRY[name]
     except KeyError as exc:
-        raise RegistryError(
-            f"Unknown step type: '{name}'"
-        ) from exc
+        raise RegistryError(f"Unknown step type: '{name}'") from exc
 
 
 def get_connector(name: str):
     try:
         return CONNECTOR_REGISTRY[name]
     except KeyError as exc:
-        raise RegistryError(
-            f"Unknown connector: '{name}'"
-        ) from exc
+        raise RegistryError(f"Unknown connector: '{name}'") from exc
 
 
 def get_operation(name: str):
     try:
         return OPERATION_REGISTRY[name]
     except KeyError as exc:
-        raise RegistryError(
-            f"Unknown operation: '{name}'"
-        ) from exc
+        raise RegistryError(f"Unknown operation: '{name}'") from exc

@@ -31,37 +31,24 @@ class StepConfig(BaseModel):
         if overlapping_names:
             names = ", ".join(sorted(overlapping_names))
             raise ValueError(
-                f"Step '{self.id}' contains names in both "
-                f"inputs and args: {names}"
+                f"Step '{self.id}' contains names in both inputs and args: {names}"
             )
         if self.type == "read":
             if not self.connector:
-                raise ValueError(
-                    f"Read step '{self.id}' requires a connector."
-                )
+                raise ValueError(f"Read step '{self.id}' requires a connector.")
             if self.inputs:
-                raise ValueError(
-                    f"Read step '{self.id}' cannot have upstream inputs."
-                )
+                raise ValueError(f"Read step '{self.id}' cannot have upstream inputs.")
         elif self.type == "transform":
             if not self.operation:
-                raise ValueError(
-                    f"Transform step '{self.id}' requires an operation."
-                )
+                raise ValueError(f"Transform step '{self.id}' requires an operation.")
         elif self.type == "python":
             if not self.callable:
-                raise ValueError(
-                    f"Python step '{self.id}' requires a callable."
-                )
+                raise ValueError(f"Python step '{self.id}' requires a callable.")
         elif self.type == "write":
             if not self.connector:
-                raise ValueError(
-                    f"Write step '{self.id}' requires a connector."
-                )
+                raise ValueError(f"Write step '{self.id}' requires a connector.")
             if not self.inputs:
-                raise ValueError(
-                    f"Write step '{self.id}' requires at least one input."
-                )
+                raise ValueError(f"Write step '{self.id}' requires at least one input.")
         return self
 
 
@@ -75,17 +62,10 @@ class PipelineConfig(BaseModel):
     def validate_unique_step_ids(self) -> Self:
         ids = [step.id for step in self.steps]
 
-        duplicates = {
-            step_id
-            for step_id in ids
-            if ids.count(step_id) > 1
-        }
+        duplicates = {step_id for step_id in ids if ids.count(step_id) > 1}
 
         if duplicates:
             duplicate_names = ", ".join(sorted(duplicates))
 
-            raise ValueError(
-                f"Duplicate step ids found: {duplicate_names}"
-            )
+            raise ValueError(f"Duplicate step ids found: {duplicate_names}")
         return self
-    

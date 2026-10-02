@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class StepStatus(str, Enum):
+class StepStatus(StrEnum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
@@ -18,9 +18,7 @@ class StepStatus(str, Enum):
 class Artifact:
     name: str
     value: Any
-    metadata: dict[str, Any] = field(
-        default_factory=dict
-    )
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -47,6 +45,4 @@ class PipelineResult:
 class ExecutionContext:
     run_id: str
     logger: logging.Logger
-    artifacts: dict[str, Artifact] = field(
-        default_factory=dict
-    )
+    artifacts: dict[str, Artifact] = field(default_factory=dict)

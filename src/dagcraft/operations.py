@@ -56,12 +56,10 @@ def join(
     left: pd.DataFrame,
     right: pd.DataFrame,
     on: str | list[str],
-    how: str = "inner",
     **kwargs: Any,
 ) -> pd.DataFrame:
     return left.merge(
         right,
         on=on,
-        how=how,
         **kwargs,
     )

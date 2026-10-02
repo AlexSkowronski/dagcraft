@@ -33,4 +33,3 @@ class ParquetConnector:
     ) -> pd.DataFrame:
         data.to_parquet(**kwargs)
         return data
-    
