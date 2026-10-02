@@ -83,6 +83,43 @@ def test_write_then_read_by_table_and_query(tmp_path):
     assert result.artifact("top")["name"].tolist() == ["Ada", "Grace"]
 
 
+def test_query_file_with_params(tmp_path):
+    write_rows(tmp_path, [("Ada", 9), ("Grace", 7), ("Alan", 4)])
+    (tmp_path / "sql").mkdir()
+    (tmp_path / "sql" / "top.sql").write_text(
+        "SELECT name\nFROM scores\nWHERE score >= :minimum\nORDER BY name\n",
+        encoding="utf-8",
+    )
+
+    result = make_pipeline(
+        {
+            "id": "top",
+            "type": "read",
+            "connection": "db",
+            "query_file": "sql/top.sql",
+            "params": {"minimum": 7},
+        },
+        connections=database(),
+        base_dir=tmp_path,
+    ).run()
+
+    assert result.artifact("top")["name"].tolist() == ["Ada", "Grace"]
+
+
+def test_missing_query_file_is_a_config_error(tmp_path):
+    with pytest.raises(ConfigError, match=r"Query file 'sql/missing\.sql' not found"):
+        make_pipeline(
+            {
+                "id": "top",
+                "type": "read",
+                "connection": "db",
+                "query_file": "sql/missing.sql",
+            },
+            connections=database(),
+            base_dir=tmp_path,
+        )
+
+
 def test_writing_to_an_existing_table_fails_by_default(tmp_path):
     write_rows(tmp_path, [("Ada", 9)])
 
@@ -168,15 +205,19 @@ def test_missing_url_variable_fails_the_step(tmp_path):
     [
         (
             {"type": "read", "query": "SELECT 1", "table": "scores"},
-            "Set exactly one of 'query' or 'table'.",
+            "Set exactly one of 'query', 'query_file' or 'table'.",
         ),
         (
             {"type": "read"},
-            "Set exactly one of 'query' or 'table'.",
+            "Set exactly one of 'query', 'query_file' or 'table'.",
+        ),
+        (
+            {"type": "read", "query": "SELECT 1", "query_file": "q.sql"},
+            "Set exactly one of 'query', 'query_file' or 'table'.",
         ),
         (
             {"type": "read", "table": "scores", "params": {"a": 1}},
-            "'params' can only be used with 'query'.",
+            "'params' can only be used with a query.",
         ),
         (
             {"type": "read", "table": "db.dbo.scores"},

@@ -43,6 +43,13 @@ class Connection:
     def write(self, data: Any, options: Any) -> None:
         raise NotImplementedError
 
+    def prepare_read(self, options: Any) -> Any:
+        """Finish a read step's validated options when the pipeline compiles.
+
+        Raise ``ValueError`` for problems. Returns the options to use.
+        """
+        return options
+
     def accepts_multiple_inputs(self, options: Any) -> bool:
         """Whether a write step can pass several inputs, as a dict, to ``write``."""
         return False

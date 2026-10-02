@@ -40,8 +40,8 @@ class ReadStep(BaseStep):
                 f"Connection '{connection.name}' does not support reading."
             )
 
-        self.options = connection.read_options.model_validate(
-            self.config.model_extra or {}
+        self.options = connection.prepare_read(
+            connection.read_options.model_validate(self.config.model_extra or {})
         )
 
     def execute(

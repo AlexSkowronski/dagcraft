@@ -24,24 +24,29 @@ if TYPE_CHECKING:
 class SQLReadOptions(BaseModel):
     """Fields of a read step that uses a SQL connection.
 
-    Set ``query`` (with ``:name`` placeholders filled from ``params``) or
-    ``table`` (``name`` or ``schema.name``). ``args`` go to ``pandas.read_sql``.
+    Set one of ``query``, ``query_file`` (a ``.sql`` file, relative to the
+    pipeline file) or ``table`` (``name`` or ``schema.name``). Queries take
+    ``:name`` placeholders filled from ``params``. ``args`` go to
+    ``pandas.read_sql``.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     query: str | None = Field(default=None, min_length=1)
+    query_file: str | None = Field(default=None, min_length=1)
     table: str | None = Field(default=None, min_length=1)
     params: dict[str, Any] = Field(default_factory=dict)
     args: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def check_source(self) -> Self:
-        if (self.query is None) == (self.table is None):
-            raise ValueError("Set exactly one of 'query' or 'table'.")
+        sources = [self.query, self.query_file, self.table]
 
-        if self.params and self.query is None:
-            raise ValueError("'params' can only be used with 'query'.")
+        if sum(source is not None for source in sources) != 1:
+            raise ValueError("Set exactly one of 'query', 'query_file' or 'table'.")
+
+        if self.params and self.table is not None:
+            raise ValueError("'params' can only be used with a query.")
 
         if self.table is not None:
             split_table(self.table)
@@ -102,6 +107,21 @@ class SQLConnection(Connection):
         if self._engine is None:
             raise ExecutionError(f"Connection '{self.name}' is not open.")
         return self._engine
+
+    def prepare_read(self, options: SQLReadOptions) -> SQLReadOptions:
+        if options.query_file is None:
+            return options
+
+        path = self.base_dir / options.query_file
+
+        try:
+            query = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            raise ValueError(
+                f"Query file '{options.query_file}' not found (looked for {path})."
+            ) from None
+
+        return options.model_copy(update={"query": query})
 
     def read(self, options: SQLReadOptions) -> pd.DataFrame:
         import sqlalchemy as sa  # noqa: PLC0415
