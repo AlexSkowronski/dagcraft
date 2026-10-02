@@ -66,6 +66,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument(
+        "--max-workers",
+        type=positive_int,
+        metavar="N",
+        help="Run up to N independent steps at once (overrides the file).",
+    )
+    run_parser.add_argument(
         "--run-id",
         help="ID for this run in the logs, e.g. from an orchestrator. Random if unset.",
     )
@@ -75,6 +81,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip every remaining step after the first failure.",
     )
     return parser
+
+
+def positive_int(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError:
+        value = 0
+
+    if value < 1:
+        raise argparse.ArgumentTypeError(
+            f"expected a whole number of at least 1, got '{text}'"
+        )
+    return value
 
 
 def parse_param(text: str) -> tuple[str, Any]:
@@ -114,7 +133,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.dry_run or args.check_connections:
         if args.dry_run:
-            log_plan(pipeline)
+            log_plan(pipeline, args.max_workers)
         else:
             logger.info("Pipeline '%s' is valid.", pipeline.config.pipeline.name)
 
@@ -128,6 +147,7 @@ def main(argv: list[str] | None = None) -> None:
             fail_fast=args.fail_fast,
             run_id=args.run_id,
             keep_artifacts=False,
+            max_workers=args.max_workers,
         )
     except PipelineError as exc:
         log_summary(exc.result)
@@ -167,7 +187,7 @@ def log_checks(pipeline: Pipeline) -> bool:
     return True
 
 
-def log_plan(pipeline: Pipeline) -> None:
+def log_plan(pipeline: Pipeline, max_workers: int | None = None) -> None:
     logger.info("Pipeline '%s' is valid.", pipeline.config.pipeline.name)
 
     if pipeline.params:
@@ -176,6 +196,11 @@ def log_plan(pipeline: Pipeline) -> None:
 
     plan = pipeline.plan()
     width = max((len(step.id) for step in plan), default=0)
+    max_workers = max_workers or pipeline.config.pipeline.max_workers
+
+    if max_workers > 1:
+        logger.info("Up to %d independent steps run at once.", max_workers)
+
     logger.info("Steps, in run order:")
 
     for number, step in enumerate(plan, start=1):

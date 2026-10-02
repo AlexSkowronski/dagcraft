@@ -122,6 +122,11 @@ ignore = [
     "S106",
 ]
 
+[tool.ruff.lint.pylint]
+# Long signatures are fine when the extra arguments are keyword-only
+# (PLR0917 still limits positional arguments to 5).
+max-args = 8
+
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

@@ -140,10 +140,12 @@ class Pipeline:
 
     def run(
         self,
+        *,
         logger: logging.Logger | None = None,
         fail_fast: bool = False,
         run_id: str | None = None,
         keep_artifacts: bool = True,
+        max_workers: int | None = None,
     ) -> PipelineResult:
         """Run the pipeline and return the outcome of every step.
 
@@ -160,13 +162,20 @@ class Pipeline:
         Each step's output is kept on the result (``result.artifact(id)``).
         With ``keep_artifacts=False``, an output is dropped as soon as every
         step that uses it has finished, which saves memory on large data.
+
+        ``max_workers`` overrides the pipeline file's ``max_workers``: how
+        many independent steps may run at once, each in its own thread.
         """
+        if max_workers is not None and max_workers < 1:
+            raise ValueError("max_workers must be at least 1.")
+
         executor = Executor(
             pipeline=self.compiled,
             logger=logger,
             fail_fast=fail_fast,
             run_id=run_id,
             keep_artifacts=keep_artifacts,
+            max_workers=max_workers or self.config.pipeline.max_workers,
         )
 
         result = executor.run()

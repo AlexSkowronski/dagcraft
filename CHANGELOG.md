@@ -40,6 +40,8 @@ First release.
   (`run(run_id=...)`, `--run-id`).
 - `run(keep_artifacts=False)` drops each step's output once nothing else
   needs it, to save memory; the command line always runs this way.
+- Independent steps can run in parallel (`max_workers` in the pipeline
+  file, `run(max_workers=...)`, `--max-workers`).
 - When a step fails, only the steps that depend on it are skipped;
   `PipelineError` names every failure. `fail_fast` stops at the first.
 - `dagcraft run` with `--dry-run`, `--check-connections`, `--param`,

@@ -117,7 +117,7 @@ Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
 
 | Key           | Description                                                    |
 | ------------- | -------------------------------------------------------------- |
-| `pipeline`    | `name` of the pipeline.                                        |
+| `pipeline`    | `name` of the pipeline; optionally `max_workers` (see [Running steps in parallel](#running-steps-in-parallel)). |
 | `connections` | Optional. Named places to read from and write to (see below).  |
 | `steps`       | The steps. Every step has an `id` and a `type`; optionally `inputs`, `retries` and `retry_delay`. |
 
@@ -460,6 +460,23 @@ SQL writes run in a transaction, uploads to Azure Blob Storage and
 SharePoint replace the file in one go, and local files are written to a
 temporary name first, so retrying a write is safe.
 
+### Running steps in parallel
+
+Steps that don't depend on each other can run at the same time, which helps
+when a pipeline runs several queries or downloads:
+
+```yaml
+pipeline:
+  name: daily_sales
+  max_workers: 4    # up to 4 independent steps at once; default 1
+```
+
+Override it with `pipeline.run(max_workers=8)` or `--max-workers 8`. Steps
+still start in the order they're written, and each waits for its inputs. With
+more than one worker, steps run in threads, so functions you call from
+`python` steps or register as operations should be safe to run alongside
+each other.
+
 Every step's output stays available on the result (`result.artifact(id)`)
 until the run ends. For large data, drop each output as soon as the steps
 that use it have finished instead (the command line always does this):
@@ -509,6 +526,7 @@ dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 | `--check-connections` | Check the pipeline and prove each connection it uses works (see below). |
 | `--param NAME=VALUE`  | Override a param. Values are read as YAML. Repeatable.     |
 | `--fail-fast`         | Skip every remaining step after the first failure.         |
+| `--max-workers N`     | Run up to N independent steps at once.                     |
 | `--run-id ID`         | ID for the run in the logs, e.g. from an orchestrator.     |
 
 The command exits with status 1 if the pipeline is invalid or a step fails.

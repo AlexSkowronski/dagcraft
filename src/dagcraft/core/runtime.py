@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
@@ -103,14 +104,17 @@ class ExecutionContext:
     connections: dict[str, Connection] = field(default_factory=dict)
     artifacts: dict[str, Artifact] = field(default_factory=dict)
     opened: list[Connection] = field(default_factory=list)
+    # Steps running in parallel may ask for the same connection at once.
+    lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def connection(self, name: str) -> Connection:
         """Return a connection, opening it on first use in this run."""
         connection = self.connections[name]
 
-        if connection not in self.opened:
-            connection.open()
-            self.opened.append(connection)
+        with self.lock:
+            if connection not in self.opened:
+                connection.open()
+                self.opened.append(connection)
 
         return connection
 

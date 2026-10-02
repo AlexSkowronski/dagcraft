@@ -33,9 +33,12 @@ def load_yaml(stream: IO[str]) -> Any:
 
 
 class PipelineMeta(BaseModel):
+    """``max_workers`` is how many independent steps may run at once."""
+
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1)
+    max_workers: int = Field(default=1, ge=1)
 
 
 class PipelineConfig(BaseModel):
