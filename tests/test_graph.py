@@ -1,8 +1,8 @@
 import pytest
 
-from dagcraft.config import StepConfig
+from dagcraft.core.graph import compile_graph, topological_sort
 from dagcraft.exceptions import GraphError
-from dagcraft.graph import compile_graph, topological_sort
+from dagcraft.steps.base import StepConfig
 
 
 def compile_steps(*steps):

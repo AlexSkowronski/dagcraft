@@ -10,10 +10,10 @@ from pydantic import ValidationError
 
 # Importing operations registers the built-in operations.
 from dagcraft import operations as _operations  # noqa: F401
-from dagcraft.config import PipelineConfig, format_validation_error
 from dagcraft.connections import Connection, LocalConfig, LocalConnection
+from dagcraft.core.config import PipelineConfig, format_validation_error
+from dagcraft.core.graph import CompiledGraph, compile_graph
 from dagcraft.exceptions import ConfigError, DagcraftError
-from dagcraft.graph import CompiledGraph, compile_graph
 from dagcraft.registry import CONNECTIONS, STEPS
 from dagcraft.steps import BaseStep
 

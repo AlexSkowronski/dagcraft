@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 
-from dagcraft.config import StepConfig
 from dagcraft.exceptions import GraphError
+from dagcraft.steps.base import StepConfig
 
 
 @dataclass(frozen=True)

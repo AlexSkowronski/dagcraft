@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from dagcraft import Pipeline, PipelineError
-from dagcraft.runtime import StepStatus
+from dagcraft.core.runtime import StepStatus
 
 
 @pytest.fixture

@@ -1,18 +1,17 @@
 import logging
 
-from dagcraft.config import StepConfig
 from dagcraft.connections import Connection, FileConnection
+from dagcraft.core.pipeline import Pipeline
+from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import ConfigError, DagcraftError, PipelineError
 from dagcraft.formats import Format
-from dagcraft.pipeline import Pipeline
 from dagcraft.registry import (
     register_connection,
     register_format,
     register_operation,
     register_step,
 )
-from dagcraft.runtime import PipelineResult
-from dagcraft.steps import BaseStep
+from dagcraft.steps import BaseStep, StepConfig
 
 # Libraries leave logging configuration to the application.
 logging.getLogger("dagcraft").addHandler(logging.NullHandler())

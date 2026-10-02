@@ -11,16 +11,6 @@ class PipelineMeta(BaseModel):
     name: str = Field(min_length=1)
 
 
-class StepConfig(BaseModel):
-    """Fields every step has. Step types subclass this to add their own."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    id: str = Field(min_length=1)
-    type: str = Field(min_length=1)
-    inputs: dict[str, str] = Field(default_factory=dict)
-
-
 class PipelineConfig(BaseModel):
     """The pipeline file as written.
 

@@ -6,9 +6,9 @@ import argparse
 import logging
 import sys
 
+from dagcraft.core.pipeline import Pipeline
+from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import DagcraftError, PipelineError
-from dagcraft.pipeline import Pipeline
-from dagcraft.runtime import PipelineResult
 
 logger = logging.getLogger(__name__)
 

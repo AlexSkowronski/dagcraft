@@ -73,9 +73,6 @@ ignore = [
     "S101",     # assert is how pytest works
     "PLR2004",  # literal values in assertions are fine
 ]
-"src/dagcraft/steps.py" = [
-    "S101",  # asserts narrow optional config fields that validation guarantees
-]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

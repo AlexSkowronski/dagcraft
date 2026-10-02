@@ -7,11 +7,11 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from dagcraft.compiler import CompiledPipeline, compile_pipeline
-from dagcraft.config import PipelineConfig, format_validation_error
+from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
+from dagcraft.core.config import PipelineConfig, format_validation_error
+from dagcraft.core.executor import Executor
+from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import ConfigError, PipelineError
-from dagcraft.executor import Executor
-from dagcraft.runtime import PipelineResult
 
 
 class Pipeline:

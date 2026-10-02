@@ -4,8 +4,8 @@ import logging
 import uuid
 from time import perf_counter
 
-from dagcraft.compiler import CompiledPipeline
-from dagcraft.runtime import (
+from dagcraft.core.compiler import CompiledPipeline
+from dagcraft.core.runtime import (
     Artifact,
     ExecutionContext,
     PipelineResult,
