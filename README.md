@@ -95,6 +95,48 @@ whose output it receives.
 Relative paths in the file are relative to the file's directory, not to
 where the code runs.
 
+### Parameters
+
+Declare values under `params` and use them anywhere in `connections` and
+`steps`:
+
+```yaml
+params:
+  run_date: 2026-10-02
+  region: ${env:REGION:-north}
+
+steps:
+  - id: orders
+    type: read
+    connection: lake
+    path: orders/${params.run_date}.parquet
+```
+
+| Reference                 | Replaced by                                        |
+| ------------------------- | -------------------------------------------------- |
+| `${params.NAME}`          | The param's value.                                 |
+| `${env:NAME}`             | An environment variable. Unset is an error.        |
+| `${env:NAME:-default}`    | An environment variable, or `default` if unset.    |
+| `$${...}`                 | A literal `${...}`.                                |
+
+A value that is exactly one reference keeps the referenced value's type, so
+`columns: ${params.columns}` can be a list. Inside longer text, the value is
+inserted as text. Params can use environment variables but not other params.
+
+Override params when loading, from Python or the command line. Overrides
+must name a param declared in the file:
+
+```python
+Pipeline.from_yaml("pipelines/daily_sales.yaml", params={"run_date": "2026-10-03"})
+```
+
+```bash
+dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
+```
+
+References are resolved when the pipeline is loaded. For secrets, prefer the
+connections' `*_env` fields, which read the variable only when connecting.
+
 ### Step types
 
 **`read`**: loads data from a connection. Takes no inputs.
@@ -266,10 +308,11 @@ logging.basicConfig(level=logging.INFO)
 
 ```bash
 dagcraft validate pipelines/daily_sales.yaml
-dagcraft run pipelines/daily_sales.yaml
+dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
 ```
 
-`validate` is handy in CI. Both exit with status 1 on failure.
+`validate` is handy in CI. Both take `--param NAME=VALUE` (values are read
+as YAML) and exit with status 1 on failure.
 
 ## Extending dagcraft
 

@@ -13,6 +13,7 @@ from dagcraft import operations as _operations  # noqa: F401
 from dagcraft.connections import Connection, LocalConfig, LocalConnection
 from dagcraft.core.config import PipelineConfig, format_validation_error
 from dagcraft.core.graph import CompiledGraph, compile_graph
+from dagcraft.core.params import resolve_params, substitute
 from dagcraft.exceptions import ConfigError, DagcraftError
 from dagcraft.registry import CONNECTIONS, STEPS
 from dagcraft.steps import BaseStep
@@ -21,14 +22,20 @@ from dagcraft.steps import BaseStep
 @dataclass(frozen=True)
 class CompiledPipeline:
     name: str
+    params: dict[str, Any]
     connections: dict[str, Connection]
     steps: dict[str, BaseStep]
     graph: CompiledGraph
 
 
-def compile_pipeline(config: PipelineConfig, base_dir: Path) -> CompiledPipeline:
-    connections = build_connections(config.connections, base_dir)
-    steps = build_steps(config.steps)
+def compile_pipeline(
+    config: PipelineConfig,
+    base_dir: Path,
+    params: dict[str, Any] | None = None,
+) -> CompiledPipeline:
+    values = resolve_params(config.params, params or {})
+    connections = build_connections(config.connections, base_dir, values)
+    steps = build_steps(config.steps, values)
 
     for step_id, step in steps.items():
         try:
@@ -40,6 +47,7 @@ def compile_pipeline(config: PipelineConfig, base_dir: Path) -> CompiledPipeline
 
     return CompiledPipeline(
         name=config.pipeline.name,
+        params=values,
         connections=connections,
         steps=steps,
         graph=graph,
@@ -49,6 +57,7 @@ def compile_pipeline(config: PipelineConfig, base_dir: Path) -> CompiledPipeline
 def build_connections(
     raw_connections: dict[str, dict[str, Any]],
     base_dir: Path,
+    params: dict[str, Any],
 ) -> dict[str, Connection]:
     # A "local" connection rooted at the pipeline file's directory is always
     # available; defining one in the file replaces it.
@@ -57,7 +66,11 @@ def build_connections(
     }
 
     for name, raw in raw_connections.items():
-        fields = dict(raw)
+        try:
+            fields = substitute(raw, params)
+        except ValueError as exc:
+            raise ConfigError(f"Connection '{name}': {exc}") from exc
+
         connection_type = fields.pop("type", None)
 
         if not isinstance(connection_type, str):
@@ -73,20 +86,29 @@ def build_connections(
     return connections
 
 
-def build_steps(raw_steps: list[dict[str, Any]]) -> dict[str, BaseStep]:
+def build_steps(
+    raw_steps: list[dict[str, Any]],
+    params: dict[str, Any],
+) -> dict[str, BaseStep]:
     steps: dict[str, BaseStep] = {}
 
     for position, raw in enumerate(raw_steps, start=1):
         step_id = raw.get("id")
         label = f"'{step_id}'" if isinstance(step_id, str) else f"#{position}"
-        step_type = raw.get("type")
+
+        try:
+            fields = substitute(raw, params)
+        except ValueError as exc:
+            raise ConfigError(f"Step {label}: {exc}") from exc
+
+        step_type = fields.get("type")
 
         if not isinstance(step_type, str):
             raise ConfigError(f"Step {label} needs a 'type'.")
 
         try:
             step_class = STEPS.get(step_type)
-            step_config = step_class.config_model.model_validate(raw)
+            step_config = step_class.config_model.model_validate(fields)
         except (ValueError, DagcraftError) as exc:
             raise ConfigError(f"Step {label}: {describe(exc)}") from exc
 

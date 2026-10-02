@@ -56,6 +56,7 @@ class PipelineResult:
 class ExecutionContext:
     run_id: str
     logger: logging.Logger
+    params: dict[str, Any] = field(default_factory=dict)
     connections: dict[str, Connection] = field(default_factory=dict)
     artifacts: dict[str, Artifact] = field(default_factory=dict)
     opened: list[Connection] = field(default_factory=list)

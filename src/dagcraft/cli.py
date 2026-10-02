@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import io
 import logging
 import sys
+from typing import Any
 
+import yaml
+
+from dagcraft.core.config import load_yaml
 from dagcraft.core.pipeline import Pipeline
 from dagcraft.core.runtime import PipelineResult
 from dagcraft.exceptions import DagcraftError, PipelineError
@@ -23,20 +28,51 @@ def build_parser() -> argparse.ArgumentParser:
         dest="command",
         required=True,
     )
-    validate_parser = subparsers.add_parser(
-        "validate",
-        help="Validate a pipeline.",
-    )
-    validate_parser.add_argument(
+
+    # Arguments shared by every command.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
         "pipeline",
         help="Path to the pipeline YAML file.",
     )
-    run_parser = subparsers.add_parser(
-        "run",
-        help="Run a pipeline",
+    common.add_argument(
+        "--param",
+        dest="params",
+        metavar="NAME=VALUE",
+        type=parse_param,
+        action="append",
+        default=[],
+        help="Override a param from the file. Values are read as YAML. Repeatable.",
     )
-    run_parser.add_argument("pipeline", help="Path to the pipeline YAML file.")
+
+    subparsers.add_parser(
+        "validate",
+        parents=[common],
+        help="Validate a pipeline.",
+    )
+    subparsers.add_parser(
+        "run",
+        parents=[common],
+        help="Run a pipeline.",
+    )
     return parser
+
+
+def parse_param(text: str) -> tuple[str, Any]:
+    name, equals, value = text.partition("=")
+
+    if not equals or not name:
+        raise argparse.ArgumentTypeError(f"expected NAME=VALUE, got '{text}'")
+
+    if not value:
+        return name, ""
+
+    try:
+        return name, load_yaml(io.StringIO(value))
+    except yaml.YAMLError as exc:
+        raise argparse.ArgumentTypeError(
+            f"can't read the value of '{name}': {exc}"
+        ) from exc
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -50,6 +86,7 @@ def main(argv: list[str] | None = None) -> None:
     try:
         pipeline = Pipeline.from_yaml(
             args.pipeline,
+            params=dict(args.params),
         )
     except DagcraftError as exc:
         # User-facing config error: show the message, not a traceback.

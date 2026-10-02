@@ -19,21 +19,32 @@ class Pipeline:
         self,
         config: PipelineConfig,
         base_dir: str | Path | None = None,
+        params: dict[str, Any] | None = None,
     ):
         """Compile ``config``.
 
         ``base_dir`` is where relative paths in the config are resolved from;
         it defaults to the current directory, or the file's directory when
-        loaded with ``from_yaml``.
+        loaded with ``from_yaml``. ``params`` override the file's params.
         """
         self.config = config
         self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
-        self.compiled: CompiledPipeline = compile_pipeline(config, self.base_dir)
+        self.compiled: CompiledPipeline = compile_pipeline(
+            config,
+            self.base_dir,
+            params,
+        )
+
+    @property
+    def params(self) -> dict[str, Any]:
+        """The params in effect: the file's, with any overrides applied."""
+        return self.compiled.params
 
     @classmethod
     def from_yaml(
         cls,
         path: str | Path,
+        params: dict[str, Any] | None = None,
     ) -> Pipeline:
         path = Path(path)
 
@@ -50,13 +61,14 @@ class Pipeline:
         except yaml.YAMLError as exc:
             raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
-        return cls.from_dict(raw, base_dir=path.resolve().parent)
+        return cls.from_dict(raw, base_dir=path.resolve().parent, params=params)
 
     @classmethod
     def from_dict(
         cls,
         config: dict[str, Any],
         base_dir: str | Path | None = None,
+        params: dict[str, Any] | None = None,
     ) -> Pipeline:
         try:
             parsed = PipelineConfig.model_validate(config)
@@ -66,7 +78,7 @@ class Pipeline:
                 f"Invalid pipeline: {format_validation_error(exc)}"
             ) from exc
 
-        return cls(parsed, base_dir=base_dir)
+        return cls(parsed, base_dir=base_dir, params=params)
 
     def validate(self) -> bool:
         # Everything is checked when the pipeline is compiled in __init__:

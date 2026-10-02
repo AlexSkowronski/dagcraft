@@ -29,6 +29,7 @@ class Executor:
         context = ExecutionContext(
             run_id=str(uuid.uuid4()),
             logger=self.logger,
+            params=self.pipeline.params,
             connections=self.pipeline.connections,
         )
 

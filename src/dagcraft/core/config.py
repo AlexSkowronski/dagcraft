@@ -48,6 +48,7 @@ class PipelineConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     pipeline: PipelineMeta
+    params: dict[str, Any] = Field(default_factory=dict)
     connections: dict[str, dict[str, Any]] = Field(default_factory=dict)
     steps: list[dict[str, Any]]
 
