@@ -1,7 +1,5 @@
 """Checks for optional dependencies installed through dagcraft's extras."""
 
-from __future__ import annotations
-
 import importlib.util
 
 from dagcraft.exceptions import ConfigError
@@ -24,6 +22,7 @@ def require_extra(
 
 
 def module_available(module: str) -> bool:
+    """Whether ``module`` can be imported, without importing it."""
     try:
         return importlib.util.find_spec(module) is not None
     except ModuleNotFoundError:

@@ -3,7 +3,7 @@ import json
 import fsspec
 import pytest
 
-from dagcraft import ConfigError, Pipeline, PipelineError
+from dagcraft import ConfigError, Pipeline, RunError
 from dagcraft.connections import AzureBlobConnection
 
 
@@ -46,7 +46,7 @@ def test_wildcard_reads_every_matching_file_in_order(tmp_path):
             },
         )
         .run()
-        .artifact("events")
+        .output("events")
     )
 
     assert frame.to_dict("list") == {
@@ -67,7 +67,7 @@ def test_double_star_matches_any_depth(tmp_path):
             {"id": "events", "type": "read", "path": "events/**/*.json"},
         )
         .run()
-        .artifact("events")
+        .output("events")
     )
 
     assert sorted(frame["id"]) == [1, 2, 3, 4]
@@ -80,7 +80,7 @@ def test_no_matches_is_an_error(tmp_path):
         {"id": "events", "type": "read", "path": "events/2025-*.json"},
     )
 
-    with pytest.raises(PipelineError, match="No files in connection 'local' match"):
+    with pytest.raises(RunError, match="No files in connection 'local' match"):
         pipeline.run()
 
 
@@ -147,7 +147,7 @@ def test_wildcards_in_blob_storage(tmp_path, memory_container):
             },
         )
         .run()
-        .artifact("events")
+        .output("events")
     )
 
     assert frame["id"].tolist() == [1, 2, 3]

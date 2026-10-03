@@ -11,13 +11,13 @@ from dagcraft import (
     ConfigError,
     Connection,
     Pipeline,
-    PipelineError,
+    RunError,
     StepConfig,
+    StepStatus,
     register_connection,
     register_step,
 )
 from dagcraft.cli import main
-from dagcraft.core.runtime import StepStatus
 
 
 class TrackedConfig(StepConfig):
@@ -76,6 +76,9 @@ class SlowOpenConnection(Connection):
     def open(self) -> None:
         time.sleep(0.05)
         type(self).opens += 1
+
+    def check(self) -> str:
+        return "opened"
 
 
 @pytest.fixture(autouse=True)
@@ -147,7 +150,7 @@ def test_one_worker_runs_steps_in_the_calling_thread():
 
 
 def test_failures_skip_dependents_and_others_still_run():
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         make_pipeline(
             tracked("bad", fail=True),
             tracked("after_bad", inputs={"x": "bad"}),
@@ -168,7 +171,7 @@ def test_failures_skip_dependents_and_others_still_run():
 
 
 def test_fail_fast_lets_running_steps_finish_and_skips_the_rest():
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         make_pipeline(
             # Both start together; "waits" is still running when "bad" fails.
             tracked("bad", meet=2, fail=True),
@@ -223,8 +226,8 @@ def test_cli_max_workers(tmp_path, caplog):
     )
 
     with caplog.at_level(logging.INFO):
-        main(["run", str(path), "--max-workers", "2", "--dry-run"])
-        main(["run", str(path), "--max-workers", "2"])
+        assert main([str(path), "--max-workers", "2", "--dry-run"]) == 0
+        assert main([str(path), "--max-workers", "2"]) == 0
 
     assert "Up to 2 independent steps run at once." in caplog.text
     assert TrackedStep.most_active == 2

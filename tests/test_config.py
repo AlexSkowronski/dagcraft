@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 
 from dagcraft import Pipeline
-from dagcraft.core.config import load_yaml
 from dagcraft.exceptions import ConfigError
+from dagcraft.yaml_loader import load_yaml
 
 
 def make_config(*steps, connections=None):
@@ -237,6 +237,6 @@ steps:
         encoding="utf-8",
     )
 
-    joined = Pipeline.from_yaml(path).run().artifact("joined")
+    joined = Pipeline.from_yaml(path).run().output("joined")
 
     assert joined.to_dict("list") == {"id": [1, 2], "a": ["x", "y"], "b": ["p", "q"]}

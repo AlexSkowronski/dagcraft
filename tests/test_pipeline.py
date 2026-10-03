@@ -4,8 +4,7 @@ import types
 import pandas as pd
 import pytest
 
-from dagcraft import Pipeline, PipelineError
-from dagcraft.core.runtime import StepStatus
+from dagcraft import Pipeline, RunError, StepStatus
 
 
 @pytest.fixture
@@ -66,7 +65,7 @@ def test_read_transform_write(people_csv, tmp_path):
 
     assert result.success
     assert all(step.status == StepStatus.SUCCESS for step in result.steps.values())
-    assert result.artifact("names")["name"].tolist() == ["Ada", "Grace"]
+    assert result.output("names")["name"].tolist() == ["Ada", "Grace"]
 
     # The index is not written by default, so only the selected column remains.
     written = pd.read_csv(output)
@@ -98,7 +97,7 @@ def test_python_step(people_csv, monkeypatch):
     result = pipeline.run()
 
     assert result.success
-    assert result.artifact("count") == 14
+    assert result.output("count") == 14
 
 
 def test_failure_skips_remaining_steps(people_csv, tmp_path):
@@ -119,7 +118,7 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
         },
     )
 
-    with pytest.raises(PipelineError, match="failed at step 'broken'") as exc_info:
+    with pytest.raises(RunError, match="failed at step 'broken'") as exc_info:
         pipeline.run()
 
     # The step's own exception is chained, so tracebacks show the real cause.
@@ -131,7 +130,7 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
     assert result.steps["broken"].status == StepStatus.FAILED
     assert result.steps["broken"].exception is exc_info.value.__cause__
     assert result.steps["save"].status == StepStatus.SKIPPED
-    assert "save" not in result.artifacts
+    assert "save" not in result.outputs
     assert not (tmp_path / "out.csv").exists()
 
 

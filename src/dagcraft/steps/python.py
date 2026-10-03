@@ -1,26 +1,21 @@
-from __future__ import annotations
+"""The ``python`` step: call your own function with its inputs."""
 
 import importlib
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from pydantic import Field
-
+from dagcraft.config.steps import PythonConfig
+from dagcraft.connections import Connection
+from dagcraft.core.context import ExecutionContext
 from dagcraft.exceptions import ConfigError
 from dagcraft.registry import register_step
-from dagcraft.steps.base import BaseStep, FunctionStepConfig
-
-if TYPE_CHECKING:
-    from dagcraft.connections import Connection
-    from dagcraft.core.runtime import ExecutionContext
-
-
-class PythonConfig(FunctionStepConfig):
-    callable: str = Field(min_length=1)
+from dagcraft.steps.base import BaseStep
 
 
 @register_step("python")
 class PythonStep(BaseStep):
+    """Calls ``callable`` with the inputs, by name, plus ``args``."""
+
     config_model = PythonConfig
     config: PythonConfig
     function: Callable[..., Any]
@@ -31,27 +26,18 @@ class PythonStep(BaseStep):
     def describe(self) -> str:
         return f"call {self.config.callable}"
 
-    def execute(
-        self,
-        context: ExecutionContext,
-        inputs: dict[str, Any],
-    ) -> Any:
-        return self.function(
-            **inputs,
-            **self.config.args,
-        )
+    def execute(self, context: ExecutionContext, inputs: dict[str, Any]) -> Any:
+        return self.function(**inputs, **self.config.args)
 
 
 def load_callable(path: str) -> Callable[..., Any]:
+    """Import ``module.path:function`` and return the function."""
     if ":" not in path:
         raise ConfigError(
             "Python callable must use the format 'module.path:function_name'."
         )
 
-    module_name, function_name = path.split(
-        ":",
-        maxsplit=1,
-    )
+    module_name, function_name = path.split(":", maxsplit=1)
 
     try:
         module = importlib.import_module(module_name)

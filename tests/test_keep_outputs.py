@@ -15,7 +15,7 @@ class SnapshotStep(BaseStep):
     seen: ClassVar[dict[str, list[str]]] = {}
 
     def execute(self, context, inputs):
-        self.seen[self.config.id] = sorted(context.artifacts)
+        self.seen[self.config.id] = context.outputs.names()
         return self.config.id
 
 
@@ -47,7 +47,7 @@ def make_pipeline(tmp_path):
 
 
 def test_outputs_are_dropped_once_no_step_needs_them(tmp_path):
-    result = make_pipeline(tmp_path).run(keep_artifacts=False)
+    result = make_pipeline(tmp_path).run(keep_outputs=False)
 
     assert result.success
     assert SnapshotStep.seen == {
@@ -56,21 +56,21 @@ def test_outputs_are_dropped_once_no_step_needs_them(tmp_path):
         # "b" was dropped after "c"; "c" had no consumers.
         "d": ["a"],
     }
-    assert result.artifacts == {}
+    assert result.outputs == {}
 
 
 def test_outputs_are_kept_by_default(tmp_path):
     result = make_pipeline(tmp_path).run()
 
-    assert sorted(result.artifacts) == ["a", "b", "c", "d"]
+    assert sorted(result.outputs) == ["a", "b", "c", "d"]
     assert SnapshotStep.seen["d"] == ["a", "b", "c"]
 
 
 def test_missing_output_explains_why(tmp_path):
-    result = make_pipeline(tmp_path).run(keep_artifacts=False)
+    result = make_pipeline(tmp_path).run(keep_outputs=False)
 
-    with pytest.raises(KeyError, match="keep_artifacts=False"):
-        result.artifact("a")
+    with pytest.raises(KeyError, match="keep_outputs=False"):
+        result.output("a")
 
 
 def test_cli_does_not_keep_outputs(tmp_path, monkeypatch):
@@ -88,6 +88,6 @@ def test_cli_does_not_keep_outputs(tmp_path, monkeypatch):
         encoding="utf-8",
     )
 
-    main(["run", str(path)])
+    assert main([str(path)]) == 0
 
-    assert calls[0]["keep_artifacts"] is False
+    assert calls[0]["keep_outputs"] is False

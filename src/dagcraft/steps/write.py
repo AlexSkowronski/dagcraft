@@ -1,77 +1,49 @@
-from __future__ import annotations
+"""The ``write`` step: put data somewhere through a connection."""
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, model_validator
-
-from dagcraft.registry import register_step
-from dagcraft.steps.base import BaseStep, StepConfig, find_connection
-
-if TYPE_CHECKING:
-    from dagcraft.connections import Connection
-    from dagcraft.core.runtime import ExecutionContext
-
-
-class WriteConfig(StepConfig):
-    """Fields beyond these are defined by the connection's type.
-
-    Usually one input; formats that hold several tables, such as Excel,
-    accept more.
-    """
-
-    model_config = ConfigDict(extra="allow")
-
-    connection: str = "local"
-
-    @model_validator(mode="after")
-    def check_inputs(self) -> Self:
-        if not self.inputs:
-            raise ValueError("A write step needs at least one input.")
-        return self
+from dagcraft.config.steps import WriteConfig, extra_fields
+from dagcraft.connections import Connection
+from dagcraft.core.context import ExecutionContext
+from dagcraft.registry import WRITERS, register_step
+from dagcraft.steps.base import BaseStep
+from dagcraft.steps.connections import find_connection, prepare_handler
+from dagcraft.writers import Writer
 
 
 @register_step("write")
 class WriteStep(BaseStep):
+    """Writes with the writer registered for the connection's type.
+
+    Several inputs are written together (as Excel sheets, say) when the
+    writer accepts them; the step's output is what it wrote.
+    """
+
     config_model = WriteConfig
     config: WriteConfig
-    options: BaseModel
-    target: str
+    writer: Writer
 
     def prepare(self, connections: dict[str, Connection]) -> None:
         connection = find_connection(connections, self.config.connection)
-
-        if connection.write_options is None:
-            raise ValueError(
-                f"Connection '{connection.name}' does not support writing."
-            )
-
-        self.options = connection.write_options.model_validate(
-            self.config.model_extra or {}
+        self.writer = prepare_handler(
+            WRITERS, connection, extra_fields(self.config), "writing"
         )
 
-        self.target = connection.describe(self.options)
-
-        if len(self.config.inputs) > 1 and not connection.accepts_multiple_inputs(
-            self.options
-        ):
+        if len(self.config.inputs) > 1 and not self.writer.accepts_multiple_inputs():
             raise ValueError(
                 "Only formats that hold several tables, such as excel (one "
                 "sheet per input), can write several inputs."
             )
 
     def describe(self) -> str:
-        target = f" {self.target}" if self.target else ""
-        return f"write{target} to '{self.config.connection}'"
+        target = self.writer.describe()
+        return f"write{f' {target}' if target else ''} to '{self.config.connection}'"
 
-    def execute(
-        self,
-        context: ExecutionContext,
-        inputs: dict[str, Any],
-    ) -> Any:
+    def connection_name(self) -> str:
+        return self.config.connection
+
+    def execute(self, context: ExecutionContext, inputs: dict[str, Any]) -> Any:
         # Several inputs are passed on by name, e.g. as Excel sheets.
         data = next(iter(inputs.values())) if len(inputs) == 1 else dict(inputs)
-
-        connection = context.connection(self.config.connection)
-        connection.write(data, self.options)
-
+        self.writer.write(context.connection(self.config.connection), data)
         return data

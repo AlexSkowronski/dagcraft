@@ -29,7 +29,7 @@ def workbook(tmp_path):
 def test_reads_the_first_sheet_by_default(tmp_path):
     frame = run(tmp_path, {"id": "s", "type": "read", "path": "sales.xlsx"})
 
-    assert frame.artifact("s").to_dict("list") == {"month": [1, 2], "revenue": [10, 20]}
+    assert frame.output("s").to_dict("list") == {"month": [1, 2], "revenue": [10, 20]}
 
 
 @pytest.mark.usefixtures("workbook")
@@ -42,7 +42,7 @@ def test_reads_a_named_sheet(tmp_path):
             "path": "sales.xlsx",
             "args": {"sheet_name": "Targets"},
         },
-    ).artifact("s")
+    ).output("s")
 
     assert frame.to_dict("list") == {"region": ["North"], "target": [25]}
 
@@ -57,7 +57,7 @@ def test_reads_several_sheets_into_one_table(tmp_path):
             "path": "sales.xlsx",
             "args": {"sheet_name": ["North", "South"], "sheet_column": "region"},
         },
-    ).artifact("s")
+    ).output("s")
 
     assert frame.to_dict("list") == {
         "month": [1, 2, 1],
@@ -71,7 +71,7 @@ def test_sheet_name_null_reads_every_sheet(tmp_path):
     frame = run(
         tmp_path,
         {"id": "s", "type": "read", "path": "sales.xlsx", "args": {"sheet_name": None}},
-    ).artifact("s")
+    ).output("s")
 
     assert frame["sheet"].unique().tolist() == ["North", "South", "Targets"]
 

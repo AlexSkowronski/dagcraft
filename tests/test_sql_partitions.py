@@ -1,11 +1,13 @@
+import logging
 import threading
 
 import pandas as pd
 import pytest
 import sqlalchemy as sa
+from sqlalchemy import event
 
-from dagcraft import ConfigError, Pipeline, PipelineError
-from dagcraft.connections.sql import split_range
+from dagcraft import ConfigError, Pipeline, RunError
+from dagcraft.readers.sql.partitions import split_range
 
 
 @pytest.fixture
@@ -35,9 +37,9 @@ def statements():
     def record(_conn, _cursor, statement, _parameters, _context, _executemany):
         seen.append((statement, threading.current_thread().name))
 
-    sa.event.listen(sa.engine.Engine, "before_cursor_execute", record)
+    event.listen(sa.engine.Engine, "before_cursor_execute", record)
     yield seen
-    sa.event.remove(sa.engine.Engine, "before_cursor_execute", record)
+    event.remove(sa.engine.Engine, "before_cursor_execute", record)
 
 
 def read(base_dir, **fields):
@@ -51,7 +53,7 @@ def read(base_dir, **fields):
             base_dir=base_dir,
         )
         .run()
-        .artifact("data")
+        .output("data")
     )
 
 
@@ -76,6 +78,18 @@ def test_partitioned_table_matches_a_plain_read(warehouse, statements):
     # The parts ran on the read's own worker threads.
     worker_threads = {thread for s, thread in statements if "BETWEEN" in s}
     assert all(thread.startswith("dagcraft-sql") for thread in worker_threads)
+
+
+def test_part_logs_name_the_step(warehouse, caplog):
+    with caplog.at_level(logging.DEBUG, logger="dagcraft"):
+        read(warehouse, table="orders", partition={"column": "order_id", "parts": 4})
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert any(m.endswith("data: reading in 5 parts at once") for m in messages)
+    # Logged from the read's own worker threads, which still know the step.
+    parts = [m for m in messages if "data: read part" in m]
+    assert len(parts) == 5
+    assert any(m.endswith("read part 5 of 5 (NULL): 3 rows x 3 columns") for m in parts)
 
 
 def test_explicit_bounds_skip_the_min_max_query(warehouse, statements):
@@ -133,7 +147,7 @@ def test_empty_table_is_read_whole(warehouse):
 
 
 def test_column_must_hold_whole_numbers(warehouse):
-    with pytest.raises(PipelineError, match="must hold whole numbers"):
+    with pytest.raises(RunError, match="must hold whole numbers"):
         read(warehouse, table="orders", partition={"column": "label", "parts": 2})
 
 

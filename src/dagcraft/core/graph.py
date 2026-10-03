@@ -1,52 +1,46 @@
-from __future__ import annotations
+"""The dependency graph between steps, and the order they run in."""
 
 import heapq
 from dataclasses import dataclass
 from graphlib import CycleError, TopologicalSorter
 
 from dagcraft.exceptions import GraphError
-from dagcraft.steps.base import StepConfig
 
 
 @dataclass(frozen=True)
 class CompiledGraph:
+    """Each step's dependencies, and an order that respects them."""
+
     dependencies: dict[str, set[str]]
     order: list[str]
 
 
-def compile_graph(steps: list[StepConfig]) -> CompiledGraph:
-    step_ids = {step.id for step in steps}
+def compile_graph(dependencies: dict[str, set[str]]) -> CompiledGraph:
+    """Check and order the graph.
 
-    dependencies: dict[str, set[str]] = {}
-
-    for step in steps:
-        deps = set(step.inputs.values())
-
-        unknown = deps - step_ids
+    ``dependencies`` maps each step id, in declared order, to the ids of the
+    steps it takes inputs from. Raises ``GraphError`` for unknown steps,
+    self-dependencies and cycles.
+    """
+    for step_id, upstream_ids in dependencies.items():
+        unknown = upstream_ids - dependencies.keys()
 
         if unknown:
             names = ", ".join(sorted(unknown))
-
             raise GraphError(
-                f"Step '{step.id}' references unknown dependencies: {names}"
+                f"Step '{step_id}' references unknown dependencies: {names}"
             )
 
-        if step.id in deps:
-            raise GraphError(f"Step '{step.id}' cannot depend on itself.")
-
-        dependencies[step.id] = deps
-
-    order = topological_sort(dependencies)
+        if step_id in upstream_ids:
+            raise GraphError(f"Step '{step_id}' cannot depend on itself.")
 
     return CompiledGraph(
         dependencies=dependencies,
-        order=order,
+        order=topological_sort(dependencies),
     )
 
 
-def topological_sort(
-    dependencies: dict[str, set[str]],
-) -> list[str]:
+def topological_sort(dependencies: dict[str, set[str]]) -> list[str]:
     """Order steps so each comes after the steps it depends on.
 
     Whenever several steps are ready, the one declared first goes next, so

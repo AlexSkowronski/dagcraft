@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 import sqlalchemy as sa
 
-from dagcraft import ConfigError, Pipeline, PipelineError, extras
-from dagcraft.connections.sql import escape_non_code_colons
+from dagcraft import ConfigError, Pipeline, RunError, extras
+from dagcraft.readers.sql.query_text import escape_non_code_colons
 
 
 def make_pipeline(*steps, connections, base_dir):
@@ -80,8 +80,8 @@ def test_write_then_read_by_table_and_query(tmp_path):
         base_dir=tmp_path,
     ).run()
 
-    assert len(result.artifact("everyone")) == 3
-    assert result.artifact("top")["name"].tolist() == ["Ada", "Grace"]
+    assert len(result.output("everyone")) == 3
+    assert result.output("top")["name"].tolist() == ["Ada", "Grace"]
 
 
 def test_query_file_with_params(tmp_path):
@@ -104,7 +104,7 @@ def test_query_file_with_params(tmp_path):
         base_dir=tmp_path,
     ).run()
 
-    assert result.artifact("top")["name"].tolist() == ["Ada", "Grace"]
+    assert result.output("top")["name"].tolist() == ["Ada", "Grace"]
 
 
 def test_missing_query_file_is_a_config_error(tmp_path):
@@ -143,7 +143,7 @@ def test_sqlite_folder_is_created(tmp_path):
 def test_writing_to_an_existing_table_fails_by_default(tmp_path):
     write_rows(tmp_path, [("Ada", 9)])
 
-    with pytest.raises(PipelineError, match="already exists"):
+    with pytest.raises(RunError, match="already exists"):
         write_rows(tmp_path, [("Grace", 7)])
 
 
@@ -185,7 +185,7 @@ def test_failed_write_leaves_the_table_unchanged(tmp_path):
 
     # The second row violates NOT NULL; with one row per batch, the first
     # batch has already been inserted when the error happens.
-    with pytest.raises(PipelineError):
+    with pytest.raises(RunError):
         write_rows(
             tmp_path,
             [("Grace", 7), (None, 5)],
@@ -202,22 +202,20 @@ def test_url_can_come_from_an_environment_variable(tmp_path, monkeypatch):
 
     result = make_pipeline(
         {"id": "scores", "type": "read", "connection": "db", "table": "scores"},
-        connections={"db": {"type": "sql", "url_env": "WAREHOUSE_URL"}},
+        connections={"db": {"type": "sql", "url": "${env:WAREHOUSE_URL}"}},
         base_dir=tmp_path,
     ).run()
 
-    assert result.artifact("scores").empty
+    assert result.output("scores").empty
 
 
-def test_missing_url_variable_fails_the_step(tmp_path):
+def test_url_is_kept_secret(tmp_path):
     pipeline = make_pipeline(
-        {"id": "scores", "type": "read", "connection": "db", "table": "scores"},
-        connections={"db": {"type": "sql", "url_env": "WAREHOUSE_URL"}},
+        connections={"db": {"type": "sql", "url": "postgresql://me:hunter2@db/x"}},
         base_dir=tmp_path,
     )
 
-    with pytest.raises(PipelineError, match="'WAREHOUSE_URL', which is not set"):
-        pipeline.run()
+    assert "hunter2" not in repr(pipeline.compiled.connections["db"].config)
 
 
 @pytest.mark.parametrize(
@@ -267,7 +265,7 @@ def test_step_validation(tmp_path, step, message):
 
 
 def test_connection_needs_a_url(tmp_path):
-    with pytest.raises(ConfigError, match="Set exactly one of 'url' or 'url_env'"):
+    with pytest.raises(ConfigError, match="url: Field required"):
         make_pipeline(connections={"db": {"type": "sql"}}, base_dir=tmp_path)
 
 
@@ -316,7 +314,7 @@ def test_parameters_named_in_comments_and_strings(tmp_path):
         base_dir=tmp_path,
     ).run()
 
-    assert result.artifact("top").to_dict("list") == {
+    assert result.output("top").to_dict("list") == {
         "name": ["Ada"],
         "rule": ["score >= :minimum"],
     }

@@ -5,15 +5,14 @@ from typing import Any, ClassVar
 
 import pyodbc
 import pytest
-import sqlalchemy as sa
+from sqlalchemy import event
+from sqlalchemy.dialects.mssql.pyodbc import MSDialect_pyodbc
 
 from dagcraft import ConfigError, Pipeline, extras
-from dagcraft.connections.azure_sql import (
-    AZURE_SQL_SCOPE,
-    SQL_COPT_SS_ACCESS_TOKEN,
-    AzureSQLConfig,
-    AzureSQLConnection,
-)
+from dagcraft.config.connections import AzureSQLConfig
+from dagcraft.connections import AzureSQLConnection
+from dagcraft.connections.sql.azure_sql import AZURE_SQL_SCOPE
+from dagcraft.connections.sql.odbc import SQL_COPT_SS_ACCESS_TOKEN
 from dagcraft.exceptions import ExecutionError
 
 DRIVER = "ODBC Driver 18 for SQL Server"
@@ -62,10 +61,10 @@ def signed_in(**extra):
         (
             {},
             "Set 'server' and 'database' (sign in with DefaultAzureCredential) "
-            "or 'connection_string_env', but not both.",
+            "or 'connection_string', but not both.",
         ),
         (
-            {"server": "s", "database": "d", "connection_string_env": "X"},
+            {"server": "s", "database": "d", "connection_string": "X"},
             "but not both",
         ),
         (
@@ -117,8 +116,9 @@ def test_sign_in_passes_a_fresh_token_to_each_connection():
     try:
         engine = connection.engine
         assert engine.url.query["odbc_connect"] == connection.odbc_connection_string()
+        assert isinstance(engine.dialect, MSDialect_pyodbc)
         assert engine.dialect.fast_executemany is True
-        assert sa.event.contains(engine, "do_connect", connection._provide_token)
+        assert event.contains(engine, "do_connect", connection._provide_token)
 
         # Simulate SQLAlchemy opening two database connections.
         first: dict[str, Any] = {}
@@ -140,30 +140,24 @@ def test_sign_in_passes_a_fresh_token_to_each_connection():
         _ = connection.engine
 
 
-def test_connection_string_comes_from_the_environment(monkeypatch):
+def test_connection_string_is_used_as_given(monkeypatch):
     odbc = "Driver={Some Driver};Server=tcp:example,1433;Uid=user;Pwd=secret;"
-    monkeypatch.setenv("WAREHOUSE_ODBC", odbc)
     # The driver named in the connection string isn't checked.
     monkeypatch.setattr(pyodbc, "drivers", list)
 
-    connection = make_connection(connection_string_env="WAREHOUSE_ODBC")
+    connection = make_connection(connection_string=odbc)
     connection.open()
 
     try:
         assert connection.engine.url.query["odbc_connect"] == odbc
-        assert not sa.event.contains(
+        assert not event.contains(
             connection.engine, "do_connect", connection._provide_token
         )
         assert FakeCredential.instances == []
     finally:
         connection.close()
 
-
-def test_missing_connection_string_variable_fails_on_open():
-    connection = make_connection(connection_string_env="WAREHOUSE_ODBC")
-
-    with pytest.raises(ExecutionError, match="'WAREHOUSE_ODBC', which is not set"):
-        connection.open()
+    assert "secret" not in repr(connection.config)
 
 
 def test_missing_driver_fails_on_open(monkeypatch):

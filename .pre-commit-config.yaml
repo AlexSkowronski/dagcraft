@@ -41,9 +41,9 @@ repos:
         types_or: [python, pyi]
         require_serial: true
 
-      - id: mypy
-        name: mypy
-        entry: uv run --frozen mypy
+      - id: pyright
+        name: pyright
+        entry: uv run --frozen pyright
         language: system
         types_or: [python, pyi]
         pass_filenames: false

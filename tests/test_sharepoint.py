@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import responses
 
-from dagcraft import ConfigError, Pipeline, PipelineError, extras
+from dagcraft import ConfigError, Pipeline, RunError, extras
 
 GRAPH = "https://graph.microsoft.com/v1.0"
 SITE = f"{GRAPH}/sites/contoso.sharepoint.com:/sites/Finance"
@@ -77,7 +77,7 @@ def test_reads_a_file(tmp_path, graph):
         folder="Reports/2026",
     ).run()
 
-    assert result.artifact("sales").to_dict("list") == {
+    assert result.output("sales").to_dict("list") == {
         "region": ["North"],
         "revenue": [10],
     }
@@ -143,7 +143,7 @@ def test_wildcards_list_the_folder_across_pages(tmp_path, graph):
             folder="Inbox",
         )
         .run()
-        .artifact("daily")
+        .output("daily")
     )
 
     assert frame.to_dict("list") == {
@@ -152,15 +152,12 @@ def test_wildcards_list_the_folder_across_pages(tmp_path, graph):
     }
 
 
-@pytest.mark.usefixtures("graph")
-def test_wildcards_in_folder_names_are_rejected(tmp_path):
-    pipeline = make_pipeline(
-        tmp_path,
-        {"id": "daily", "type": "read", "connection": "sp", "path": "*/x.csv"},
-    )
-
-    with pytest.raises(PipelineError, match="only use wildcards in the file name"):
-        pipeline.run()
+def test_wildcards_in_folder_names_are_rejected_before_running(tmp_path):
+    with pytest.raises(ConfigError, match="only use wildcards in the file name"):
+        make_pipeline(
+            tmp_path,
+            {"id": "daily", "type": "read", "connection": "sp", "path": "*/x.csv"},
+        )
 
 
 @pytest.mark.usefixtures("graph")
@@ -171,7 +168,7 @@ def test_unknown_library_lists_the_available_ones(tmp_path):
         library="Reports",
     )
 
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         pipeline.run()
 
     assert "no document library named 'Reports'" in str(exc_info.value)
@@ -194,7 +191,7 @@ def test_missing_file_reports_graphs_message(tmp_path, graph):
         {"id": "x", "type": "read", "connection": "sp", "path": "missing.csv"},
     )
 
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         pipeline.run()
 
     assert "SharePoint returned 404" in str(exc_info.value)
@@ -223,7 +220,7 @@ def test_site_address(tmp_path, site, site_url):
             site=site,
         ).run()
 
-    assert result.artifact("x")["n"].tolist() == [1]
+    assert result.output("x")["n"].tolist() == [1]
 
 
 def test_site_must_be_an_address(tmp_path):

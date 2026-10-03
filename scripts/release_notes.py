@@ -30,6 +30,7 @@ def section(changelog: str, version: str) -> str | None:
 
 
 def main(argv: list[str]) -> int:
+    """Print the notes for the version in ``argv``; exit 1 if there are none."""
     try:
         [_, version] = argv
     except ValueError:

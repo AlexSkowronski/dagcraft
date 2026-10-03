@@ -1,9 +1,13 @@
 import logging
+import re
+import subprocess
+import sys
 
 import pandas as pd
 import pytest
 
-from dagcraft.cli import main
+from dagcraft import __version__
+from dagcraft.cli import ExitCode, main
 
 
 @pytest.fixture
@@ -17,6 +21,14 @@ def write_pipeline(tmp_path, body):
     path = tmp_path / "pipeline.yaml"
     path.write_text(body, encoding="utf-8")
     return path
+
+
+def report_lines(caplog):
+    return [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "dagcraft.cli.report"
+    ]
 
 
 def test_run_logs_every_step(tmp_path, input_csv, caplog):
@@ -41,19 +53,16 @@ steps:
     )
 
     with caplog.at_level(logging.INFO):
-        main(["run", str(pipeline)])
+        assert main([str(pipeline)]) == ExitCode.SUCCESS
 
-    summary = [
-        record.getMessage()
-        for record in caplog.records
-        if record.name == "dagcraft.cli"
-    ]
+    summary = report_lines(caplog)
+    assert summary[0] == "Pipeline 'demo' is valid."
     assert any(line.startswith("SUCCESS    source") for line in summary)
     assert any(line.startswith("SUCCESS    sorted") for line in summary)
     assert summary[-1].startswith("SUCCESS in")
 
 
-def test_run_failure_exits_nonzero(tmp_path, caplog):
+def test_run_failure_exits_1(tmp_path, caplog):
     pipeline = write_pipeline(
         tmp_path,
         f"""
@@ -73,12 +82,10 @@ steps:
 """,
     )
 
-    with caplog.at_level(logging.INFO), pytest.raises(SystemExit) as exc_info:
-        main(["run", str(pipeline)])
+    with caplog.at_level(logging.INFO):
+        assert main([str(pipeline)]) == ExitCode.FAILED
 
-    assert exc_info.value.code == 1
-
-    summary = [record for record in caplog.records if record.name == "dagcraft.cli"]
+    summary = [r for r in caplog.records if r.name == "dagcraft.cli.report"]
     messages = [record.getMessage() for record in summary]
     assert any(line.startswith("FAILED     source") for line in messages)
     assert any(line.startswith("SKIPPED    sorted") for line in messages)
@@ -111,12 +118,11 @@ steps:
     )
 
     with caplog.at_level(logging.INFO):
-        main(["run", str(pipeline), "--dry-run", "--param", "limit=5"])
+        assert main([str(pipeline), "--dry-run"]) == ExitCode.SUCCESS
 
-    lines = [r.getMessage() for r in caplog.records if r.name == "dagcraft.cli"]
-    assert lines == [
+    assert report_lines(caplog) == [
         "Pipeline 'demo' is valid.",
-        "Params: limit=5",
+        "Params: limit=2",
         "Steps, in run order:",
         f"  1. source  read {input_csv.as_posix()} from 'local'",
         "  2. sorted  transform with 'sort'  <- data: source",
@@ -126,15 +132,7 @@ steps:
     assert not (tmp_path / "out").exists()
 
 
-def test_validate_command_is_gone(tmp_path, capsys):
-    with pytest.raises(SystemExit) as exc_info:
-        main(["validate", str(tmp_path / "pipeline.yaml")])
-
-    assert exc_info.value.code == 2
-    assert "invalid choice: 'validate'" in capsys.readouterr().err
-
-
-def test_invalid_config_exits_cleanly(tmp_path, caplog):
+def test_invalid_config_exits_2(tmp_path, caplog):
     pipeline = write_pipeline(
         tmp_path,
         """
@@ -146,8 +144,40 @@ steps:
 """,
     )
 
-    with pytest.raises(SystemExit) as exc_info:
-        main(["run", str(pipeline), "--dry-run"])
-
-    assert exc_info.value.code == 1
+    assert main([str(pipeline), "--dry-run"]) == ExitCode.INVALID
     assert "Step 'source': path: Field required" in caplog.text
+
+
+def test_missing_file_exits_2(tmp_path, caplog):
+    assert main([str(tmp_path / "nowhere.yaml")]) == ExitCode.INVALID
+    assert "Could not read pipeline file" in caplog.text
+
+
+def test_verbose_logs_detail(tmp_path, caplog):
+    for day in (1, 2):
+        pd.DataFrame({"n": [day]}).to_csv(tmp_path / f"day{day}.csv", index=False)
+    pipeline = write_pipeline(
+        tmp_path,
+        "pipeline: {name: demo}\n"
+        "steps:\n"
+        "  - {id: days, type: read, path: 'day*.csv'}\n",
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        assert main([str(pipeline), "-v"]) == ExitCode.SUCCESS
+
+    messages = [record.getMessage() for record in caplog.records]
+    run_prefix = r"\[demo [0-9a-f]{8}\] days: "
+    assert any(re.match(f"{run_prefix}found 2 files matching day", m) for m in messages)
+    assert any(re.match(f"{run_prefix}reading day1.csv", m) for m in messages)
+
+
+def test_python_m_runs_the_command():
+    completed = subprocess.run(
+        [sys.executable, "-m", "dagcraft", "--version"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert completed.stdout.strip() == f"dagcraft {__version__}"

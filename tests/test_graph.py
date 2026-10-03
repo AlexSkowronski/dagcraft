@@ -2,11 +2,12 @@ import pytest
 
 from dagcraft.core.graph import compile_graph, topological_sort
 from dagcraft.exceptions import GraphError
-from dagcraft.steps.base import StepConfig
 
 
 def compile_steps(*steps):
-    return compile_graph([StepConfig.model_validate(step) for step in steps])
+    return compile_graph(
+        {step["id"]: set(step.get("inputs", {}).values()) for step in steps}
+    )
 
 
 def read(step_id):

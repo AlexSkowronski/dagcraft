@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from dagcraft import BaseStep, Pipeline, PipelineError, StepConfig, register_step
+from dagcraft import BaseStep, Pipeline, RunError, StepConfig, register_step
 from dagcraft.cli import main
 
 
@@ -28,7 +28,7 @@ def make_pipeline(*steps):
 
 
 def dagcraft_records(caplog):
-    return [record for record in caplog.records if record.name == "dagcraft"]
+    return [record for record in caplog.records if record.name.startswith("dagcraft")]
 
 
 def test_each_run_gets_a_short_random_id():
@@ -48,15 +48,16 @@ def test_logs_carry_the_pipeline_and_run_id(caplog):
 
     records = dagcraft_records(caplog)
     assert [record.getMessage() for record in records] == [
-        "[ids adf-1234] Starting run",
-        "[ids adf-1234] Running step 'a'",
-        "[ids adf-1234] hello from inside the step",
-        f"[ids adf-1234] Completed step 'a' in {result.steps['a'].duration:.3f}s",
-        f"[ids adf-1234] Run completed in {result.duration:.3f}s",
+        "[ids adf-1234] Starting run: 1 step",
+        "[ids adf-1234] a: started: chatty",
+        "[ids adf-1234] a: hello from inside the step",
+        f"[ids adf-1234] a: finished in {result.steps['a'].duration:.3f}s: int",
+        f"[ids adf-1234] Run succeeded in {result.duration:.3f}s",
     ]
     assert {(record.pipeline, record.run_id) for record in records} == {
         ("ids", "adf-1234")
     }
+    assert [record.step for record in records] == ["", "a", "a", "a", ""]
 
 
 def test_failed_run_keeps_its_id():
@@ -64,7 +65,7 @@ def test_failed_run_keeps_its_id():
         {"id": "missing", "type": "read", "path": "does_not_exist.csv"},
     )
 
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         pipeline.run(run_id="nightly-7")
 
     assert exc_info.value.result.run_id == "nightly-7"
@@ -78,6 +79,6 @@ def test_cli_run_id(tmp_path, caplog):
     )
 
     with caplog.at_level(logging.INFO):
-        main(["run", str(path), "--run-id", "from-adf"])
+        main([str(path), "--run-id", "from-adf"])
 
-    assert "[cli from-adf] hello from inside the step" in caplog.text
+    assert "[cli from-adf] a: hello from inside the step" in caplog.text

@@ -8,7 +8,7 @@ import responses
 import sqlalchemy as sa
 from pydantic import BaseModel, ConfigDict
 
-from dagcraft import Connection, Pipeline, register_connection
+from dagcraft import Connection, Pipeline, Reader, register_connection, register_reader
 from dagcraft.cli import main
 from dagcraft.connections import AzureBlobConnection, AzureSQLConnection
 
@@ -30,7 +30,6 @@ class ProbeConnection(Connection):
     """Test connection whose check passes or fails on request."""
 
     config_model = ProbeConfig
-    read_options = ProbeOptions
     events: ClassVar[list[str]] = []
 
     def open(self) -> None:
@@ -43,6 +42,14 @@ class ProbeConnection(Connection):
 
     def close(self) -> None:
         self.events.append(f"close {self.name}")
+
+
+@register_reader(ProbeConnection)
+class ProbeReader(Reader):
+    options_model = ProbeOptions
+
+    def read(self, connection):
+        return None
 
 
 @pytest.fixture(autouse=True)
@@ -139,15 +146,14 @@ def test_local_folders(tmp_path):
     assert out.message.endswith("doesn't exist yet; writing will create it")
 
 
-def test_sql(tmp_path, monkeypatch):
-    monkeypatch.delenv("MISSING_URL", raising=False)
+def test_sql(tmp_path):
     pipeline = make_pipeline(
         tmp_path,
         read("a", "db", table="t"),
         read("b", "nowhere", table="t"),
         connections={
             "db": {"type": "sql", "url": "sqlite:///warehouse.db"},
-            "nowhere": {"type": "sql", "url_env": "MISSING_URL"},
+            "nowhere": {"type": "sql", "url": "nosuchdb://server/db"},
         },
     )
 
@@ -155,11 +161,10 @@ def test_sql(tmp_path, monkeypatch):
 
     assert (db.ok, db.message) == (True, "connected")
     assert not nowhere.ok
-    assert "'MISSING_URL', which is not set" in nowhere.message
+    assert "nosuchdb" in nowhere.message
 
 
 def test_azure_sql_reports_who_it_connected_as(tmp_path, monkeypatch):
-    monkeypatch.setenv("WAREHOUSE_ODBC", "Driver={x};Server=y;")
     monkeypatch.setattr(
         AzureSQLConnection,
         "_engine_for",
@@ -176,7 +181,7 @@ def test_azure_sql_reports_who_it_connected_as(tmp_path, monkeypatch):
         connections={
             "warehouse": {
                 "type": "azure_sql",
-                "connection_string_env": "WAREHOUSE_ODBC",
+                "connection_string": "Driver={x};Server=y;",
             }
         },
     )
@@ -333,7 +338,7 @@ def cli_lines(caplog):
     return [
         record.getMessage()
         for record in caplog.records
-        if record.name == "dagcraft.cli"
+        if record.name == "dagcraft.cli.report"
     ]
 
 
@@ -344,7 +349,7 @@ def test_cli_check_connections(tmp_path, caplog):
     )
 
     with caplog.at_level(logging.INFO):
-        main(["run", str(path), "--check-connections"])
+        assert main([str(path), "--check-connections"]) == 0
 
     assert cli_lines(caplog) == [
         "Pipeline 'cli' is valid.",
@@ -361,10 +366,9 @@ def test_cli_check_connections_failure_exits_nonzero(tmp_path, caplog):
         "  first: {type: probe}\n  second: {type: probe, fail: true}",
     )
 
-    with caplog.at_level(logging.INFO), pytest.raises(SystemExit) as exc_info:
-        main(["run", str(path), "--check-connections", "--dry-run"])
+    with caplog.at_level(logging.INFO):
+        assert main([str(path), "--check-connections", "--dry-run"]) == 1
 
-    assert exc_info.value.code == 1
     lines = cli_lines(caplog)
     assert lines[0] == "Pipeline 'cli' is valid."
     assert "Steps, in run order:" in lines

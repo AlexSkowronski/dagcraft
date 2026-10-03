@@ -25,6 +25,7 @@ LAST_NAMES = ["Lovelace", "Hopper", "Turing", "Dijkstra", "Liskov", "Knuth", "Al
 
 
 def main() -> None:
+    """Write every sample file, from a fixed seed so they never change."""
     rng = random.Random(42)
     OUTPUT.mkdir(parents=True, exist_ok=True)
 
@@ -47,6 +48,7 @@ def main() -> None:
 
 
 def make_customers(rng: random.Random) -> pd.DataFrame:
+    """Customers with names, regions, segments and signup dates."""
     rows = []
 
     for customer_id in range(1, 13):
@@ -64,6 +66,7 @@ def make_customers(rng: random.Random) -> pd.DataFrame:
 
 
 def make_products() -> list[dict[str, object]]:
+    """Products with nested attributes and a list of tags, as YAML holds them."""
     catalogue = [
         ("Desk lamp", "Lighting", 24.99, "black", 1.2),
         ("Floor lamp", "Lighting", 79.0, "white", 4.5),
@@ -94,6 +97,7 @@ def make_orders(
     customers: pd.DataFrame,
     products: list[dict[str, object]],
 ) -> pd.DataFrame:
+    """Orders placed by the customers for the products."""
     rows = []
 
     for order_id in range(1001, 1061):
@@ -117,6 +121,7 @@ def make_orders(
 
 
 def write_employees() -> None:
+    """employees.csv, for the basic example."""
     # The original test.csv, kept for the basic example.
     pd.DataFrame(
         {
@@ -135,6 +140,7 @@ def write_employees() -> None:
 
 
 def write_products(products: list[dict[str, object]]) -> None:
+    """products.yaml."""
     text = yaml.safe_dump(products, sort_keys=False, allow_unicode=True)
     (OUTPUT / "products.yaml").write_text(text, encoding="utf-8", newline="\n")
 
@@ -144,6 +150,7 @@ def write_events(
     customers: pd.DataFrame,
     products: list[dict[str, object]],
 ) -> None:
+    """events/: one JSON batch of nested events per day, for wildcard reads."""
     folder = OUTPUT / "events"
     folder.mkdir(exist_ok=True)
     event_id = 1
@@ -184,6 +191,7 @@ def write_events(
 
 
 def write_clicks(rng: random.Random, customers: pd.DataFrame) -> None:
+    """clicks.jsonl: one JSON record per line."""
     pages = ["/", "/lighting", "/furniture", "/cart", "/checkout"]
     lines = []
 
@@ -209,6 +217,7 @@ def write_clicks(rng: random.Random, customers: pd.DataFrame) -> None:
 
 
 def write_regional_sales(rng: random.Random) -> None:
+    """regional_sales.xlsx: one sheet per region."""
     months = [f"2026-{month:02d}" for month in range(1, 7)]
 
     with pd.ExcelWriter(OUTPUT / "regional_sales.xlsx", engine="openpyxl") as writer:
@@ -231,6 +240,7 @@ def write_warehouse(
     products: list[dict[str, object]],
     orders: pd.DataFrame,
 ) -> None:
+    """warehouse.db: a SQLite database with customers, products and orders."""
     path = OUTPUT / "warehouse.db"
     path.unlink(missing_ok=True)
 

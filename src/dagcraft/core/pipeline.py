@@ -1,29 +1,34 @@
-from __future__ import annotations
+"""The ``Pipeline`` class: load a pipeline file, then plan, check or run it."""
 
-import contextlib
-import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import yaml
 from pydantic import ValidationError
 
+from dagcraft.config import PipelineConfig, format_validation_error
+from dagcraft.core.checks import check_connection
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
-from dagcraft.core.config import PipelineConfig, format_validation_error, load_yaml
 from dagcraft.core.executor import Executor
-from dagcraft.core.runtime import ConnectionCheck, PipelineResult, PlannedStep
-from dagcraft.exceptions import ConfigError, PipelineError
-
-logger = logging.getLogger(__name__)
+from dagcraft.core.results import ConnectionCheck, PipelineResult, PlannedStep
+from dagcraft.exceptions import ConfigError, RunError
+from dagcraft.yaml_loader import load_yaml
 
 
 class Pipeline:
+    """A checked pipeline, ready to plan, check or run.
+
+    Usually created with ``Pipeline.from_yaml(path)``. Everything is checked
+    when the pipeline is created, so a pipeline that exists is one that can
+    run; ``run`` can then be called any number of times.
+    """
+
     def __init__(
         self,
         config: PipelineConfig,
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
-    ):
+    ) -> None:
         """Compile ``config``.
 
         ``base_dir`` is where relative paths in the config are resolved from;
@@ -38,29 +43,19 @@ class Pipeline:
             params,
         )
 
-    @property
-    def params(self) -> dict[str, Any]:
-        """The params in effect: the file's, with any overrides applied."""
-        return self.compiled.params
-
     @classmethod
     def from_yaml(
         cls,
         path: str | Path,
         params: dict[str, Any] | None = None,
-    ) -> Pipeline:
+    ) -> Self:
+        """Load and compile a pipeline file. Relative paths are relative to it."""
         path = Path(path)
 
         try:
-            with path.open(
-                "r",
-                encoding="utf-8",
-            ) as file:
-                raw = load_yaml(file)
-
+            raw = load_yaml(path.read_text(encoding="utf-8"))
         except OSError as exc:
             raise ConfigError(f"Could not read pipeline file: {path}") from exc
-
         except yaml.YAMLError as exc:
             raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
@@ -72,10 +67,10 @@ class Pipeline:
         config: dict[str, Any],
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
-    ) -> Pipeline:
+    ) -> Self:
+        """Compile a pipeline from a dict shaped like a pipeline file."""
         try:
             parsed = PipelineConfig.model_validate(config)
-
         except ValidationError as exc:
             raise ConfigError(
                 f"Invalid pipeline: {format_validation_error(exc)}"
@@ -83,12 +78,23 @@ class Pipeline:
 
         return cls(parsed, base_dir=base_dir, params=params)
 
-    def plan(self) -> list[PlannedStep]:
-        """The steps in the order they would run, without running them.
+    @property
+    def name(self) -> str:
+        """The pipeline's name, from its file."""
+        return self.compiled.name
 
-        Everything is already checked when the pipeline is created, so a
-        pipeline you can plan is one you can run.
-        """
+    @property
+    def params(self) -> dict[str, Any]:
+        """The params in effect: the file's, with any overrides applied."""
+        return self.compiled.params
+
+    @property
+    def max_workers(self) -> int:
+        """How many independent steps the file lets run at once."""
+        return self.config.pipeline.max_workers
+
+    def plan(self) -> list[PlannedStep]:
+        """The steps in the order they would run, without running them."""
         return [
             PlannedStep(
                 id=step_id,
@@ -103,9 +109,9 @@ class Pipeline:
         names: list[str] = []
 
         for step_id in self.compiled.graph.order:
-            name = getattr(self.compiled.steps[step_id].config, "connection", None)
+            name = self.compiled.steps[step_id].connection_name()
 
-            if isinstance(name, str) and name not in names:
+            if name is not None and name not in names:
                 names.append(name)
 
         return names
@@ -118,49 +124,35 @@ class Pipeline:
         permissions, network or drivers show up without running any steps.
         A failure is reported in the result rather than raised.
         """
-        checks = []
-
-        for name in self.connections_in_use():
-            connection = self.compiled.connections[name]
-            connection_type = self.config.connections.get(name, {}).get("type", "local")
-
-            try:
-                connection.open()
-                message = connection.check()
-            except Exception as exc:
-                logger.debug("Checking connection '%s' failed", name, exc_info=True)
-                checks.append(ConnectionCheck(name, connection_type, False, str(exc)))
-            else:
-                checks.append(ConnectionCheck(name, connection_type, True, message))
-            finally:
-                with contextlib.suppress(Exception):
-                    connection.close()
-
-        return checks
+        return [
+            check_connection(
+                name,
+                self.compiled.connection_types[name],
+                self.compiled.connections[name],
+            )
+            for name in self.connections_in_use()
+        ]
 
     def run(
         self,
         *,
-        logger: logging.Logger | None = None,
         fail_fast: bool = False,
         run_id: str | None = None,
-        keep_artifacts: bool = True,
+        keep_outputs: bool = True,
         max_workers: int | None = None,
     ) -> PipelineResult:
         """Run the pipeline and return the outcome of every step.
 
         When a step fails, the steps that depend on it are skipped and the
         rest still run; with ``fail_fast``, every later step is skipped.
-
-        Raises ``PipelineError`` if any step fails. The error's ``result``
-        has the per-step outcome, and the first failure's exception is
-        chained.
+        Raises ``RunError`` if any step fails: its ``result`` has the
+        per-step outcome, and the first failure's exception is chained.
 
         ``run_id`` identifies the run in logs and the result; by default a
         short random one is made. Pass your own to match an orchestrator's.
 
-        Each step's output is kept on the result (``result.artifact(id)``).
-        With ``keep_artifacts=False``, an output is dropped as soon as every
+        Each step's output is kept on the result (``result.output(id)``).
+        With ``keep_outputs=False``, an output is dropped as soon as every
         step that uses it has finished, which saves memory on large data.
 
         ``max_workers`` overrides the pipeline file's ``max_workers``: how
@@ -169,28 +161,17 @@ class Pipeline:
         if max_workers is not None and max_workers < 1:
             raise ValueError("max_workers must be at least 1.")
 
-        executor = Executor(
-            pipeline=self.compiled,
-            logger=logger,
+        result = Executor(
+            self.compiled,
             fail_fast=fail_fast,
             run_id=run_id,
-            keep_artifacts=keep_artifacts,
-            max_workers=max_workers or self.config.pipeline.max_workers,
-        )
+            keep_outputs=keep_outputs,
+            max_workers=max_workers or self.max_workers,
+        ).run()
 
-        result = executor.run()
-        failed = result.failed_steps
-
-        if failed:
-            first, others = failed[0], failed[1:]
-            message = (
-                f"Pipeline '{result.name}' failed at step '{first.id}': {first.error}"
-            )
-
-            if others:
-                names = ", ".join(step.id for step in others)
-                message += f" (also failed: {names})"
-
-            raise PipelineError(message, result) from first.exception
+        if not result.success:
+            # A run fails only when a step does, so there is a first failure.
+            first_failure = result.failed_steps[0]
+            raise RunError.from_result(result) from first_failure.exception
 
         return result

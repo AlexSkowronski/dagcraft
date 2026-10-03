@@ -33,6 +33,7 @@ dependencies = [
     "PyYAML>=6.0",
     "pyarrow>=16.0",
     "fsspec>=2024.6.0",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]
@@ -78,6 +79,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = [
     "F",     # pyflakes
+    "D",     # pydocstyle (docstrings)
     "E",     # pycodestyle errors
     "W",     # pycodestyle warnings
     "I",     # isort
@@ -108,6 +110,9 @@ select = [
 ignore = [
     "TRY003",  # descriptive messages at the raise site are fine
     "ARG002",  # step methods share a fixed signature and may ignore arguments
+    "D102",    # overriding methods inherit the base class's docstring
+    "D105",    # magic methods are self-explanatory
+    "D107",    # __init__ arguments are described in the class docstring
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -116,11 +121,15 @@ ignore = [
     "S311",  # seeded random numbers for sample data, not security
 ]
 "tests/**" = [
+    "D",        # test names say what they check
     "S101",     # assert is how pytest works
     "PLR2004",  # literal values in assertions are fine
     "S105",     # fake credentials in tests are fine
     "S106",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.pylint]
 # Long signatures are fine when the extra arguments are keyword-only
@@ -130,28 +139,20 @@ max-args = 8
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
-[tool.mypy]
-mypy_path = "src"
-files = ["src", "tests", "scripts"]
-plugins = ["pydantic.mypy"]
-check_untyped_defs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-enable_error_code = ["ignore-without-code"]
-
-[[tool.mypy.overrides]]
-# These ship without type information.
-module = ["adlfs", "adlfs.*", "fsspec", "fsspec.*", "pyodbc"]
-ignore_missing_imports = true
+[tool.pyright]
+# The same checker VS Code's Pylance uses, so the editor and the hooks agree.
+include = ["src", "tests", "scripts"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
 
 [dependency-groups]
 dev = [
     "adlfs>=2026.8.0",
-    "mypy>=2.4.0",
     "openpyxl>=3.1.5",
     "pandas-stubs>=3.0.5.260914",
     "pre-commit>=4.6.2",
     "pyodbc>=5.3.0",
+    "pyright[nodejs]>=1.1.400",
     "pytest>=9.1.1",
     "responses>=0.26.3",
     "ruff>=0.16.10",

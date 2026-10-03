@@ -7,12 +7,12 @@ from dagcraft import (
     BaseStep,
     ConfigError,
     Pipeline,
-    PipelineError,
+    RunError,
     StepConfig,
+    StepStatus,
     register_step,
 )
-from dagcraft.core import executor
-from dagcraft.core.runtime import StepStatus
+from dagcraft.core import step_runner
 
 
 class FlakyConfig(StepConfig):
@@ -40,7 +40,7 @@ class FlakyStep(BaseStep):
 def reset_and_record_sleeps(monkeypatch):
     FlakyStep.calls.clear()
     sleeps: list[float] = []
-    monkeypatch.setattr(executor.time, "sleep", sleeps.append)
+    monkeypatch.setattr(step_runner.time, "sleep", sleeps.append)
     return sleeps
 
 
@@ -59,28 +59,26 @@ def test_retries_until_the_step_succeeds(reset_and_record_sleeps, caplog):
 
     step = result.steps["flaky"]
     assert (step.status, step.attempts) == (StepStatus.SUCCESS, 3)
-    assert result.artifact("flaky") == 3
+    assert result.output("flaky") == 3
     assert reset_and_record_sleeps == [1, 2]
-    assert (
-        "Step 'flaky' failed (attempt 1 of 4), retrying in 1.0s: blip 1" in caplog.text
-    )
+    assert "flaky: failed (attempt 1 of 4), retrying in 1.0s: blip 1" in caplog.text
 
 
 def test_gives_up_after_the_last_retry(reset_and_record_sleeps, caplog):
     with (
         caplog.at_level(logging.ERROR, logger="dagcraft"),
-        pytest.raises(PipelineError) as exc_info,
+        pytest.raises(RunError) as exc_info,
     ):
         make_pipeline(failures=10, retries=3, retry_delay=0.5).run()
 
     step = exc_info.value.result.steps["flaky"]
     assert (step.status, step.attempts, step.error) == (StepStatus.FAILED, 4, "blip 4")
     assert reset_and_record_sleeps == [0.5, 1.0, 2.0]
-    assert "Step 'flaky' failed after 4 attempts" in caplog.text
+    assert "flaky: failed after 4 attempts" in caplog.text
 
 
 def test_no_retries_by_default(reset_and_record_sleeps):
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         make_pipeline(failures=1).run()
 
     assert exc_info.value.result.steps["flaky"].attempts == 1

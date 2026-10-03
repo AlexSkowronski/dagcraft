@@ -1,41 +1,37 @@
-"""Connection types. Importing this package registers the built-in ones."""
+"""Connections: where data lives and how to sign in to it.
 
-from dagcraft.connections.azure_blob import AzureBlobConfig, AzureBlobConnection
-from dagcraft.connections.azure_sql import AzureSQLConfig, AzureSQLConnection
+Importing this package registers the built-in connection types::
+
+    Connection (base.py)          open / close / check
+    ├── FileConnection (files/)   open_file / glob
+    │   ├── local
+    │   ├── azure_blob
+    │   └── sharepoint
+    └── SQLConnection (sql/)      a SQLAlchemy engine
+        ├── sql                   any database, by URL
+        └── azure_sql
+"""
+
 from dagcraft.connections.base import Connection
 from dagcraft.connections.files import (
+    AzureBlobConnection,
     FileConnection,
-    FileReadOptions,
-    FileWriteOptions,
-    FsspecConnection,
+    LocalConnection,
+    SharePointConnection,
 )
-from dagcraft.connections.local import LocalConfig, LocalConnection
-from dagcraft.connections.sharepoint import SharePointConfig, SharePointConnection
 from dagcraft.connections.sql import (
+    AzureSQLConnection,
     GenericSQLConnection,
-    SQLConfig,
     SQLConnection,
-    SQLReadOptions,
-    SQLWriteOptions,
 )
 
 __all__ = [
-    "AzureBlobConfig",
     "AzureBlobConnection",
-    "AzureSQLConfig",
     "AzureSQLConnection",
     "Connection",
     "FileConnection",
-    "FileReadOptions",
-    "FileWriteOptions",
-    "FsspecConnection",
     "GenericSQLConnection",
-    "LocalConfig",
     "LocalConnection",
-    "SQLConfig",
     "SQLConnection",
-    "SQLReadOptions",
-    "SQLWriteOptions",
-    "SharePointConfig",
     "SharePointConnection",
 ]

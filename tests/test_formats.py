@@ -40,7 +40,7 @@ EVENTS = {
 def test_json_list_of_records_is_flattened(tmp_path):
     (tmp_path / "events.json").write_text(json.dumps(EVENTS["events"]))
 
-    frame = run(tmp_path, read("events.json")).artifact("data")
+    frame = run(tmp_path, read("events.json")).output("data")
 
     assert frame.to_dict("list") == {
         "id": [1, 2],
@@ -58,7 +58,7 @@ def test_json_records_inside_a_document(tmp_path):
             "batch.json",
             args={"record_path": "events", "meta": ["batch", ["source", "system"]]},
         ),
-    ).artifact("data")
+    ).output("data")
 
     assert frame.columns.tolist() == [
         "id",
@@ -74,7 +74,7 @@ def test_json_lines(tmp_path):
     lines = [json.dumps(record) for record in EVENTS["events"]]
     (tmp_path / "events.jsonl").write_text("\n".join(lines) + "\n\n")
 
-    frame = run(tmp_path, read("events.jsonl")).artifact("data")
+    frame = run(tmp_path, read("events.jsonl")).output("data")
 
     assert frame["user.country"].tolist() == ["GB", "PL"]
 
@@ -84,7 +84,7 @@ def test_yaml_reads_like_json_with_yaml_1_2_booleans(tmp_path):
         "- {code: NO, name: Norway, eu: false}\n- {code: PL, name: Poland, eu: true}\n"
     )
 
-    frame = run(tmp_path, read("countries.yml")).artifact("data")
+    frame = run(tmp_path, read("countries.yml")).output("data")
 
     assert frame.to_dict("list") == {
         "code": ["NO", "PL"],
@@ -104,7 +104,7 @@ def test_round_trip(tmp_path, path):
     ).to_parquet(tmp_path / "in.parquet")
 
     run(tmp_path, read("in.parquet"), write(path))
-    back = run(tmp_path, read(path)).artifact("data")
+    back = run(tmp_path, read(path)).output("data")
 
     assert back["name"].tolist() == ["Zoë", "Ada"]
     assert back["score"].iloc[0] == 1.5

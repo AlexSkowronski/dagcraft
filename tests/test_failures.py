@@ -3,9 +3,8 @@ import logging
 import pandas as pd
 import pytest
 
-from dagcraft import Pipeline, PipelineError
+from dagcraft import Pipeline, RunError, StepStatus
 from dagcraft.cli import main
-from dagcraft.core.runtime import StepStatus
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +36,7 @@ def run(tmp_path, *steps, fail_fast=False):
         base_dir=tmp_path,
     )
 
-    with pytest.raises(PipelineError) as exc_info:
+    with pytest.raises(RunError) as exc_info:
         pipeline.run(fail_fast=fail_fast)
 
     return exc_info.value
@@ -66,7 +65,7 @@ def test_independent_steps_keep_running(tmp_path):
         "after_good": StepStatus.SUCCESS,
         "unrelated": StepStatus.SUCCESS,
     }
-    assert error.result.artifact("after_good")["n"].tolist() == [2, 3]
+    assert error.result.output("after_good")["n"].tolist() == [2, 3]
 
 
 def test_skips_carry_down_the_graph(tmp_path):
@@ -136,7 +135,7 @@ def test_skips_are_logged_with_the_reason(tmp_path, caplog):
     with caplog.at_level(logging.WARNING, logger="dagcraft"):
         run(tmp_path, read("source"), broken("bad", "source"), keep("child", "bad"))
 
-    assert "Skipping step 'child': upstream step 'bad' did not succeed" in caplog.text
+    assert "child: skipped: upstream step 'bad' did not succeed" in caplog.text
 
 
 def test_cli_fail_fast(tmp_path, caplog):
@@ -161,9 +160,10 @@ steps:
         encoding="utf-8",
     )
 
-    with caplog.at_level(logging.INFO), pytest.raises(SystemExit) as exc_info:
-        main(["run", str(path), "--fail-fast"])
+    with caplog.at_level(logging.INFO):
+        assert main([str(path), "--fail-fast"]) == 1
 
-    assert exc_info.value.code == 1
-    summary = [r.getMessage() for r in caplog.records if r.name == "dagcraft.cli"]
+    summary = [
+        r.getMessage() for r in caplog.records if r.name == "dagcraft.cli.report"
+    ]
     assert any(line.startswith("SKIPPED    unrelated") for line in summary)

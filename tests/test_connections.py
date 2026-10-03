@@ -4,8 +4,15 @@ import pandas as pd
 import pytest
 from pydantic import BaseModel, ConfigDict
 
-from dagcraft import Connection, Pipeline, PipelineError, register_connection
-from dagcraft.exceptions import ConfigError
+from dagcraft import (
+    ConfigError,
+    Connection,
+    Pipeline,
+    Reader,
+    RunError,
+    register_connection,
+    register_reader,
+)
 
 
 class RecordingConfig(BaseModel):
@@ -23,7 +30,6 @@ class RecordingConnection(Connection):
     """Read-only test connection that records its lifecycle."""
 
     config_model = RecordingConfig
-    read_options = RecordingOptions
 
     events: ClassVar[list[str]] = []
 
@@ -33,9 +39,20 @@ class RecordingConnection(Connection):
     def close(self) -> None:
         self.events.append(f"close {self.name}")
 
-    def read(self, options: RecordingOptions) -> int:
-        self.events.append(f"read {self.name}")
-        return options.value
+    def check(self) -> str:
+        return "fine"
+
+
+@register_reader(RecordingConnection)
+class RecordingReader(Reader):
+    """Reads the step's ``value``, noting each read on the connection."""
+
+    options_model = RecordingOptions
+    options: RecordingOptions
+
+    def read(self, connection: RecordingConnection) -> int:
+        connection.events.append(f"read {connection.name}")
+        return self.options.value
 
 
 @pytest.fixture(autouse=True)
@@ -100,7 +117,7 @@ def test_named_local_connection_uses_its_root(tmp_path):
     result = pipeline.run()
 
     assert result.success
-    assert result.artifact("source")["value"].tolist() == [1, 2]
+    assert result.output("source")["value"].tolist() == [1, 2]
 
 
 def test_format_can_be_set_explicitly(tmp_path):
@@ -138,7 +155,7 @@ def test_format_args_are_passed_through(tmp_path):
     result = pipeline.run()
 
     assert result.success
-    assert result.artifact("source").columns.tolist() == ["a", "b"]
+    assert result.output("source").columns.tolist() == ["a", "b"]
 
 
 def test_connection_opened_once_and_closed_after_run():
@@ -154,7 +171,7 @@ def test_connection_opened_once_and_closed_after_run():
     result = pipeline.run()
 
     assert result.success
-    assert result.artifact("b") == 2
+    assert result.output("b") == 2
     # "unused" is never opened because no step uses it.
     assert RecordingConnection.events == [
         "open rec",
@@ -197,7 +214,7 @@ def test_connection_closed_when_a_step_fails():
         connections={"rec": {"type": "recording"}},
     )
 
-    with pytest.raises(PipelineError):
+    with pytest.raises(RunError):
         pipeline.run()
 
     assert RecordingConnection.events[-1] == "close rec"
@@ -242,7 +259,7 @@ def test_failed_local_write_leaves_the_old_file(tmp_path):
         base_dir=tmp_path,
     )
 
-    with pytest.raises(PipelineError):
+    with pytest.raises(RunError):
         pipeline.run()
 
     assert (tmp_path / "out.csv").read_text(encoding="utf-8") == "old contents\n"

@@ -1,11 +1,9 @@
 import datetime
-import logging
 
 import pandas as pd
 import pytest
 
 from dagcraft import ConfigError, Pipeline
-from dagcraft.cli import main, parse_param
 
 
 @pytest.fixture
@@ -53,7 +51,7 @@ def test_references_inside_text_and_as_whole_values(tmp_path):
     result = pipeline.run()
 
     # A whole-value reference keeps its type: the list stays a list.
-    assert result.artifact("big").to_dict("list") == {"n": [3, 2]}
+    assert result.output("big").to_dict("list") == {"n": [3, 2]}
 
 
 @pytest.mark.usefixtures("numbers_csv")
@@ -73,7 +71,7 @@ def test_overrides_replace_the_files_params(tmp_path):
     )
 
     assert pipeline.params == {"ascending": False}
-    assert pipeline.run().artifact("sorted")["n"].tolist() == [3, 2, 1]
+    assert pipeline.run().output("sorted")["n"].tolist() == [3, 2, 1]
 
 
 def test_unknown_override_is_rejected(tmp_path):
@@ -99,7 +97,7 @@ def test_environment_variables(tmp_path, monkeypatch):
     )
 
     assert pipeline.params == {"region": "north"}
-    assert len(pipeline.run().artifact("source")) == 3
+    assert len(pipeline.run().output("source")) == 3
 
 
 def test_escaped_reference_is_kept_literally(tmp_path):
@@ -110,7 +108,7 @@ def test_escaped_reference_is_kept_literally(tmp_path):
         {"id": "source", "type": "read", "path": "$${literal}.csv"},
     )
 
-    assert pipeline.run().artifact("source")["n"].tolist() == [1]
+    assert pipeline.run().output("source")["n"].tolist() == [1]
 
 
 @pytest.mark.usefixtures("numbers_csv")
@@ -125,7 +123,7 @@ def test_connections_can_use_params(tmp_path):
         connections={"files": {"type": "local", "root": "${params.folder}"}},
     )
 
-    assert len(pipeline.run().artifact("source")) == 3
+    assert len(pipeline.run().output("source")) == 3
 
 
 @pytest.mark.parametrize(
@@ -174,13 +172,12 @@ def test_param_errors(tmp_path, params, message):
         make_pipeline(tmp_path, params=params)
 
 
-@pytest.mark.usefixtures("numbers_csv")
-def test_cli_param_overrides(tmp_path, caplog):
+def test_overrides_from_python_keep_their_types(tmp_path):
     path = tmp_path / "pipeline.yaml"
     path.write_text(
         """
 pipeline:
-  name: cli
+  name: overrides
 params:
   minimum: 0
   day: 2026-01-01
@@ -197,27 +194,7 @@ steps:
         encoding="utf-8",
     )
 
-    with caplog.at_level(logging.INFO):
-        main(["run", str(path), "--dry-run", "--param", "minimum=3"])
-
-    assert "Pipeline 'cli' is valid." in caplog.text
-
-    # Values are read as YAML, like the file.
     pipeline = Pipeline.from_yaml(path, params={"minimum": 3})
+
+    # The file's values are read as YAML; overrides keep their Python types.
     assert pipeline.params == {"minimum": 3, "day": datetime.date(2026, 1, 1)}
-
-
-def test_cli_rejects_malformed_param(tmp_path, capsys):
-    with pytest.raises(SystemExit) as exc_info:
-        main(["run", str(tmp_path / "pipeline.yaml"), "--param", "minimum"])
-
-    assert exc_info.value.code == 2
-    assert "expected NAME=VALUE" in capsys.readouterr().err
-
-
-def test_cli_param_values_are_parsed_as_yaml():
-    assert parse_param("limit=10") == ("limit", 10)
-    assert parse_param("columns=[a, b]") == ("columns", ["a", "b"])
-    assert parse_param("day=2026-10-02") == ("day", datetime.date(2026, 10, 2))
-    assert parse_param("flag=on") == ("flag", "on")
-    assert parse_param("empty=") == ("empty", "")

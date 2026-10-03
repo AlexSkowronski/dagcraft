@@ -1,6 +1,6 @@
-from __future__ import annotations
+"""The base class every connection type extends."""
 
-import os
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -9,34 +9,34 @@ from pydantic import BaseModel
 from dagcraft.exceptions import ExecutionError
 
 
-class Connection:
-    """Base class for connection types.
+class Connection(ABC):
+    """Where data lives, and how to sign in to it.
 
-    A connection is created when the pipeline is compiled, opened the first
-    time a step uses it during a run, and closed when the run ends.
+    A connection holds a client (a filesystem, an HTTP session, a database
+    engine) and nothing about what to read or write: that is up to the
+    reader and writer registered for its kind of connection. It is created
+    when the pipeline compiles, opened the first time a step uses it during a
+    run, and closed when the run ends.
 
     Subclasses set ``config_model`` to validate their entry in the
-    ``connections`` block, and ``read_options`` / ``write_options`` to
-    validate the remaining fields of read and write steps that use them.
-    Leaving one as ``None`` means the connection cannot be read from or
-    written to.
+    ``connections`` section, and implement ``check``. ``base_dir`` is the
+    pipeline file's directory, which relative paths are resolved from.
     """
 
     config_model: ClassVar[type[BaseModel]]
-    read_options: ClassVar[type[BaseModel] | None] = None
-    write_options: ClassVar[type[BaseModel] | None] = None
 
     def __init__(self, name: str, config: Any, base_dir: Path) -> None:
         self.name = name
         self.config = config
         self.base_dir = base_dir
 
-    def open(self) -> None:
+    def open(self) -> None:  # noqa: B027 - most connections acquire something
         """Acquire resources, such as clients or engines."""
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: B027
         """Release anything acquired in ``open``."""
 
+    @abstractmethod
     def check(self) -> str:
         """Prove the connection works with one cheap real operation.
 
@@ -44,37 +44,7 @@ class Connection:
         permissions, network or drivers before a run. Raises if something
         is wrong; returns a short description of what was checked.
         """
-        return "opened"
 
-    def read(self, options: Any) -> Any:
-        raise NotImplementedError
-
-    def write(self, data: Any, options: Any) -> None:
-        raise NotImplementedError
-
-    def prepare_read(self, options: Any) -> Any:
-        """Finish a read step's validated options when the pipeline compiles.
-
-        Raise ``ValueError`` for problems. Returns the options to use.
-        """
-        return options
-
-    def describe(self, options: Any) -> str:
-        """A short description of what a step reads or writes, for dry runs."""
-        return ""
-
-    def accepts_multiple_inputs(self, options: Any) -> bool:
-        """Whether a write step can pass several inputs, as a dict, to ``write``."""
-        return False
-
-
-def read_variable(variable: str, connection: str, purpose: str) -> str:
-    """Return an environment variable, or raise if it's unset or empty."""
-    value = os.environ.get(variable)
-
-    if not value:
-        raise ExecutionError(
-            f"Connection '{connection}' reads its {purpose} from the "
-            f"environment variable '{variable}', which is not set."
-        )
-    return value
+    def not_open(self) -> ExecutionError:
+        """The error to raise when the connection is used before ``open``."""
+        return ExecutionError(f"Connection '{self.name}' is not open.")

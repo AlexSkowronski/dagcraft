@@ -6,8 +6,6 @@ reference inside a longer string is inserted as text. ``$${...}`` is a
 literal ``${...}``.
 """
 
-from __future__ import annotations
-
 import os
 import re
 from typing import Any
@@ -83,6 +81,7 @@ def substitute(value: Any, params: dict[str, Any] | None, where: str = "") -> An
 
 
 def substitute_text(text: str, params: dict[str, Any] | None, where: str) -> Any:
+    """Replace the references in one string; see ``substitute``."""
     whole = REFERENCE.fullmatch(text)
 
     if whole is not None and not whole.group(1):
@@ -107,6 +106,7 @@ def substitute_text(text: str, params: dict[str, Any] | None, where: str) -> Any
 
 
 def resolve(reference: str, params: dict[str, Any] | None, where: str) -> Any:
+    """The value of one reference, written without its ``${`` and ``}``."""
     if reference.startswith("env:"):
         name, has_default, default = reference.removeprefix("env:").partition(":-")
         value = os.environ.get(name)
@@ -138,8 +138,10 @@ def resolve(reference: str, params: dict[str, Any] | None, where: str) -> Any:
 
 
 def join(where: str, key: str) -> str:
+    """The location of ``key`` inside ``where``, for error messages."""
     return f"{where}.{key}" if where else key
 
 
 def location(where: str) -> str:
+    """``where`` as the start of an error message, if known."""
     return f"in {where}: " if where else ""

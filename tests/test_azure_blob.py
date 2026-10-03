@@ -6,8 +6,9 @@ import pytest
 from adlfs import AzureBlobFileSystem
 from azure.identity.aio import DefaultAzureCredential
 
-from dagcraft import ConfigError, Pipeline, PipelineError, extras
-from dagcraft.connections.azure_blob import AzureBlobConfig, AzureBlobConnection
+from dagcraft import ConfigError, Pipeline, extras
+from dagcraft.config.connections import AzureBlobConfig
+from dagcraft.connections import AzureBlobConnection
 from dagcraft.exceptions import ExecutionError
 
 # Variables adlfs reads on its own; cleared so the machine running the tests
@@ -73,7 +74,7 @@ def make_pipeline(*steps, lake):
             "Set exactly one of 'account'",
         ),
         (
-            {"container": "raw", "account": "acct", "connection_string_env": "X"},
+            {"container": "raw", "account": "acct", "connection_string": "X"},
             "Set exactly one of 'account'",
         ),
         (
@@ -130,31 +131,42 @@ def test_account_signs_in_with_default_credential():
         connection.close()
 
 
-def test_connection_string_is_read_from_the_named_variable(monkeypatch):
+def test_connection_string_from_the_environment(monkeypatch):
     monkeypatch.setenv("LAKE_CONNECTION", FAKE_CONNECTION_STRING)
-    connection = make_connection(
-        container="raw",
-        connection_string_env="LAKE_CONNECTION",
+    pipeline = make_pipeline(
+        lake={"container": "raw", "connection_string": "${env:LAKE_CONNECTION}"},
     )
+    connection = pipeline.compiled.connections["lake"]
+    assert isinstance(connection, AzureBlobConnection)
     connection.open()
 
     try:
-        assert connection.filesystem.connection_string == FAKE_CONNECTION_STRING
+        filesystem = connection.filesystem
+        assert isinstance(filesystem, AzureBlobFileSystem)
+        assert filesystem.connection_string == FAKE_CONNECTION_STRING
     finally:
         connection.close()
 
 
-def test_missing_connection_string_variable_fails_the_step():
+def test_connection_string_is_kept_secret(monkeypatch):
+    monkeypatch.setenv("LAKE_CONNECTION", FAKE_CONNECTION_STRING)
     pipeline = make_pipeline(
-        {"id": "load", "type": "read", "connection": "lake", "path": "x.csv"},
-        lake={"container": "raw", "connection_string_env": "LAKE_CONNECTION"},
+        lake={"container": "raw", "connection_string": "${env:LAKE_CONNECTION}"},
     )
 
-    with pytest.raises(PipelineError) as exc_info:
-        pipeline.run()
+    assert "AccountKey" not in repr(pipeline.compiled.connections["lake"].config)
 
-    assert "failed at step 'load'" in str(exc_info.value)
-    assert "'LAKE_CONNECTION', which is not set" in str(exc_info.value)
+
+def test_missing_connection_string_variable_is_a_config_error(monkeypatch):
+    monkeypatch.delenv("LAKE_CONNECTION", raising=False)
+
+    with pytest.raises(ConfigError) as exc_info:
+        make_pipeline(
+            lake={"container": "raw", "connection_string": "${env:LAKE_CONNECTION}"},
+        )
+
+    assert "Connection 'lake'" in str(exc_info.value)
+    assert "environment variable 'LAKE_CONNECTION' is not set" in str(exc_info.value)
 
 
 @pytest.mark.parametrize("value", [FAKE_CONNECTION_STRING, ""])
@@ -196,4 +208,4 @@ def test_write_and_read_through_the_container(tmp_path, memory_filesystem):
         lake=lake,
     )
 
-    assert download.run().artifact("load")["value"].tolist() == [1, 2]
+    assert download.run().output("load")["value"].tolist() == [1, 2]
