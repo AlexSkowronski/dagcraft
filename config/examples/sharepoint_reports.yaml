@@ -35,7 +35,7 @@ steps:
   - id: actuals
     type: read
     connection: warehouse
-    query_file: sql/actuals_by_department.sql
+    query_file: config/examples/sql/actuals_by_department.sql
     params:
       year: ${params.year}
 

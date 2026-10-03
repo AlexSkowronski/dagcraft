@@ -81,7 +81,7 @@ class SQLReadOptions(BaseModel):
     Reading from a SQL connection.
 
     Set one of ``query``, ``query_file`` (a ``.sql`` file, relative to the
-    pipeline file) or ``table`` (``name`` or ``schema.name``). Queries take
+    folder you run from) or ``table`` (``name`` or ``schema.name``). Queries take
     ``:name`` placeholders filled from ``params``. ``args`` go to
     ``pandas.read_sql``. ``partition`` splits a large read into ranges that
     are read at the same time.

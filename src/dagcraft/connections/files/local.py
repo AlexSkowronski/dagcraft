@@ -23,7 +23,7 @@ class LocalConnection(FileConnection):
     Files on the local filesystem.
 
     Step paths are relative to ``root``, and a relative ``root`` is relative
-    to the directory containing the pipeline file. Parent folders are
+    to the folder you run from. Parent folders are
     created when writing, and a file is written under a temporary name and
     only then put in place, so a failed write leaves the old file untouched.
     """

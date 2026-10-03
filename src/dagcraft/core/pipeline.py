@@ -36,8 +36,8 @@ class Pipeline:
         Compile ``config``.
 
         ``base_dir`` is where relative paths in the config are resolved from;
-        it defaults to the current directory, or the file's directory when
-        loaded with ``from_yaml``. ``params`` override the file's params.
+        it defaults to the current directory, fixed when the pipeline is
+        created. ``params`` override the file's params.
         """
         self.config = config
         self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
@@ -52,9 +52,16 @@ class Pipeline:
         cls,
         path: str | Path,
         params: dict[str, Any] | None = None,
+        base_dir: str | Path | None = None,
     ) -> Self:
         """
-        Load and compile a pipeline file. Relative paths are relative to it.
+        Load and compile a pipeline file.
+
+        Relative paths in the file (``env_file``, ``query_file``, a local
+        ``root``, ...) are resolved like ``path`` itself: from the current
+        directory, so write them from your project's root, where you run.
+        Pass ``base_dir`` to resolve them from somewhere else, such as a
+        scheduled job that starts in another folder.
         """
         path = Path(path)
 
@@ -65,7 +72,7 @@ class Pipeline:
         except yaml.YAMLError as exc:
             raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
-        return cls.from_dict(raw, base_dir=path.resolve().parent, params=params)
+        return cls.from_dict(raw, base_dir=base_dir, params=params)
 
     @classmethod
     def from_dict(

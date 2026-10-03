@@ -6,8 +6,8 @@ pipeline:
   name: basic
 
 params:
-  data_dir: ../../data/sample
-  output_dir: ../../output
+  data_dir: data/sample
+  output_dir: output
 
 connections:
   data:

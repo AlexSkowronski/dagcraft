@@ -12,7 +12,7 @@
 pipeline:
   name: azure_blob_to_sql
   # Load environment variables, such as a connection string, from a .env
-  # file next to this one. Variables already set in the environment win.
+  # file in the folder you run from. Variables already set in the environment win.
   # env_file: .env
 
 params:

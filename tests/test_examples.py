@@ -9,7 +9,8 @@ import pytest
 
 from dagcraft import Pipeline
 
-EXAMPLES = Path(__file__).resolve().parents[1] / "config" / "examples"
+ROOT = Path(__file__).resolve().parents[1]
+EXAMPLES = ROOT / "config" / "examples"
 
 # Examples that run on sample data, with a file each one writes.
 LOCAL = {
@@ -34,13 +35,14 @@ def test_every_example_is_listed():
 
 @pytest.mark.parametrize("path", example_paths(), ids=lambda path: path.stem)
 def test_example_loads_and_plans(path):
-    assert Pipeline.from_yaml(path).plan()
+    assert Pipeline.from_yaml(path, base_dir=ROOT).plan()
 
 
 @pytest.mark.parametrize(("name", "output"), LOCAL.items())
 def test_local_example_runs(tmp_path, name, output):
     result = Pipeline.from_yaml(
         EXAMPLES / f"{name}.yaml",
+        base_dir=ROOT,
         params={"output_dir": tmp_path.as_posix()},
     ).run()
 
@@ -51,6 +53,7 @@ def test_local_example_runs(tmp_path, name, output):
 def test_excel_report_has_a_sheet_per_input(tmp_path):
     Pipeline.from_yaml(
         EXAMPLES / "excel_reports.yaml",
+        base_dir=ROOT,
         params={"output_dir": tmp_path.as_posix()},
     ).run()
 
@@ -66,6 +69,7 @@ def test_excel_report_has_a_sheet_per_input(tmp_path):
 def test_json_events_are_flattened_and_joined(tmp_path):
     Pipeline.from_yaml(
         EXAMPLES / "json_events.yaml",
+        base_dir=ROOT,
         params={"output_dir": tmp_path.as_posix()},
     ).run()
 

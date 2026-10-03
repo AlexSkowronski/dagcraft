@@ -12,7 +12,7 @@ class PipelineMeta(BaseModel):
     The ``pipeline`` section.
 
     ``max_workers`` is how many independent steps may run at once.
-    ``env_file`` is a ``.env`` file, relative to the pipeline file, whose
+    ``env_file`` is a ``.env`` file, relative to the folder you run from, whose
     variables are loaded before anything else so ``${env:NAME}`` references
     and Azure sign-in can use them. Variables already set in the environment
     keep their values.

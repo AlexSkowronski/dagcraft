@@ -108,6 +108,8 @@ data in [`data/sample/`](https://github.com/AlexSkowronski/dagcraft/tree/main/da
 | `azure_blob_to_sql`  | Template: JSON from Azure Blob Storage into Azure SQL.        |
 | `sharepoint_reports` | Template: Excel from SharePoint, compared with Azure SQL, published back. |
 
+Run them from the repository root, which their paths are relative to:
+
 ```bash
 dagcraft config/examples/json_events.yaml
 dagcraft config/examples/sharepoint_reports.yaml --dry-run
@@ -123,8 +125,21 @@ Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
 | `connections` | Optional. Named places to read from and write to (see below).  |
 | `steps`       | The steps. Every step has an `id` and a `type`; optionally `inputs`, `retries` and `retry_delay`. |
 
-Relative paths in the file are relative to the file's directory, not to
-where the code runs.
+Relative paths in the file (`env_file`, `query_file`, a local `root`,
+SQLite files) are resolved like the path you load it by: from the folder
+you run from, usually your project's root. So with
+
+```
+project/
+  .env
+  configs/daily_sales.yaml
+  sql/orders.sql
+```
+
+and `Pipeline.from_yaml("configs/daily_sales.yaml")` run from `project/`,
+the file says `env_file: .env` and `query_file: sql/orders.sql`. The folder
+is fixed when the pipeline loads. For a job that starts somewhere else,
+such as a scheduled task, pass it: `Pipeline.from_yaml(path, base_dir=...)`.
 
 ### Parameters
 
@@ -183,7 +198,7 @@ connections:
     connection_string: ${env:LAKE_CONNECTION_STRING}
 ```
 
-`env_file` is relative to the pipeline file and loaded before anything else.
+`env_file` is relative to the folder you run from and loaded before anything else.
 Variables already set in the environment keep their values, so a scheduler
 or CI secret wins over the file. They go into the process environment, so
 `DefaultAzureCredential` can use a service principal's `AZURE_CLIENT_ID`,
@@ -237,7 +252,7 @@ keyword arguments.
 
 ## Connections
 
-A `local` connection, rooted at the pipeline file's directory, is always
+A `local` connection, rooted at the folder you run from, is always
 available. Define others under `connections`, each with a `type`.
 
 A read or write step combines three things, each with one job:
@@ -318,7 +333,7 @@ input, named after the input:
 
 | Field  | Description                                                   |
 | ------ | ------------------------------------------------------------- |
-| `root` | Directory paths are relative to. Defaults to the file's directory. |
+| `root` | Directory paths are relative to. Defaults to the folder you run from. |
 
 **`azure_blob`**: Azure Blob Storage, including ADLS Gen2 accounts.
 Requires `dagcraft-pipelines[azure]`.
@@ -359,7 +374,7 @@ Read steps take a `query`, a `query_file` or a `table`:
 | Field        | Description                                                 |
 | ------------ | ----------------------------------------------------------- |
 | `query`      | SQL to run. Use `:name` placeholders for `params`.          |
-| `query_file` | Or: a `.sql` file, relative to the pipeline file. Same placeholders. |
+| `query_file` | Or: a `.sql` file, relative to the folder you run from. Same placeholders. |
 | `table`      | Or: a whole table, as `name` or `schema.name`.              |
 | `params`     | Values for the query's placeholders.                        |
 | `args`       | Passed to `pandas.read_sql`.                                |

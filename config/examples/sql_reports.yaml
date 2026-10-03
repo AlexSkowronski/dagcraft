@@ -7,8 +7,8 @@ pipeline:
   name: sql_reports
 
 params:
-  data_dir: ../../data/sample
-  output_dir: ../../output
+  data_dir: data/sample
+  output_dir: output
   # Quoted so it stays text: SQLite stores these dates as text.
   since: "2026-09-15"
   status: shipped
@@ -26,7 +26,7 @@ steps:
   - id: revenue_by_region
     type: read
     connection: warehouse
-    query_file: sql/revenue_by_region.sql
+    query_file: config/examples/sql/revenue_by_region.sql
     params:
       since: ${params.since}
       status: ${params.status}

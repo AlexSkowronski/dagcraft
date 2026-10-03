@@ -89,7 +89,7 @@ def build_connections(
 
     Returns the connections and each one's type name, by connection name.
     """
-    # A "local" connection rooted at the pipeline file's directory is always
+    # A "local" connection rooted at the base directory is always
     # available; defining one in the file replaces it.
     connections: dict[str, Connection] = {
         "local": LocalConnection("local", LocalConfig(), base_dir),

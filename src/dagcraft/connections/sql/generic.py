@@ -26,7 +26,7 @@ class GenericSQLConnection(SQLConnection):
     """
     Any database SQLAlchemy supports, given a database URL.
 
-    A relative SQLite path is relative to the pipeline file's directory, and
+    A relative SQLite path is relative to the folder you run from, and
     the folder for a new SQLite file is created.
     """
 

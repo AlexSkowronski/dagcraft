@@ -19,6 +19,10 @@ First release.
 - Validation when a pipeline loads: every field of every step and
   connection, the operations, functions, connections, formats and query
   files it names, and the graph, with one-line error messages.
+- Relative paths in a pipeline file (`env_file`, `query_file`, local roots,
+  SQLite files) are resolved from the folder you run from, like the path
+  passed to `Pipeline.from_yaml`, or from its `base_dir`. (In 0.1.0rc1 they
+  were relative to the pipeline file.)
 - Params, `${params.NAME}` and `${env:NAME}` references, overridable from
   Python.
 - Secrets written as `${env:NAME}` are held as secrets, never shown in logs;

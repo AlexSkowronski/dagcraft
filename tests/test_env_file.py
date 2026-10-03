@@ -38,7 +38,11 @@ def project(tmp_path):
 
 
 def write_pipeline(project, env_file=".env"):
-    path = project / "pipeline.yaml"
+    """
+    The pipeline goes in configs/, with the .env at the project's root.
+    """
+    (project / "configs").mkdir(exist_ok=True)
+    path = project / "configs" / "pipeline.yaml"
     path.write_text(PIPELINE.format(env_file=env_file), encoding="utf-8")
     return path
 
@@ -57,10 +61,11 @@ def test_the_real_environment_wins(project, monkeypatch):
     assert result.output("source")["where"].tolist() == ["from_environment"]
 
 
-def test_env_file_is_relative_to_the_pipeline_file(project, monkeypatch):
-    monkeypatch.chdir(project / "from_file")
+def test_env_file_is_found_from_where_you_run(project, monkeypatch):
+    write_pipeline(project)
+    monkeypatch.chdir(project)
 
-    result = Pipeline.from_yaml(write_pipeline(project)).run()
+    result = Pipeline.from_yaml("configs/pipeline.yaml").run()
 
     assert result.output("source")["where"].tolist() == ["from_file"]
 

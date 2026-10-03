@@ -80,10 +80,13 @@ def write_csv(path, **columns):
     pd.DataFrame(columns).to_csv(path, index=False)
 
 
-def test_paths_are_relative_to_the_pipeline_file(tmp_path, monkeypatch):
-    project = tmp_path / "project"
+def write_project(project):
+    """
+    A project with its data at the root and its pipeline under configs/.
+    """
     write_csv(project / "data" / "in.csv", value=[3, 1, 2])
-    (project / "pipeline.yaml").write_text(
+    (project / "configs").mkdir()
+    (project / "configs" / "pipeline.yaml").write_text(
         """
 pipeline:
   name: relative
@@ -100,13 +103,44 @@ steps:
         encoding="utf-8",
     )
 
-    # Run from somewhere else to prove paths don't depend on the cwd.
-    monkeypatch.chdir(tmp_path)
-    result = Pipeline.from_yaml("project/pipeline.yaml").run()
+
+def test_paths_are_relative_to_where_you_run(tmp_path, monkeypatch):
+    project = tmp_path / "project"
+    write_project(project)
+
+    # Like Pipeline.from_yaml's own path, written from the project's root.
+    monkeypatch.chdir(project)
+    result = Pipeline.from_yaml("configs/pipeline.yaml").run()
 
     assert result.success
     written = pd.read_parquet(project / "out" / "nested" / "result.parquet")
     assert written["value"].tolist() == [3, 1, 2]
+
+
+def test_base_dir_sets_where_paths_are_relative_to(tmp_path):
+    project = tmp_path / "project"
+    write_project(project)
+
+    # Run from elsewhere (tests start in tmp_path), as a scheduled job might.
+    result = Pipeline.from_yaml(
+        project / "configs" / "pipeline.yaml",
+        base_dir=project,
+    ).run()
+
+    assert result.success
+    assert (project / "out" / "nested" / "result.parquet").exists()
+
+
+def test_paths_are_fixed_when_the_pipeline_loads(tmp_path, monkeypatch):
+    project = tmp_path / "project"
+    write_project(project)
+    monkeypatch.chdir(project)
+    pipeline = Pipeline.from_yaml("configs/pipeline.yaml")
+
+    monkeypatch.chdir(tmp_path)
+
+    assert pipeline.run().success
+    assert (project / "out" / "nested" / "result.parquet").exists()
 
 
 def test_named_local_connection_uses_its_root(tmp_path):

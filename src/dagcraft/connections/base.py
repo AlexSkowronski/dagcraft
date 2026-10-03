@@ -23,7 +23,7 @@ class Connection(ABC):
 
     Subclasses set ``config_model`` to validate their entry in the
     ``connections`` section, and implement ``check``. ``base_dir`` is the
-    pipeline file's directory, which relative paths are resolved from.
+    folder relative paths are resolved from: by default, where you run.
     """
 
     config_model: ClassVar[type[BaseModel]]

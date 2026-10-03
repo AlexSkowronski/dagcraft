@@ -6,8 +6,8 @@ pipeline:
   name: local_sales
 
 params:
-  data_dir: ../../data/sample
-  output_dir: ../../output
+  data_dir: data/sample
+  output_dir: output
   min_quantity: 2
 
 connections:
