@@ -15,7 +15,8 @@ First release.
 - Pipelines described in YAML and run from Python
   (`Pipeline.from_yaml(path).run()`) or the `dagcraft` command.
 - Step types: `read`, `write`, `transform` (built-in or registered
-  operations) and `python` (any importable function).
+  operations) and `python` (any importable function, including modules in
+  the folder you run from, also with the `dagcraft` command).
 - Validation when a pipeline loads: every field of every step and
   connection, the operations, functions, connections, formats and query
   files it names, and the graph, with one-line error messages.

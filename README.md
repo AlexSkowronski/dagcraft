@@ -235,7 +235,7 @@ keyword arguments.
 
 | Field      | Description                                         |
 | ---------- | --------------------------------------------------- |
-| `callable` | `module.path:function_name`                         |
+| `callable` | `module.path:function_name`. Modules in the folder you run from (your project root) can be imported. |
 | `args`     | Extra keyword arguments for the function.           |
 
 ### Built-in operations

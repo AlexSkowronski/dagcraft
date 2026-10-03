@@ -191,6 +191,47 @@ def test_verbose_logs_detail(tmp_path, caplog):
     assert any(re.match(f"{run_prefix}reading day1.csv", m) for m in messages)
 
 
+@pytest.fixture
+def isolated_imports(monkeypatch):
+    """
+    Undo changes to the import path and forget the test's module afterwards.
+    """
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    yield
+    sys.modules.pop("dagcraft_project_functions", None)
+
+
+@pytest.mark.usefixtures("isolated_imports")
+def test_python_steps_import_your_modules_from_where_you_run(tmp_path):
+    # Tests run from tmp_path, which, like the dagcraft command's own
+    # launcher, isn't on the import path to begin with.
+    assert str(tmp_path) not in sys.path
+    (tmp_path / "dagcraft_project_functions.py").write_text(
+        "def summarise():\n    return {'countries': ['GB', 'PL']}\n",
+        encoding="utf-8",
+    )
+    pipeline = write_pipeline(
+        tmp_path,
+        """
+pipeline:
+  name: demo
+steps:
+  - id: summary
+    type: python
+    callable: dagcraft_project_functions:summarise
+  - id: save
+    type: write
+    path: out/summary.json
+    inputs: {data: summary}
+""",
+    )
+
+    assert main([str(pipeline)]) == ExitCode.SUCCESS
+    assert (tmp_path / "out" / "summary.json").read_text(encoding="utf-8") == (
+        '{"countries": ["GB", "PL"]}'
+    )
+
+
 def test_python_m_runs_the_command():
     completed = subprocess.run(
         [sys.executable, "-m", "dagcraft", "--version"],

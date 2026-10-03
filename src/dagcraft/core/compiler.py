@@ -22,6 +22,7 @@ from dagcraft.core.graph import CompiledGraph, compile_graph
 from dagcraft.core.params import resolve_params, substitute
 from dagcraft.env import load_env_file
 from dagcraft.exceptions import ConfigError, PipelineError
+from dagcraft.imports import make_importable
 from dagcraft.registry import CONNECTIONS, STEPS
 from dagcraft.steps import BaseStep
 
@@ -52,6 +53,9 @@ def compile_pipeline(
     """
     if config.pipeline.env_file is not None:
         load_env_file(base_dir / config.pipeline.env_file)
+
+    # python steps import your modules from the project, like a script would.
+    make_importable(base_dir)
 
     values = resolve_params(config.params, params or {})
     connections, connection_types = build_connections(
