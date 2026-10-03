@@ -49,7 +49,7 @@ steps:
           columns:
             revenue: sum
             units: sum
-      - join: {right: targets, on: region}
+      - join: {right: targets, on: region}   # left: the totals so far
 
   # Each input becomes a sheet, named after the input.
   - id: report

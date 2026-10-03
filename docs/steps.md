@@ -55,14 +55,14 @@ point where the data goes somewhere else.
   - id: clean_orders
     type: transform
     inputs:
-      data: orders              # the table the operations start from
-      customers: customers      # other inputs, for joins
+      orders: orders
+      customers: customers
     operations:
+      - join: {left: orders, right: customers, on: customer_id, how: left}
       - drop_nulls: [customer_id]
       - derive:
           total: price * quantity
       - filter: total > 100
-      - join: {right: customers, on: customer_id, how: left}
       - rename: {cust_name: customer}
       - select: [order_id, customer, total]
       - check: {not_null: [customer], unique: [order_id]}
@@ -70,8 +70,19 @@ point where the data goes somewhere else.
 
 | Field | |
 | --- | --- |
-| `inputs` | Must include `data`, where the operations start. Other inputs are named in operations that take a table, such as `join`'s `right`. |
+| `inputs` | The tables the step takes, by name. Every one must be used. |
 | `operations` | The operations, in order. |
+
+The chain starts from the table its first operation names, as the `join`
+above names `left: orders`, or else from an input called `data`:
+
+```yaml
+    inputs:
+      data: orders
+    operations:
+      - drop_nulls: [customer_id]    # works on data: the orders
+      - filter: amount > 100
+```
 
 Each operation is written one of three ways:
 
@@ -110,7 +121,7 @@ names the operation: `operation 4 (join) failed: ...`.
 
 | Operation | Options |
 | --- | --- |
-| `join` | `right`: another input of the step; `on`: shared column(s); `how`: `inner` (default), `left`, `right` or `outer`; plus any [`DataFrame.merge`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.merge.html) option, such as `suffixes`. |
+| `join` | `left` and `right`: inputs of the step; `on`: shared column(s); `how`: `inner` (default), `left`, `right` or `outer`; plus any [`DataFrame.merge`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.merge.html) option, such as `suffixes`. After the first operation, leave out `left`: the left side is the result so far. |
 | `aggregate` | `by`: column(s) to group by; `columns`: `column: function` pairs, with `sum`, `mean`, `count`, `min`, `max`, ... |
 
 ### Checking

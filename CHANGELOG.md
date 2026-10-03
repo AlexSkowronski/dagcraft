@@ -20,7 +20,7 @@ First release.
 - Transforms are a list of operations applied in order (`operations:`), so
   one step holds a whole stage of cleaning. Operations: `filter`,
   `drop_nulls`, `dedupe`, `sort`, `select`, `drop`, `rename`, `cast`,
-  `derive`, `fill_nulls`, `join` (with another input), `aggregate`,
+  `derive`, `fill_nulls`, `join` (`left` and `right` inputs), `aggregate`,
   `flatten`, `check` (data quality checks that fail or warn) and `python`
   (your own function). Options are checked when the pipeline loads; each
   operation logs its effect at DEBUG and is named when it fails. (In

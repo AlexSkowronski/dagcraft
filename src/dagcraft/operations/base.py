@@ -18,7 +18,9 @@ class Operation:
     ``main`` is the option a single value fills, so ``filter: amount > 100``
     means ``filter: {expression: amount > 100}``. ``tables`` are options that
     name another of the step's inputs, such as a join's ``right``; the input's
-    data is passed in their place. ``prepare`` turns options into what the
+    data is passed in their place. ``source`` is an option naming the input
+    to work on instead of the result so far, such as a join's ``left``; it
+    isn't passed to the function. ``prepare`` turns options into what the
     function takes when the pipeline loads, such as importing a function.
     """
 
@@ -26,7 +28,14 @@ class Operation:
     function: Callable[..., Any]
     main: str | None = None
     tables: tuple[str, ...] = ()
+    source: str | None = None
     prepare: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+    def source_input(self, options: dict[str, Any]) -> str | None:
+        """
+        The input ``options`` say to work on, if any, instead of the result so far.
+        """
+        return options.get(self.source) if self.source else None
 
     def options_from(self, value: Any) -> dict[str, Any]:
         """
@@ -53,7 +62,7 @@ class Operation:
         names = [p.name for p in parameters if p.kind is not p.VAR_KEYWORD]
         takes_any = any(p.kind is p.VAR_KEYWORD for p in parameters)
 
-        unknown = [name for name in options if name not in names]
+        unknown = [name for name in options if name not in [*names, self.source]]
         if unknown and not takes_any:
             raise ValueError(
                 f"unknown option {', '.join(map(repr, unknown))}; "
@@ -70,8 +79,8 @@ class Operation:
         if missing:
             raise ValueError(f"needs {', '.join(map(repr, missing))}.")
 
-        for table in self.tables:
-            name = options.get(table)
+        for table in [*self.tables, self.source]:
+            name = options.get(table) if table else None
             if name is not None and name not in inputs:
                 raise ValueError(
                     f"{table}: '{name}' isn't one of this step's inputs "
@@ -83,11 +92,19 @@ class Operation:
     def apply(self, data: Any, options: dict[str, Any], inputs: dict[str, Any]) -> Any:
         """
         Run the function on ``data``, with named inputs swapped for their data.
+
+        If ``source`` names an input, that input is worked on instead.
         """
+        source = self.source_input(options)
+        if source is not None:
+            data = inputs[source]
+
         tables = {
             table: inputs[options[table]] for table in self.tables if table in options
         }
-        return self.function(data, **{**options, **tables})
+        arguments = {**options, **tables}
+        arguments.pop(self.source or "", None)
+        return self.function(data, **arguments)
 
 
 def register_operation(
@@ -95,17 +112,20 @@ def register_operation(
     *,
     main: str | None = None,
     tables: tuple[str, ...] = (),
+    source: str | None = None,
     prepare: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
 ):
     """
     Decorator that registers ``function(data, **options)`` as an operation.
 
-    See ``Operation`` for ``main``, ``tables`` and ``prepare``. The function
-    is returned unchanged, so it can still be called and tested directly.
+    See ``Operation`` for ``main``, ``tables``, ``source`` and ``prepare``.
+    The function is returned unchanged, so it can still be called and tested
+    directly.
     """
 
     def decorator(function):
-        OPERATIONS.register(name)(Operation(name, function, main, tables, prepare))
+        operation = Operation(name, function, main, tables, source, prepare)
+        OPERATIONS.register(name)(operation)
         return function
 
     return decorator

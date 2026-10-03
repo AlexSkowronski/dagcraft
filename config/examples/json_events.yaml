@@ -61,7 +61,7 @@ steps:
           user.id: user_id
           user.region: region
           properties.product_id: product_id
-      - join:
+      - join:                      # left: the purchases so far
           right: products
           on: product_id
           how: left

@@ -42,10 +42,10 @@ steps:
   - id: comparison
     type: transform
     inputs:
-      data: budget
+      budget: budget
       actuals: actuals
     operations:
-      - join: {right: actuals, on: [department, quarter], how: left}
+      - join: {left: budget, right: actuals, on: [department, quarter], how: left}
 
   - id: publish
     type: write

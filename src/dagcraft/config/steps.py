@@ -28,11 +28,12 @@ class StepConfig(BaseModel):
 
 class TransformConfig(StepConfig):
     """
-    A ``transform`` step: ``operations`` applied in order to its ``data`` input.
+    A ``transform`` step: ``operations`` applied in order, each to the last result.
 
     Each operation is written ``name: {option: value}``, ``name: value`` for
-    its main option, or just ``name``. Other inputs can be named in options
-    that take a table, such as a join's ``right``.
+    its main option, or just ``name``. The chain starts from the ``data``
+    input, or from the table the first operation names, such as a join's
+    ``left``; other inputs are named in options like a join's ``right``.
     """
 
     operations: list[str | dict[str, Any]] = Field(min_length=1)
@@ -52,15 +53,10 @@ class TransformConfig(StepConfig):
         return data
 
     @model_validator(mode="after")
-    def check_operations(self) -> Self:
+    def check_entries(self) -> Self:
         """
-        The chain starts from ``data``, and each entry is one operation.
+        Each entry is one operation.
         """
-        if "data" not in self.inputs:
-            raise ValueError(
-                "A transform needs a 'data' input: the table its operations start from."
-            )
-
         for position, entry in enumerate(self.operations, start=1):
             if isinstance(entry, dict) and len(entry) != 1:
                 raise ValueError(

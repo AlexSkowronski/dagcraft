@@ -9,7 +9,7 @@ import pandas as pd
 from dagcraft.operations.base import register_operation
 
 
-@register_operation("join", tables=("right",))
+@register_operation("join", tables=("right",), source="left")
 def join(
     data: pd.DataFrame,
     right: pd.DataFrame,
@@ -18,10 +18,12 @@ def join(
     **args: Any,
 ) -> pd.DataFrame:
     """
-    Join another of the step's inputs, named by ``right``, on shared columns.
+    Join the ``left`` table with the ``right`` one on shared columns.
 
-    ``how`` is ``inner``, ``left``, ``right`` or ``outer``; any other
-    ``DataFrame.merge`` option, such as ``suffixes``, works too.
+    ``right`` names another of the step's inputs. ``left`` names one too
+    when the join comes first in a transform; later, the left side is the
+    result so far. ``how`` is ``inner``, ``left``, ``right`` or ``outer``;
+    any other ``DataFrame.merge`` option, such as ``suffixes``, works too.
     """
     return data.merge(right, on=on, how=how, **args)
 

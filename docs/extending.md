@@ -30,8 +30,10 @@ def add_total(data, columns, name="total"):
 
 `main` names the option a single value fills. `tables` names options that
 refer to another input of the step, as `join`'s `right` does: the input's
-data is passed instead of its name. Options are checked against the
-function's parameters when the pipeline loads.
+data is passed instead of its name. `source` names an option that picks the
+input to work on instead of the result so far, as `join`'s `left` does.
+Options are checked against the function's parameters when the pipeline
+loads.
 
 ## Step types
 

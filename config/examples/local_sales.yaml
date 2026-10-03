@@ -34,11 +34,11 @@ steps:
   - id: shipped_orders
     type: transform
     inputs:
-      data: orders
+      orders: orders
       customers: customers
     operations:
+      - join: {left: orders, right: customers, on: customer_id, how: left}
       - filter: status == 'shipped' and quantity >= ${params.min_quantity}
-      - join: {right: customers, on: customer_id, how: left}
       - select: [order_id, order_date, name, region, product_id, quantity, unit_price]
       - sort: [region, order_date]
       - check: {not_null: [order_id, region], unique: [order_id], min_rows: 1}

@@ -47,10 +47,10 @@ steps:
   - id: comparison
     type: transform
     inputs:
-      data: budget
+      budget: budget
       actuals: actuals
     operations:
-      - join: {right: actuals, on: [department, quarter], how: left}
+      - join: {left: budget, right: actuals, on: [department, quarter], how: left}
       - fill_nulls: {actual: 0}
       - derive:
           variance: actual - budget

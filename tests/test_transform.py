@@ -35,7 +35,7 @@ def pipeline(tmp_path, *operations, inputs=None):
                 {
                     "id": "clean",
                     "type": "transform",
-                    "inputs": inputs or {"data": "orders", "customers": "customers"},
+                    "inputs": inputs or {"data": "orders"},
                     "operations": list(operations),
                 },
             ],
@@ -54,16 +54,33 @@ def test_operations_apply_in_order(tmp_path):
         {"drop_nulls": ["customer_id"]},
         {"derive": {"total": "price * quantity"}},
         {"filter": "total > 15"},
+        # After the first operation, the left side is the result so far.
         {"join": {"right": "customers", "on": "customer_id", "how": "left"}},
         {"sort": {"by": "total", "ascending": False}},
         {"select": ["order_id", "name", "total"]},
         {"check": {"not_null": ["name"], "unique": ["order_id"]}},
+        inputs={"data": "orders", "customers": "customers"},
     )
 
     assert frame.to_dict("list") == {
         "order_id": [3, 2],
         "name": ["Ada", "Grace"],
         "total": [60.0, 50.0],
+    }
+
+
+def test_a_join_that_starts_the_transform_names_both_sides(tmp_path):
+    frame = run(
+        tmp_path,
+        {"join": {"left": "orders", "right": "people", "on": "customer_id"}},
+        {"select": ["order_id", "name"]},
+        inputs={"orders": "orders", "people": "customers"},
+    )
+
+    # An inner join keeps the left order; order 4 has no customer.
+    assert frame.to_dict("list") == {
+        "order_id": [1, 2, 3],
+        "name": ["Ada", "Grace", "Ada"],
     }
 
 
@@ -145,7 +162,12 @@ def test_a_failed_check_names_the_problems(tmp_path):
         (
             [{"join": {"right": "products", "on": "id"}}],
             "operation 1 (join): right: 'products' isn't one of this step's "
-            "inputs (customers, data).",
+            "inputs (data).",
+        ),
+        (
+            ["drop_nulls", {"join": {"left": "data", "right": "data", "on": "x"}}],
+            "operation 2 (join): only the first operation can set left; after "
+            "that, the left side is the result so far.",
         ),
         (
             [{"join": "customers"}],
@@ -168,9 +190,18 @@ def test_operations_are_checked_when_the_pipeline_loads(tmp_path, operations, me
     assert message in str(exc_info.value)
 
 
-def test_a_transform_needs_a_data_input(tmp_path):
-    with pytest.raises(ConfigError, match="A transform needs a 'data' input"):
+def test_a_transform_needs_somewhere_to_start(tmp_path):
+    with pytest.raises(ConfigError, match="starts from its 'data' input, or from"):
         pipeline(tmp_path, "drop_nulls", inputs={"orders": "orders"})
+
+
+def test_every_input_must_be_used(tmp_path):
+    with pytest.raises(ConfigError, match="No operation uses the input 'customers'"):
+        pipeline(
+            tmp_path,
+            "drop_nulls",
+            inputs={"data": "orders", "customers": "customers"},
+        )
 
 
 def test_the_old_form_points_to_operations(tmp_path):

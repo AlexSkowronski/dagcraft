@@ -15,10 +15,11 @@ from dagcraft.steps.base import BaseStep
 @register_step("transform")
 class TransformStep(BaseStep):
     """
-    Applies ``operations`` to the ``data`` input, each to the last one's result.
+    Applies ``operations`` in order, each to the last one's result.
 
-    The operations are checked when the pipeline loads. Other inputs can be
-    named in operations that take a table, such as a join's ``right``.
+    The chain starts from the ``data`` input, or from the table the first
+    operation names (``join: {left: ..., right: ...}``). The operations are
+    checked when the pipeline loads.
     """
 
     config_model = TransformConfig
@@ -32,4 +33,4 @@ class TransformStep(BaseStep):
         return "transform: " + " -> ".join(call.operation.name for call in self.calls)
 
     def execute(self, context: ExecutionContext, inputs: dict[str, Any]) -> Any:
-        return run_operations(self.calls, inputs["data"], inputs)
+        return run_operations(self.calls, inputs)
