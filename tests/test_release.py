@@ -35,7 +35,7 @@ def test_changelog_has_notes_for_the_current_version():
     notes = load_release_notes()
 
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert notes.section(changelog, project_version())
+    assert notes.notes_for(changelog, project_version())
 
 
 def test_section_stops_at_the_next_heading_or_links():
@@ -51,3 +51,18 @@ def test_section_stops_at_the_next_heading_or_links():
     assert notes.section(changelog, "0.1.0") == "- First."
     assert notes.section(changelog, "Unreleased") is None
     assert notes.section(changelog, "9.9.9") is None
+
+
+def test_pre_releases_use_their_release_notes_unless_they_have_their_own():
+    notes = load_release_notes()
+    changelog = (
+        "## [0.2.0rc2] - 2026-10-20\n\n- Fix for rc1.\n\n"
+        "## [0.2.0] - Unreleased\n\n- New thing.\n"
+    )
+
+    assert notes.notes_for(changelog, "0.2.0rc1") == "- New thing."
+    assert notes.notes_for(changelog, "0.2.0b1") == "- New thing."
+    assert notes.notes_for(changelog, "0.2.0.dev3") == "- New thing."
+    assert notes.notes_for(changelog, "0.2.0rc2") == "- Fix for rc1."
+    # Only pre-releases fall back.
+    assert notes.notes_for(changelog, "0.2.0.post1") is None

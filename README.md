@@ -814,6 +814,15 @@ The release workflow checks that the tag, `pyproject.toml` and the changelog
 agree, runs the tests, publishes to PyPI with trusted publishing, and
 creates a GitHub release with the changelog's notes.
 
+To try a release before it's final, publish a pre-release the same way with
+a version such as `0.1.0rc1`. It uses the notes of the release it leads up
+to (`0.1.0`) unless the changelog has a section of its own, and GitHub marks
+it as a pre-release. Install it by naming it:
+
+```bash
+pip install "dagcraft-pipelines[all]==0.1.0rc1"
+```
+
 Before the first release, add a trusted publisher on PyPI (Your account →
 Publishing → Add a new pending publisher) with project name
 `dagcraft-pipelines`, owner `AlexSkowronski`, repository `dagcraft`, workflow
