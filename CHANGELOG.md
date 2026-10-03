@@ -70,6 +70,8 @@ First release.
   writers and formats.
 - Optional extras: `excel`, `sql`, `azure` and `all`.
 - Example pipelines in `config/examples` with sample data in `data/sample`.
+- A guide at https://alexskowronski.github.io/dagcraft/: getting started,
+  every connection, format and step, recipes, and extending dagcraft.
 
 [Unreleased]: https://github.com/AlexSkowronski/dagcraft/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/AlexSkowronski/dagcraft/releases/tag/v0.1.0

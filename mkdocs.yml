@@ -1,0 +1,69 @@
+site_name: dagcraft
+site_description: Config-driven data pipelines for Python, described in YAML.
+site_url: https://alexskowronski.github.io/dagcraft/
+repo_url: https://github.com/AlexSkowronski/dagcraft
+repo_name: AlexSkowronski/dagcraft
+edit_uri: edit/main/docs/
+strict: true
+# With strict, any of these fails the build.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - The pipeline file: pipeline-file.md
+  - Connections:
+      - Local files: connections/local.md
+      - Azure Blob Storage: connections/azure-blob.md
+      - SharePoint: connections/sharepoint.md
+      - SQL and Azure SQL: connections/sql.md
+  - Reading and writing:
+      - Files and formats: reading-writing/files.md
+      - SQL: reading-writing/sql.md
+  - Steps and operations: steps.md
+  - Running pipelines: running.md
+  - Recipes:
+      - Blob JSON into Azure SQL: recipes/blob-json-to-sql.md
+      - SharePoint Excel report: recipes/sharepoint-report.md
+      - Your own Python functions: recipes/python-functions.md
+  - Extending dagcraft: extending.md
