@@ -244,8 +244,9 @@ def test_url_is_kept_secret(tmp_path):
             "should be written as 'name' or 'schema.name'",
         ),
         (
-            {"type": "write", "table": "scores", "if_exists": "upsert"},
-            "if_exists: Input should be 'fail', 'append', 'delete_rows' or 'replace'",
+            {"type": "write", "table": "scores", "if_exists": "merge"},
+            "if_exists: Input should be 'fail', 'append', 'delete_rows', 'replace' "
+            "or 'upsert'",
         ),
         (
             {"type": "write", "path": "scores.csv"},

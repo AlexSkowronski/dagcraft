@@ -32,8 +32,9 @@ First release.
 - Reading many files at once with wildcard paths, optionally recording
   each row's source file.
 - SQL reads from inline queries, `.sql` files or whole tables, with bound
-  parameters; transactional writes with `fail`, `append`, `delete_rows` or
-  `replace`.
+  parameters; transactional writes with `fail`, `append`, `delete_rows`,
+  `replace` or `upsert` (replace the rows whose `keys` match, add the
+  rest: safe to re-run).
 - Partitioned SQL reads: split a large read into ranges of a whole-number
   column, read in parallel on separate connections (`partition`).
 - Operations: `drop_nulls`, `filter`, `select`, `rename`, `sort`, `join`

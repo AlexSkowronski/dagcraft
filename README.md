@@ -406,11 +406,40 @@ Write steps take:
 | Field       | Description                                                    |
 | ----------- | -------------------------------------------------------------- |
 | `table`     | `name` or `schema.name`.                                       |
-| `if_exists` | `fail` (default), `append`, `delete_rows` (empty the table but keep its definition) or `replace` (drop and recreate it). |
+| `if_exists` | `fail` (default), `append`, `delete_rows` (empty the table but keep its definition), `replace` (drop and recreate it) or `upsert` (see below). |
+| `keys`      | For `upsert`: the columns that identify a row.                 |
 | `args`      | Passed to `DataFrame.to_sql`, e.g. `dtype` or `chunksize`.     |
 
 Each write runs in a single transaction, so a failure part-way leaves the
 table as it was.
+
+#### Upserts: safe to re-run
+
+`if_exists: upsert` replaces the rows whose `keys` match and adds the rest,
+so loading the same day twice doesn't duplicate it:
+
+```yaml
+  - id: load
+    type: write
+    connection: warehouse
+    table: staging.purchases
+    if_exists: upsert
+    keys: [event_id]          # several columns for a composite key
+    inputs:
+      data: purchases
+```
+
+The rows are loaded into a staging table next to the target, the target's
+rows with matching keys are deleted, and the staged rows inserted, in one
+transaction. That's plain SQL, so it works on every database and needs no
+unique constraint, though an index on the keys keeps it fast. A missing
+table is created. The identity needs permission to create tables in the
+target's schema, for the staging table, which is always dropped afterwards.
+
+Before writing, dagcraft checks that every row has all its keys, that no
+two rows share them, and that the table has every column of the data.
+Matching rows are replaced whole: columns the data doesn't have are reset
+to their defaults, and an identity column can't be in the data.
 
 ```yaml
   - id: customers

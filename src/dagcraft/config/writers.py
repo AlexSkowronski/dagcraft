@@ -39,13 +39,32 @@ class SQLWriteOptions(BaseModel):
 
     ``table`` is ``name`` or ``schema.name``. ``if_exists`` decides what
     happens when the table already exists: ``fail``, ``append``,
-    ``delete_rows`` (empty it but keep its definition) or ``replace`` (drop
-    and recreate it). ``args`` go to ``DataFrame.to_sql``. The whole write
-    runs in one transaction.
+    ``delete_rows`` (empty it but keep its definition), ``replace`` (drop
+    and recreate it) or ``upsert`` (replace the rows whose ``keys`` match,
+    add the rest). ``args`` go to ``DataFrame.to_sql``. The whole write runs
+    in one transaction.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     table: str = Field(min_length=1)
-    if_exists: Literal["fail", "append", "delete_rows", "replace"] = "fail"
+    if_exists: Literal["fail", "append", "delete_rows", "replace", "upsert"] = "fail"
+    keys: list[str] = Field(default_factory=list)
     args: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def check_keys(self) -> Self:
+        """
+        An upsert matches rows by ``keys``; nothing else uses them.
+        """
+        if self.if_exists == "upsert" and not self.keys:
+            raise ValueError(
+                "if_exists: upsert needs 'keys', the columns that identify a row."
+            )
+
+        if self.keys and self.if_exists != "upsert":
+            raise ValueError("'keys' only applies to if_exists: upsert.")
+
+        if len(set(self.keys)) != len(self.keys) or not all(self.keys):
+            raise ValueError("'keys' should be distinct column names.")
+        return self

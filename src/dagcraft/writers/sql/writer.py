@@ -7,14 +7,18 @@ import pandas as pd
 from dagcraft.config.writers import SQLWriteOptions
 from dagcraft.connections.sql import SQLConnection
 from dagcraft.connections.sql.names import split_table
+from dagcraft.logs import get_logger
 from dagcraft.registry import register_writer
 from dagcraft.writers.base import Writer
+from dagcraft.writers.sql.upsert import upsert
+
+logger = get_logger(__name__)
 
 
 @register_writer(SQLConnection)
 class SQLWriter(Writer):
     """
-    Writes a DataFrame to ``table``, replacing or appending as configured.
+    Writes a DataFrame to ``table``: replacing, appending or upserting.
 
     The write runs in one transaction, so a failure leaves the table as it
     was.
@@ -27,9 +31,30 @@ class SQLWriter(Writer):
         split_table(self.options.table)
 
     def describe(self) -> str:
-        return f"table {self.options.table} (if it exists: {self.options.if_exists})"
+        if_exists = self.options.if_exists
+
+        if if_exists == "upsert":
+            if_exists = f"upsert by {', '.join(self.options.keys)}"
+
+        return f"table {self.options.table} (if it exists: {if_exists})"
 
     def write(self, connection: SQLConnection, data: pd.DataFrame) -> None:
+        if self.options.if_exists == "upsert":
+            counts = upsert(
+                connection.engine,
+                data,
+                self.options.table,
+                self.options.keys,
+                self.options.args,
+            )
+            logger.info(
+                "upserted into %s: %s rows replaced, %s added",
+                self.options.table,
+                f"{counts.replaced:,}",
+                f"{counts.added:,}",
+            )
+            return
+
         schema, table = split_table(self.options.table)
         args = {"index": False, **self.options.args}
 

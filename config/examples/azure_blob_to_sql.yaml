@@ -63,6 +63,8 @@ steps:
     type: write
     connection: warehouse
     table: staging.purchases
-    if_exists: append
+    # Re-running a day replaces its rows instead of duplicating them.
+    if_exists: upsert
+    keys: [event_id]
     inputs:
       data: tidy
