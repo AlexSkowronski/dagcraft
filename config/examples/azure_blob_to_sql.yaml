@@ -3,19 +3,27 @@
 # `pip install 'dagcraft-pipelines[azure]'`, the ODBC driver, and `az login` (or a
 # managed identity / service principal).
 #
-#   dagcraft run config/examples/azure_blob_to_sql.yaml --dry-run
-#   dagcraft run config/examples/azure_blob_to_sql.yaml --param run_date=2026-10-03
+#   dagcraft config/examples/azure_blob_to_sql.yaml --dry-run
+#   dagcraft config/examples/azure_blob_to_sql.yaml --check-connections
+#   dagcraft config/examples/azure_blob_to_sql.yaml
+#
+# Set the RUN_DATE environment variable to load a different day.
 
 pipeline:
   name: azure_blob_to_sql
+  # Load environment variables, such as a connection string, from a .env
+  # file next to this one. Variables already set in the environment win.
+  # env_file: .env
 
 params:
-  run_date: "2026-10-02"
+  # The RUN_DATE environment variable, or this default.
+  run_date: ${env:RUN_DATE:-2026-10-02}
 
 connections:
   lake:
     type: azure_blob
-    account: mystorageaccount
+    account: mystorageaccount     # sign in as your `az login`, or...
+    # connection_string: ${env:LAKE_CONNECTION_STRING}   # ...with a key
     container: raw
     prefix: events
   warehouse:

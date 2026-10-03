@@ -20,10 +20,13 @@ First release.
   connection, the operations, functions, connections, formats and query
   files it names, and the graph, with one-line error messages.
 - Params, `${params.NAME}` and `${env:NAME}` references, overridable from
-  Python and the command line.
+  Python.
+- Secrets written as `${env:NAME}` are held as secrets, never shown in logs;
+  `env_file` loads a `.env` file first.
 - Connections: `local`, `azure_blob` (including ADLS Gen2), `sharepoint`
   (through Microsoft Graph), `sql` (any SQLAlchemy URL) and `azure_sql`
-  (Entra ID token per connection, `fast_executemany`).
+  (Entra ID token per connection, `fast_executemany`). Signing in with
+  `az login`, managed identity, a service principal or a connection string.
 - Formats: CSV, Parquet, Excel (several sheets in, one sheet per input
   out), JSON, JSON Lines and YAML (nested objects flattened into columns).
 - Reading many files at once with wildcard paths, optionally recording
@@ -38,18 +41,25 @@ First release.
 - Retries for any step, with a growing delay (`retries`, `retry_delay`).
 - Local files are written under a temporary name and then moved into place,
   so a failed write leaves the previous file intact.
-- Run IDs on every log message and record, random or supplied
-  (`run(run_id=...)`, `--run-id`).
-- `run(keep_artifacts=False)` drops each step's output once nothing else
+- Logging: each step logs when it starts, what it did (rows and columns)
+  and how long it took, with progress for long reads and detail at DEBUG.
+  Every message and record names the pipeline, run ID and step.
+  `configure_logging()` for scripts; `Timer` for timing your own code.
+- Run IDs, random or supplied (`run(run_id=...)`, `--run-id`).
+- `run(keep_outputs=False)` drops each step's output once nothing else
   needs it, to save memory; the command line always runs this way.
 - Independent steps can run in parallel (`max_workers` in the pipeline
   file, `run(max_workers=...)`, `--max-workers`).
 - When a step fails, only the steps that depend on it are skipped;
-  `PipelineError` names every failure. `fail_fast` stops at the first.
-- `dagcraft run` with `--dry-run`, `--check-connections`, `--param`,
-  `--fail-fast` and `--version`; `Pipeline.plan()` and
-  `Pipeline.check_connections()` from Python.
-- Extension points for step types, operations, connections and formats.
+  `RunError` names every failure. `fail_fast` stops at the first. Every
+  error is a `PipelineError`.
+- The `dagcraft pipeline.yaml` command (or `python -m dagcraft`) with
+  `--dry-run`, `--check-connections`, `--fail-fast`, `--max-workers`,
+  `--run-id`, `--verbose` and `--version`, exiting 0, 1 (failed) or 2
+  (invalid); `Pipeline.plan()` and `Pipeline.check_connections()` from
+  Python.
+- Extension points for step types, operations, connections, readers,
+  writers and formats.
 - Optional extras: `excel`, `sql`, `azure` and `all`.
 - Example pipelines in `config/examples` with sample data in `data/sample`.
 

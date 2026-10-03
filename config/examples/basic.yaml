@@ -1,6 +1,6 @@
 # The smallest useful pipeline: read a CSV, drop incomplete rows, write it out.
 #
-#   dagcraft run config/examples/basic.yaml
+#   dagcraft config/examples/basic.yaml
 
 pipeline:
   name: basic

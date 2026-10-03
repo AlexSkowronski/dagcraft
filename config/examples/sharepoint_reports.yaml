@@ -4,7 +4,7 @@
 # `pip install 'dagcraft-pipelines[azure,excel]'` and an identity with Microsoft Graph
 # access to the site's files.
 #
-#   dagcraft run config/examples/sharepoint_reports.yaml --dry-run
+#   dagcraft config/examples/sharepoint_reports.yaml --dry-run
 
 pipeline:
   name: sharepoint_reports

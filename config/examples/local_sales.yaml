@@ -1,6 +1,6 @@
 # Join CSV and Parquet files, filter, reshape and write the result twice.
 #
-#   dagcraft run config/examples/local_sales.yaml --param min_quantity=3
+#   dagcraft config/examples/local_sales.yaml
 
 pipeline:
   name: local_sales

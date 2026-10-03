@@ -1,7 +1,7 @@
 # Run SQL from a .sql file with parameters, read a whole table, and write
 # results to another database. Uses SQLite, so it runs anywhere.
 #
-#   dagcraft run config/examples/sql_reports.yaml --param status=pending
+#   dagcraft config/examples/sql_reports.yaml
 
 pipeline:
   name: sql_reports

@@ -73,18 +73,20 @@ steps:
 ```
 
 ```python
-from dagcraft import Pipeline, PipelineError
+from dagcraft import Pipeline, RunError, configure_logging
+
+configure_logging()  # print progress to the console; optional
 
 pipeline = Pipeline.from_yaml("pipelines/daily_sales.yaml")  # validates everything
 
 try:
     result = pipeline.run()
-except PipelineError as exc:
+except RunError as exc:
     print(exc)  # Pipeline 'daily_sales' failed at step ...
     print(exc.result.steps)  # status, duration and error of every step
     raise
 
-result.artifact("enriched")  # the DataFrame produced by a step
+result.output("enriched")  # the DataFrame produced by a step
 ```
 
 `inputs` decide the order steps run in: a step runs after every step it
@@ -107,8 +109,8 @@ data in [`data/sample/`](https://github.com/AlexSkowronski/dagcraft/tree/main/da
 | `sharepoint_reports` | Template: Excel from SharePoint, compared with Azure SQL, published back. |
 
 ```bash
-dagcraft run config/examples/json_events.yaml
-dagcraft run config/examples/sharepoint_reports.yaml --dry-run
+dagcraft config/examples/json_events.yaml
+dagcraft config/examples/sharepoint_reports.yaml --dry-run
 ```
 
 Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
@@ -117,7 +119,7 @@ Regenerate the sample data with `uv run python scripts/make_sample_data.py`.
 
 | Key           | Description                                                    |
 | ------------- | -------------------------------------------------------------- |
-| `pipeline`    | `name` of the pipeline; optionally `max_workers` (see [Running steps in parallel](#running-steps-in-parallel)). |
+| `pipeline`    | `name` of the pipeline; optionally `max_workers` (see [Running steps in parallel](#running-steps-in-parallel)) and `env_file` (see [Secrets](#secrets-and-env-files)). |
 | `connections` | Optional. Named places to read from and write to (see below).  |
 | `steps`       | The steps. Every step has an `id` and a `type`; optionally `inputs`, `retries` and `retry_delay`. |
 
@@ -152,19 +154,41 @@ A value that is exactly one reference keeps the referenced value's type, so
 `columns: ${params.columns}` can be a list. Inside longer text, the value is
 inserted as text. Params can use environment variables but not other params.
 
-Override params when loading, from Python or the command line. Overrides
-must name a param declared in the file:
+To vary a value between runs, give it an environment variable with a
+default, as `region` does above. From Python you can also override params
+when loading; overrides must name a param declared in the file:
 
 ```python
 Pipeline.from_yaml("pipelines/daily_sales.yaml", params={"run_date": "2026-10-03"})
 ```
 
-```bash
-dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
+References are resolved when the pipeline is loaded, so an unset variable
+is reported before anything runs.
+
+### Secrets and .env files
+
+Keep connection strings and passwords out of pipeline files: write them as
+`${env:NAME}`. dagcraft holds them as secrets, so they never appear in
+reprs, logs or error messages.
+
+```yaml
+pipeline:
+  name: daily_sales
+  env_file: .env      # optional: load variables from this file first
+
+connections:
+  lake:
+    type: azure_blob
+    container: raw
+    connection_string: ${env:LAKE_CONNECTION_STRING}
 ```
 
-References are resolved when the pipeline is loaded. For secrets, prefer the
-connections' `*_env` fields, which read the variable only when connecting.
+`env_file` is relative to the pipeline file and loaded before anything else.
+Variables already set in the environment keep their values, so a scheduler
+or CI secret wins over the file. They go into the process environment, so
+`DefaultAzureCredential` can use a service principal's `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID` and `AZURE_CLIENT_SECRET` from the file too. Don't commit
+`.env` files.
 
 ### Step types
 
@@ -215,6 +239,17 @@ keyword arguments.
 
 A `local` connection, rooted at the pipeline file's directory, is always
 available. Define others under `connections`, each with a `type`.
+
+A read or write step combines three things, each with one job:
+
+| Piece                   | Job                                   | Built in                                    |
+| ----------------------- | ------------------------------------- | ------------------------------------------- |
+| Connection              | Where the data is, and signing in     | `local`, `azure_blob`, `sharepoint`, `sql`, `azure_sql` |
+| Reader / writer         | What to read or write there           | Files (`path`), SQL (`query`, `table`)      |
+| Format (files only)     | How a file's bytes become a table     | `csv`, `parquet`, `excel`, `json`, `jsonl`, `yaml` |
+
+So the fields a step takes depend on its connection's kind: file
+connections take a `path`, SQL connections a `query` or `table`.
 
 ### File connections: `local`, `azure_blob` and `sharepoint`
 
@@ -288,19 +323,19 @@ input, named after the input:
 **`azure_blob`**: Azure Blob Storage, including ADLS Gen2 accounts.
 Requires `dagcraft-pipelines[azure]`.
 
-| Field                   | Description                                             |
-| ----------------------- | ------------------------------------------------------- |
-| `container`             | Container name.                                         |
-| `prefix`                | Optional folder inside the container.                   |
-| `account`               | Storage account; sign in with `DefaultAzureCredential`. |
-| `connection_string_env` | Or: environment variable holding a connection string.   |
+| Field               | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `container`         | Container name.                                             |
+| `prefix`            | Optional folder inside the container.                       |
+| `account`           | Storage account; sign in with `DefaultAzureCredential`.     |
+| `connection_string` | Or: a connection string, usually `${env:NAME}`.             |
 
-Set exactly one of `account` or `connection_string_env`.
-`DefaultAzureCredential` uses your `az login` locally, managed identity in
-Azure, or service principal environment variables. If
-`AZURE_STORAGE_CONNECTION_STRING` is set, signing in with `account` is
-refused: the underlying library would quietly use that connection string
-instead, possibly for a different account.
+Set exactly one of `account` or `connection_string`.
+`DefaultAzureCredential` uses service principal environment variables if
+set, managed identity in Azure, or your `az login`. If the
+`AZURE_STORAGE_CONNECTION_STRING` environment variable is set, signing in
+with `account` is refused: the underlying library (adlfs) would quietly use
+that connection string instead, possibly for a different account.
 
 **`sharepoint`**: a SharePoint document library, through Microsoft Graph.
 Requires `dagcraft-pipelines[azure]`.
@@ -314,8 +349,8 @@ Requires `dagcraft-pipelines[azure]`.
 dagcraft signs in with `DefaultAzureCredential`, so the identity (usually a
 service principal) needs Microsoft Graph permission to the site's files,
 such as `Sites.Selected` or `Sites.ReadWrite.All`. Wildcards work in file
-names but not folder names, uploads are limited to 250 MB, and throttled
-requests are retried.
+names but not folder names (checked when the pipeline loads), uploads are
+limited to 250 MB, and throttled requests are retried.
 
 ### SQL connections: `sql` and `azure_sql`
 
@@ -389,26 +424,28 @@ table as it was.
 **`sql`**: any database SQLAlchemy supports. Requires `dagcraft-pipelines[sql]` and
 a driver for your database (SQLite needs none).
 
-| Field     | Description                                                     |
-| --------- | --------------------------------------------------------------- |
-| `url`     | Database URL, e.g. `sqlite:///data/local.db`.                   |
-| `url_env` | Or: environment variable holding the URL, for URLs with passwords. |
+| Field | Description                                                         |
+| ----- | ------------------------------------------------------------------- |
+| `url` | Database URL, e.g. `sqlite:///data/local.db`. Write URLs with passwords as `${env:NAME}`. |
+
+For example, Postgres with `pip install psycopg`:
+`url: postgresql+psycopg://etl@dbhost/analytics`.
 
 **`azure_sql`**: Azure SQL Database or SQL Server. Requires
 `dagcraft-pipelines[azure]` and the ODBC driver.
 
-| Field                   | Description                                             |
-| ----------------------- | ------------------------------------------------------- |
-| `server`                | e.g. `myserver.database.windows.net`                    |
-| `database`              | Database name.                                          |
-| `driver`                | ODBC driver. Defaults to `ODBC Driver 18 for SQL Server`. |
-| `connection_string_env` | Or: environment variable holding an ODBC connection string. |
+| Field               | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `server`            | e.g. `myserver.database.windows.net`                        |
+| `database`          | Database name.                                              |
+| `driver`            | ODBC driver. Defaults to `ODBC Driver 18 for SQL Server`.   |
+| `connection_string` | Or: a full ODBC connection string, usually `${env:NAME}`.   |
 
 With `server` and `database`, dagcraft signs in with an Entra ID token from
-`DefaultAzureCredential`. A fresh token is fetched for each new database
-connection, so long runs aren't cut off when a token expires. Use
-`connection_string_env` for anything else, such as SQL authentication.
-Writes use pyodbc's `fast_executemany`.
+`DefaultAzureCredential` (your `az login` locally). A fresh token is fetched
+for each new database connection, so long runs aren't cut off when a token
+expires. Use `connection_string` for anything else, such as SQL
+authentication. Writes use pyodbc's `fast_executemany`.
 
 ## Validation
 
@@ -421,21 +458,22 @@ Problems raise `ConfigError` with one line per problem:
 dagcraft.exceptions.ConfigError: Step 'orders': pth: Extra inputs are not permitted
 ```
 
-Things that depend on the machine, such as environment variables, ODBC
-drivers and credentials, are checked when a connection is first used.
+Environment variables are checked then too. Things that depend on the
+machine and network, such as ODBC drivers and credentials, are checked when
+a connection is first used.
 
 To check a pipeline and see what it would do without running it, use
-`dagcraft run ... --dry-run`, or `pipeline.plan()` from Python:
+`dagcraft pipeline.yaml --dry-run`, or `pipeline.plan()` from Python:
 
 ```
-INFO | Pipeline 'sql_reports' is valid.
-INFO | Params: data_dir=../../data/sample, output_dir=../../output, since=2026-09-15, status=shipped
-INFO | Steps, in run order:
-INFO |   1. revenue_by_region  read the query in sql/revenue_by_region.sql from 'warehouse'
-INFO |   2. products           read table products from 'warehouse'
-INFO |   3. save_revenue       write table revenue_by_region (if it exists: replace) to 'reports'  <- data: revenue_by_region
-INFO |   4. save_products      write table products (if it exists: replace) to 'reports'  <- data: products
-INFO | Dry run: nothing was run.
+2026-10-03 08:43:38 INFO    Pipeline 'sql_reports' is valid.
+2026-10-03 08:43:38 INFO    Params: data_dir=../../data/sample, output_dir=../../output, since=2026-09-15, status=shipped
+2026-10-03 08:43:38 INFO    Steps, in run order:
+2026-10-03 08:43:38 INFO      1. revenue_by_region  read the query in sql/revenue_by_region.sql from 'warehouse'
+2026-10-03 08:43:38 INFO      2. products           read table products from 'warehouse'
+2026-10-03 08:43:38 INFO      3. save_revenue       write table revenue_by_region (if it exists: replace) to 'reports'  <- data: revenue_by_region
+2026-10-03 08:43:38 INFO      4. save_products      write table products (if it exists: replace) to 'reports'  <- data: products
+2026-10-03 08:43:38 INFO    Dry run: nothing was run.
 ```
 
 To prove the connections work before a run, use `--check-connections`, or
@@ -452,11 +490,11 @@ permissions, network or drivers show up in seconds without touching data:
 | `azure_sql`  | Connects and reports the login and database, so you can see which identity `DefaultAzureCredential` picked. |
 
 ```
-INFO | Checking 3 connection(s):
-INFO |   lake       azure_blob  OK      container 'raw' is reachable; prefix 'events' has files
-ERROR|   finance    sharepoint  FAILED  SharePoint returned 403 for GET https://graph.microsoft.com/...: Access denied.
-INFO |   warehouse  azure_sql   OK      connected to analytics as etl-app@contoso.com
-ERROR| 1 of 3 connection(s) failed.
+INFO    Checking 3 connection(s):
+INFO      lake       azure_blob  OK      container 'raw' is reachable; prefix 'events' has files
+ERROR     finance    sharepoint  FAILED  SharePoint returned 403 for GET https://graph.microsoft.com/...: Access denied.
+INFO      warehouse  azure_sql   OK      connected to analytics as etl-app@contoso.com
+ERROR   1 of 3 connection(s) failed.
 ```
 
 ## Running and failures
@@ -466,9 +504,18 @@ its inputs.
 
 When a step fails, the steps that depend on it, directly or further down,
 are skipped, and every other step still runs. `run()` then raises
-`PipelineError` naming each failed step. Its `result` holds every step's
+`RunError` naming each failed step. Its `result` holds every step's
 status (`SUCCESS`, `FAILED` or `SKIPPED`), and the first failure's exception
 is chained, so the traceback shows the real cause.
+
+Every error dagcraft raises is a `PipelineError`:
+
+| Error            | Raised when                                                |
+| ---------------- | ---------------------------------------------------------- |
+| `ConfigError`    | The pipeline file is invalid (raised when loading).        |
+| `GraphError`     | A kind of `ConfigError`: a cycle, or an unknown input.     |
+| `ExecutionError` | A step or connection couldn't do its work.                 |
+| `RunError`       | `run()` had failed steps; `.result` has the details.       |
 
 To stop at the first failure instead:
 
@@ -511,59 +558,100 @@ more than one worker, steps run in threads, so functions you call from
 `python` steps or register as operations should be safe to run alongside
 each other.
 
-Every step's output stays available on the result (`result.artifact(id)`)
+Every step's output stays available on the result (`result.output(id)`)
 until the run ends. For large data, drop each output as soon as the steps
 that use it have finished instead (the command line always does this):
 
 ```python
-pipeline.run(keep_artifacts=False)
+pipeline.run(keep_outputs=False)
 ```
 
 ## Logging
 
-dagcraft logs to the `dagcraft` logger and, like any library, prints nothing
-unless your application configures logging:
-
-```python
-import logging
-
-logging.basicConfig(level=logging.INFO)
-```
-
-Every run has an ID, and each message from the run starts with the pipeline
-and run ID, so runs can be told apart in shared logs:
+Each step logs when it starts, what it did and how long it took:
 
 ```
-INFO | [daily_sales 3f2a9c1b] Running step 'orders'
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] Starting run: 3 steps
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] employees: started: read employees.csv from 'data'
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] employees: finished in 0.008s: 5 rows x 4 columns
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] salaried: started: transform with 'drop_nulls'
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] salaried: finished in 0.003s: 4 rows x 4 columns
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] save: started: write basic/salaried.csv to 'output'
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] save: finished in 0.003s: 4 rows x 4 columns
+2026-10-03 08:43:40 INFO    [basic 4b554a3c] Run succeeded in 0.014s
 ```
 
-The records also carry `pipeline` and `run_id` attributes, for log
-handlers that store fields (such as Azure Monitor). The ID is random unless
-you pass one, for example your orchestrator's run ID, and it's on the
-result:
+Long reads add progress lines, such as how many files a wildcard matched or
+how many parts a partitioned read runs in. Detail, such as each file and
+each SQL part, is logged at DEBUG (`-v` on the command line). Retries and
+skipped steps are warnings; failures are errors with the traceback.
+
+Every message during a run starts with the pipeline, the run ID and the
+step, so runs can be told apart in shared logs. The records also carry
+`pipeline`, `run_id` and `step` attributes, for log handlers that store
+fields (such as Azure Monitor). The run ID is random unless you pass one,
+for example your orchestrator's, and it's on the result:
 
 ```python
 result = pipeline.run(run_id="adf-5c1e")
 result.run_id
 ```
 
+Like any library, dagcraft prints nothing until logging is configured. In a
+script, `configure_logging()` prints dagcraft's messages with timestamps
+(other libraries' only from WARNING up, since the Azure SDK logs every
+request at INFO):
+
+```python
+from dagcraft import Pipeline, configure_logging
+
+configure_logging()           # or configure_logging(logging.DEBUG)
+Pipeline.from_yaml("pipelines/daily_sales.yaml").run()
+```
+
+In an application with its own logging setup, configure the `dagcraft`
+logger instead. Modules log under it by name (`dagcraft.readers.files`,
+`dagcraft.core.step_runner`, ...), so you can tune parts separately.
+
+`Timer` measures how long something takes, as a context manager or a
+decorator, and can log it:
+
+```python
+from dagcraft import Timer
+
+with Timer() as timer:
+    pipeline.run()
+print(f"{timer.elapsed:.1f}s")
+
+@Timer("refresh", logger=logging.getLogger(__name__))
+def refresh(): ...
+```
+
 ## Command line
 
 ```bash
-dagcraft run pipelines/daily_sales.yaml --dry-run
-dagcraft run pipelines/daily_sales.yaml --param run_date=2026-10-03
+dagcraft pipelines/daily_sales.yaml                      # check, then run
+dagcraft pipelines/daily_sales.yaml --dry-run            # check and show the plan
+dagcraft pipelines/daily_sales.yaml --check-connections  # check and sign in to each connection
 ```
+
+`python -m dagcraft ...` does the same, where the `dagcraft` script isn't on
+the PATH.
 
 | Option                | Effect                                                     |
 | --------------------- | ---------------------------------------------------------- |
 | `--dry-run`           | Check the pipeline and show the steps it would run. Handy in CI. |
-| `--check-connections` | Check the pipeline and prove each connection it uses works (see below). |
-| `--param NAME=VALUE`  | Override a param. Values are read as YAML. Repeatable.     |
+| `--check-connections` | Check the pipeline and prove each connection it uses works (see [Validation](#validation)). |
 | `--fail-fast`         | Skip every remaining step after the first failure.         |
 | `--max-workers N`     | Run up to N independent steps at once.                     |
 | `--run-id ID`         | ID for the run in the logs, e.g. from an orchestrator.     |
+| `-v`, `--verbose`     | Also log detail, such as each file and each SQL part read. |
 
-The command exits with status 1 if the pipeline is invalid or a step fails.
+| Exit status | Meaning                                         |
+| ----------- | ----------------------------------------------- |
+| 0           | Success.                                        |
+| 1           | A step or a connection check failed.            |
+| 2           | The pipeline file is invalid, or the arguments. |
 
 ## Extending dagcraft
 
@@ -601,12 +689,50 @@ class SampleStep(BaseStep):
         return data.sample(frac=self.config.fraction, random_state=0)
 ```
 
-**Connections**: subclass `FsspecConnection` for anything
-[fsspec](https://filesystem-spec.readthedocs.io/) can reach, `FileConnection`
-for other file storage (implement `open_file`, and `glob` for wildcards), or
-`Connection` for anything else, and use `register_connection`. Override
-`check()` so `--check-connections` can prove the connection works.
-**Formats**: subclass `Format` and use `register_format`.
+Steps of your own can log with `context.logger`, or with
+`dagcraft.get_logger(__name__)` from any module; either way, messages carry
+the run and step.
+
+**Connections** handle signing in and holding a client; readers and
+writers handle what's read and written. For other file storage, subclass
+`FileConnection` and implement `open_file`, `glob` and `check`: the built-in
+file reader, writer and formats then work with it. For a different kind of
+source, subclass `Connection` and register a reader (and writer) for it:
+
+```python
+from pydantic import BaseModel
+
+from dagcraft import Connection, Reader, register_connection, register_reader
+
+
+class ApiConfig(BaseModel):
+    base_url: str
+
+
+class ApiReadOptions(BaseModel):
+    endpoint: str
+
+
+@register_connection("api")
+class ApiConnection(Connection):
+    config_model = ApiConfig
+
+    def open(self): ...   # sign in, create a session
+    def close(self): ...
+    def check(self):      # one cheap real request, for --check-connections
+        return "reachable"
+
+
+@register_reader(ApiConnection)
+class ApiReader(Reader):
+    options_model = ApiReadOptions   # the read step's fields
+
+    def read(self, connection):
+        ...  # fetch self.options.endpoint with the connection's session
+```
+
+**Formats**: subclass `Format` and use `register_format`. **Writers**:
+subclass `Writer` and use `register_writer`.
 
 ## Security
 
@@ -622,8 +748,26 @@ uv run pre-commit install  # lint, format and type checks on commit; tests on pu
 uv run pytest
 ```
 
-CI runs the same checks, builds the package, and runs the tests on
-Python 3.11 to 3.14 on Linux and on Windows.
+Type checking uses Pyright, the checker behind VS Code's Pylance, so the
+editor and the hooks report the same problems. CI runs the same checks,
+builds the package, and runs the tests on Python 3.11 to 3.14 on Linux and
+on Windows.
+
+The source is organised by job, one concern per module:
+
+```
+src/dagcraft/
+  config/        what a pipeline file can say: pydantic models only
+  core/          compiling and running: graph, scheduler, step runner, ...
+  connections/   where data lives and signing in: files/ and sql/
+  readers/       what a read step fetches, per kind of connection
+  writers/       what a write step puts, per kind of connection
+  formats/       how a file becomes a table, one format per module
+  steps/         read, write, transform, python
+  operations/    built-in transform operations
+  cli/           the dagcraft command: arguments, main, report
+  logs.py        run and step context for log messages
+```
 
 ### Releasing
 

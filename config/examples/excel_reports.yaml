@@ -1,7 +1,7 @@
 # Read several Excel sheets into one table, compare with targets from another
 # sheet, and write a workbook with one sheet per input.
 #
-#   dagcraft run config/examples/excel_reports.yaml
+#   dagcraft config/examples/excel_reports.yaml
 
 pipeline:
   name: excel_reports

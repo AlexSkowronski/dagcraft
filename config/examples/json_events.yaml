@@ -1,6 +1,6 @@
 # Ingest many nested JSON files, plus JSON Lines and YAML, into flat tables.
 #
-#   dagcraft run config/examples/json_events.yaml
+#   dagcraft config/examples/json_events.yaml
 
 pipeline:
   name: json_events
