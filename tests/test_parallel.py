@@ -29,7 +29,9 @@ class TrackedConfig(StepConfig):
 
 @register_step("tracked")
 class TrackedStep(BaseStep):
-    """Records when it runs and on which thread; optionally waits for others."""
+    """
+    Records when it runs and on which thread; optionally waits for others.
+    """
 
     config_model = TrackedConfig
     config: TrackedConfig

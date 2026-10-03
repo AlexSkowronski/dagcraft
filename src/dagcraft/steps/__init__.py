@@ -1,4 +1,6 @@
-"""Step types. Importing this package registers the built-in ones."""
+"""
+Step types. Importing this package registers the built-in ones.
+"""
 
 from dagcraft.steps.base import BaseStep
 from dagcraft.steps.python import PythonStep

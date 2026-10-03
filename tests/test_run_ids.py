@@ -9,7 +9,9 @@ from dagcraft.cli import main
 
 @register_step("chatty")
 class ChattyStep(BaseStep):
-    """Logs through the run's logger, as steps and connections can."""
+    """
+    Logs through the run's logger, as steps and connections can.
+    """
 
     config_model = StepConfig
 

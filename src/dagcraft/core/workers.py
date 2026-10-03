@@ -1,4 +1,6 @@
-"""Where steps run: worker threads, or straight away in the calling thread."""
+"""
+Where steps run: worker threads, or straight away in the calling thread.
+"""
 
 import contextvars
 from collections.abc import Callable
@@ -7,7 +9,9 @@ from typing import Any
 
 
 class InlineExecutor(Executor):
-    """Runs each submitted call straight away, in the calling thread."""
+    """
+    Runs each submitted call straight away, in the calling thread.
+    """
 
     def submit(
         self, fn: Callable[..., Any], /, *args: Any, **kwargs: Any
@@ -18,7 +22,8 @@ class InlineExecutor(Executor):
 
 
 def worker_pool(max_workers: int) -> Executor:
-    """Threads for running up to ``max_workers`` steps at once.
+    """
+    Threads for running up to ``max_workers`` steps at once.
 
     With one worker, steps run in the calling thread instead, which keeps
     tracebacks and debugging simple.
@@ -33,7 +38,8 @@ def submit_in_context(
     function: Callable[..., Any],
     *args: Any,
 ) -> Future[Any]:
-    """Submit ``function`` to run with a copy of the current context.
+    """
+    Submit ``function`` to run with a copy of the current context.
 
     Threads don't inherit context variables, which is how log messages know
     their run and step.

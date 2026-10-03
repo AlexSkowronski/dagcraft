@@ -1,4 +1,6 @@
-"""The example pipelines in config/examples keep working."""
+"""
+The example pipelines in config/examples keep working.
+"""
 
 from pathlib import Path
 

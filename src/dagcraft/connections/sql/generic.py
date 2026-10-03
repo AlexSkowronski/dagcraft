@@ -1,4 +1,5 @@
-"""The ``sql`` connection type: any database SQLAlchemy supports, by URL.
+"""
+The ``sql`` connection type: any database SQLAlchemy supports, by URL.
 
 Requires the ``sql`` extra (``pip install 'dagcraft-pipelines[sql]'``) plus a
 driver for your database, such as ``psycopg`` for Postgres. SQLite works out
@@ -22,7 +23,8 @@ IN_MEMORY_SQLITE = (None, "", ":memory:")
 
 @register_connection("sql")
 class GenericSQLConnection(SQLConnection):
-    """Any database SQLAlchemy supports, given a database URL.
+    """
+    Any database SQLAlchemy supports, given a database URL.
 
     A relative SQLite path is relative to the pipeline file's directory, and
     the folder for a new SQLite file is created.
@@ -50,7 +52,8 @@ class GenericSQLConnection(SQLConnection):
 
 
 def sqlite_file(base_dir: Path, database: str) -> Path:
-    """The SQLite file's full path, with its folder created.
+    """
+    The SQLite file's full path, with its folder created.
 
     SQLite creates a missing database file, but not its folder.
     """

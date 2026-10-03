@@ -19,7 +19,9 @@ DRIVER = "ODBC Driver 18 for SQL Server"
 
 
 class FakeCredential:
-    """Stands in for DefaultAzureCredential; hands out a fixed token."""
+    """
+    Stands in for DefaultAzureCredential; hands out a fixed token.
+    """
 
     instances: ClassVar[list["FakeCredential"]] = []
 

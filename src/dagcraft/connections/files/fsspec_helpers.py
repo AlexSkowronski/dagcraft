@@ -1,4 +1,6 @@
-"""Opening and listing files on fsspec filesystems (local disk, Azure Blob)."""
+"""
+Opening and listing files on fsspec filesystems (local disk, Azure Blob).
+"""
 
 from contextlib import AbstractContextManager
 from typing import BinaryIO, cast
@@ -11,7 +13,8 @@ def open_binary(
     path: str,
     mode: str,
 ) -> AbstractContextManager[BinaryIO]:
-    """Open ``path`` in a binary mode.
+    """
+    Open ``path`` in a binary mode.
 
     fsspec's file objects behave like ``BinaryIO`` but aren't declared as
     one, hence the cast.
@@ -24,7 +27,8 @@ def glob_files(
     root: str,
     pattern: str,
 ) -> list[str]:
-    """The files (not folders) matching ``pattern``, relative to ``root``.
+    """
+    The files (not folders) matching ``pattern``, relative to ``root``.
 
     ``root`` and ``pattern`` are full paths on the filesystem.
     """

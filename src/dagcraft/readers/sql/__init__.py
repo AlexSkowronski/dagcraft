@@ -1,4 +1,6 @@
-"""Reading from SQL databases."""
+"""
+Reading from SQL databases.
+"""
 
 from dagcraft.readers.sql.reader import SQLReader
 

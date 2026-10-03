@@ -8,7 +8,9 @@ GRAPH = compile_graph({"a": set(), "b": set(), "c": {"a", "b"}, "d": {"c"}})
 
 
 def drain(scheduler):
-    """Pop every ready step."""
+    """
+    Pop every ready step.
+    """
     ready = []
     while scheduler.has_ready():
         ready.append(scheduler.pop_ready())

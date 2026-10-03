@@ -1,4 +1,6 @@
-"""Finding the ``:name`` placeholders in SQL text."""
+"""
+Finding the ``:name`` placeholders in SQL text.
+"""
 
 import re
 
@@ -6,7 +8,8 @@ from dagcraft.config.readers import PARTITION_PLACEHOLDERS
 
 
 def escape_non_code_colons(query: str) -> str:
-    r"""Escape colons in comments, strings and quoted names as ``\:``.
+    r"""
+    Escape colons in comments, strings and quoted names as ``\:``.
 
     SQLAlchemy reads ``:name`` as a parameter anywhere in a query, even in
     ``-- comments`` and ``'string literals'``, where the database doesn't
@@ -39,7 +42,8 @@ def escape_non_code_colons(query: str) -> str:
 
 
 def closing_quote(query: str, start: int, quote: str) -> int:
-    """Index just past the quote closing the one at ``start``.
+    """
+    Index just past the quote closing the one at ``start``.
 
     A doubled quote inside (``'it''s'``) is part of the text.
     """
@@ -57,7 +61,9 @@ def closing_quote(query: str, start: int, quote: str) -> int:
 
 
 def check_partition_placeholders(query: str) -> None:
-    """Raise ``ValueError`` unless ``query`` uses both partition placeholders."""
+    """
+    Raise ``ValueError`` unless ``query`` uses both partition placeholders.
+    """
     code = escape_non_code_colons(query)
     missing = [
         name

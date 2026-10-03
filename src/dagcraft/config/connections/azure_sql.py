@@ -1,4 +1,6 @@
-"""The ``azure_sql`` connection type."""
+"""
+The ``azure_sql`` connection type.
+"""
 
 from typing import Self
 
@@ -6,7 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 class AzureSQLConfig(BaseModel):
-    """An Azure SQL database or SQL Server.
+    """
+    An Azure SQL database or SQL Server.
 
     Set ``server`` and ``database`` to sign in as yourself (``az login``), a
     managed identity or a service principal, through
@@ -24,7 +27,9 @@ class AzureSQLConfig(BaseModel):
 
     @model_validator(mode="after")
     def check_sign_in(self) -> Self:
-        """Either a server and database to sign in to, or a connection string."""
+        """
+        Either a server and database to sign in to, or a connection string.
+        """
         signs_in = self.server is not None or self.database is not None
 
         if signs_in == (self.connection_string is not None):

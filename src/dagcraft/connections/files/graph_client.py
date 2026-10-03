@@ -1,4 +1,6 @@
-"""Signed-in requests to Microsoft Graph, which SharePoint is reached through."""
+"""
+Signed-in requests to Microsoft Graph, which SharePoint is reached through.
+"""
 
 from __future__ import annotations
 
@@ -19,7 +21,8 @@ RETRY_STATUSES = (429, 500, 502, 503, 504)
 
 
 class GraphClient:
-    """Makes Graph requests with a fresh token, retrying throttling and blips.
+    """
+    Makes Graph requests with a fresh token, retrying throttling and blips.
 
     ``owner`` names the connection in error messages.
     """
@@ -30,7 +33,9 @@ class GraphClient:
         self._session: requests.Session | None = None
 
     def open(self) -> None:
-        """Sign in and start an HTTP session."""
+        """
+        Sign in and start an HTTP session.
+        """
         # Imported here so the azure extra is only needed when it's used.
         import requests  # noqa: PLC0415
         from requests.adapters import HTTPAdapter  # noqa: PLC0415
@@ -51,7 +56,9 @@ class GraphClient:
         self._session.mount("https://", HTTPAdapter(max_retries=retry))
 
     def close(self) -> None:
-        """End the session and release the credential."""
+        """
+        End the session and release the credential.
+        """
         if self._session is not None:
             self._session.close()
             self._session = None
@@ -68,7 +75,8 @@ class GraphClient:
         not_found_ok: bool = False,
         **kwargs: Any,
     ) -> requests.Response:
-        """Send a request; raise ``ExecutionError`` with Graph's message if it fails.
+        """
+        Send a request; raise ``ExecutionError`` with Graph's message if it fails.
 
         With ``not_found_ok``, a 404 response is returned instead of raised.
         """
@@ -97,12 +105,16 @@ class GraphClient:
         return response
 
     def get_json(self, url: str) -> Any:
-        """GET ``url`` and return its JSON body."""
+        """
+        GET ``url`` and return its JSON body.
+        """
         return self.request("GET", url).json()
 
 
 def graph_message(response: requests.Response) -> str:
-    """The error message from a Graph error response, if it has one."""
+    """
+    The error message from a Graph error response, if it has one.
+    """
     try:
         return str(response.json()["error"]["message"])
     except (ValueError, KeyError, TypeError):

@@ -1,4 +1,5 @@
-"""Partitioned reads: splitting one big read into ranges read at the same time.
+"""
+Partitioned reads: splitting one big read into ranges read at the same time.
 
 Each part runs on its own pooled database connection in its own thread, so
 a large table comes back several times faster than through one connection.
@@ -28,7 +29,9 @@ logger = get_logger(__name__)
 
 @dataclass(frozen=True)
 class Part:
-    """One query of a partitioned read, and the range it covers."""
+    """
+    One query of a partitioned read, and the range it covers.
+    """
 
     query: str
     params: dict[str, Any] = field(default_factory=dict)
@@ -40,7 +43,8 @@ def table_parts(
     table: str,
     partition: SQLPartition,
 ) -> list[Part] | None:
-    """Parts covering every row of ``table``, ranged by ``partition.column``.
+    """
+    Parts covering every row of ``table``, ranged by ``partition.column``.
 
     The range comes from the column's MIN and MAX unless ``partition`` sets
     it. A last part reads the rows where the column is NULL. Returns
@@ -74,7 +78,9 @@ def range_parts(
     upper: int,
     parts: int,
 ) -> list[Part]:
-    """``query`` once per range of ``lower..upper``, filling the placeholders."""
+    """
+    ``query`` once per range of ``lower..upper``, filling the placeholders.
+    """
     return [
         Part(
             query,
@@ -90,7 +96,9 @@ def read_parts(
     parts: list[Part],
     args: dict[str, Any],
 ) -> pd.DataFrame:
-    """Run every part at once, each on its own connection, then combine them."""
+    """
+    Run every part at once, each on its own connection, then combine them.
+    """
 
     def read_part(number: int, part: Part) -> pd.DataFrame:
         frame = read_query(engine, part.query, part.params, args)
@@ -121,7 +129,9 @@ def column_range(
     source: str,
     column: str,
 ) -> tuple[int | None, int | None]:
-    """The smallest and largest value of ``column``; ``None`` if it has none."""
+    """
+    The smallest and largest value of ``column``; ``None`` if it has none.
+    """
     import sqlalchemy as sa  # noqa: PLC0415
 
     with engine.connect() as connection:
@@ -133,7 +143,9 @@ def column_range(
 
 
 def split_range(lower: int, upper: int, parts: int) -> list[tuple[int, int]]:
-    """Split ``lower..upper`` (inclusive) into up to ``parts`` similar ranges."""
+    """
+    Split ``lower..upper`` (inclusive) into up to ``parts`` similar ranges.
+    """
     total = upper - lower + 1
     parts = min(parts, total)
     size, extra = divmod(total, parts)
@@ -149,7 +161,9 @@ def split_range(lower: int, upper: int, parts: int) -> list[tuple[int, int]]:
 
 
 def whole_number(value: Any, column: str) -> int | None:
-    """``value`` as an int, for a partition boundary."""
+    """
+    ``value`` as an int, for a partition boundary.
+    """
     if value is None:
         return None
 

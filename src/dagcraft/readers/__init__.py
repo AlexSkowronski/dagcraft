@@ -1,4 +1,5 @@
-"""Readers: what a read step fetches. Importing registers the built-in ones.
+"""
+Readers: what a read step fetches. Importing registers the built-in ones.
 
 A read step combines a connection (where), a reader for that kind of
 connection (what), and, for files, a format (how the bytes become a table)::

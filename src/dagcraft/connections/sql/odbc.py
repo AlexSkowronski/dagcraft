@@ -1,4 +1,6 @@
-"""ODBC details for SQL Server: connection strings, drivers, access tokens."""
+"""
+ODBC details for SQL Server: connection strings, drivers, access tokens.
+"""
 
 import struct
 
@@ -13,7 +15,8 @@ DRIVER_DOWNLOAD_URL = (
 
 
 def connection_string(server: str, database: str, driver: str) -> str:
-    """An encrypted ODBC connection string, without credentials.
+    """
+    An encrypted ODBC connection string, without credentials.
 
     The server's port defaults to 1433 unless given as ``server,port``.
     """
@@ -29,7 +32,9 @@ def connection_string(server: str, database: str, driver: str) -> str:
 
 
 def check_driver(driver: str, connection: str) -> None:
-    """Raise ``ExecutionError``, saying where to get it, if ``driver`` is missing."""
+    """
+    Raise ``ExecutionError``, saying where to get it, if ``driver`` is missing.
+    """
     import pyodbc  # noqa: PLC0415 - from the azure extra, needed only here
 
     installed = pyodbc.drivers()
@@ -43,7 +48,8 @@ def check_driver(driver: str, connection: str) -> None:
 
 
 def token_attribute(token: str) -> dict[int, bytes]:
-    """The pyodbc ``attrs_before`` setting that signs in with an access token.
+    """
+    The pyodbc ``attrs_before`` setting that signs in with an access token.
 
     The driver expects the token as UTF-16-LE bytes, prefixed by their length.
     """

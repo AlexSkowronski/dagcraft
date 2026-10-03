@@ -1,4 +1,6 @@
-"""The ``transform`` step: apply a registered operation to its inputs."""
+"""
+The ``transform`` step: apply a registered operation to its inputs.
+"""
 
 from collections.abc import Callable
 from typing import Any
@@ -12,7 +14,9 @@ from dagcraft.steps.base import BaseStep
 
 @register_step("transform")
 class TransformStep(BaseStep):
-    """Calls ``operation`` with the inputs, by name, plus ``args``."""
+    """
+    Calls ``operation`` with the inputs, by name, plus ``args``.
+    """
 
     config_model = TransformConfig
     config: TransformConfig

@@ -27,7 +27,9 @@ class RecordingOptions(BaseModel):
 
 @register_connection("recording")
 class RecordingConnection(Connection):
-    """Read-only test connection that records its lifecycle."""
+    """
+    Read-only test connection that records its lifecycle.
+    """
 
     config_model = RecordingConfig
 
@@ -45,7 +47,9 @@ class RecordingConnection(Connection):
 
 @register_reader(RecordingConnection)
 class RecordingReader(Reader):
-    """Reads the step's ``value``, noting each read on the connection."""
+    """
+    Reads the step's ``value``, noting each read on the connection.
+    """
 
     options_model = RecordingOptions
     options: RecordingOptions

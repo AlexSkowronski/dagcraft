@@ -1,4 +1,6 @@
-"""The ``Pipeline`` class: load a pipeline file, then plan, check or run it."""
+"""
+The ``Pipeline`` class: load a pipeline file, then plan, check or run it.
+"""
 
 from pathlib import Path
 from typing import Any, Self
@@ -16,7 +18,8 @@ from dagcraft.yaml_loader import load_yaml
 
 
 class Pipeline:
-    """A checked pipeline, ready to plan, check or run.
+    """
+    A checked pipeline, ready to plan, check or run.
 
     Usually created with ``Pipeline.from_yaml(path)``. Everything is checked
     when the pipeline is created, so a pipeline that exists is one that can
@@ -29,7 +32,8 @@ class Pipeline:
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
     ) -> None:
-        """Compile ``config``.
+        """
+        Compile ``config``.
 
         ``base_dir`` is where relative paths in the config are resolved from;
         it defaults to the current directory, or the file's directory when
@@ -49,7 +53,9 @@ class Pipeline:
         path: str | Path,
         params: dict[str, Any] | None = None,
     ) -> Self:
-        """Load and compile a pipeline file. Relative paths are relative to it."""
+        """
+        Load and compile a pipeline file. Relative paths are relative to it.
+        """
         path = Path(path)
 
         try:
@@ -68,7 +74,9 @@ class Pipeline:
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
     ) -> Self:
-        """Compile a pipeline from a dict shaped like a pipeline file."""
+        """
+        Compile a pipeline from a dict shaped like a pipeline file.
+        """
         try:
             parsed = PipelineConfig.model_validate(config)
         except ValidationError as exc:
@@ -80,21 +88,29 @@ class Pipeline:
 
     @property
     def name(self) -> str:
-        """The pipeline's name, from its file."""
+        """
+        The pipeline's name, from its file.
+        """
         return self.compiled.name
 
     @property
     def params(self) -> dict[str, Any]:
-        """The params in effect: the file's, with any overrides applied."""
+        """
+        The params in effect: the file's, with any overrides applied.
+        """
         return self.compiled.params
 
     @property
     def max_workers(self) -> int:
-        """How many independent steps the file lets run at once."""
+        """
+        How many independent steps the file lets run at once.
+        """
         return self.config.pipeline.max_workers
 
     def plan(self) -> list[PlannedStep]:
-        """The steps in the order they would run, without running them."""
+        """
+        The steps in the order they would run, without running them.
+        """
         return [
             PlannedStep(
                 id=step_id,
@@ -105,7 +121,9 @@ class Pipeline:
         ]
 
     def connections_in_use(self) -> list[str]:
-        """Names of the connections the steps use, in the order they're used."""
+        """
+        Names of the connections the steps use, in the order they're used.
+        """
         names: list[str] = []
 
         for step_id in self.compiled.graph.order:
@@ -117,7 +135,8 @@ class Pipeline:
         return names
 
     def check_connections(self) -> list[ConnectionCheck]:
-        """Open each connection the steps use and prove it works.
+        """
+        Open each connection the steps use and prove it works.
 
         Each connection does one cheap real operation, such as listing a
         folder or running ``SELECT 1``, so problems with credentials,
@@ -141,7 +160,8 @@ class Pipeline:
         keep_outputs: bool = True,
         max_workers: int | None = None,
     ) -> PipelineResult:
-        """Run the pipeline and return the outcome of every step.
+        """
+        Run the pipeline and return the outcome of every step.
 
         When a step fails, the steps that depend on it are skipped and the
         rest still run; with ``fail_fast``, every later step is skipped.
@@ -158,6 +178,8 @@ class Pipeline:
         ``max_workers`` overrides the pipeline file's ``max_workers``: how
         many independent steps may run at once, each in its own thread.
         """
+        # TODO: Would we not want to validate the argparse arguments earlier?
+        # Maybe through an args config? What do you think?
         if max_workers is not None and max_workers < 1:
             raise ValueError("max_workers must be at least 1.")
 

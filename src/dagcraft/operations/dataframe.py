@@ -1,4 +1,5 @@
-"""Built-in operations on DataFrames, for ``transform`` steps.
+"""
+Built-in operations on DataFrames, for ``transform`` steps.
 
 Each takes its inputs by name (``data``, or ``left`` and ``right``) and the
 step's ``args`` as keyword arguments.
@@ -16,7 +17,9 @@ def drop_nulls(
     data: pd.DataFrame,
     subset: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Drop rows with a missing value, in any column or only those in ``subset``."""
+    """
+    Drop rows with a missing value, in any column or only those in ``subset``.
+    """
     return data.dropna(subset=subset)
 
 
@@ -25,7 +28,9 @@ def filter_rows(
     data: pd.DataFrame,
     expression: str,
 ) -> pd.DataFrame:
-    """Keep the rows matching ``expression``, such as ``"amount > 100"``."""
+    """
+    Keep the rows matching ``expression``, such as ``"amount > 100"``.
+    """
     return data.query(expression)
 
 
@@ -34,7 +39,9 @@ def select_columns(
     data: pd.DataFrame,
     columns: list[str],
 ) -> pd.DataFrame:
-    """Keep only ``columns``, in that order."""
+    """
+    Keep only ``columns``, in that order.
+    """
     return data.loc[:, columns]
 
 
@@ -43,7 +50,9 @@ def rename_columns(
     data: pd.DataFrame,
     columns: dict[str, str],
 ) -> pd.DataFrame:
-    """Rename columns, old name to new name."""
+    """
+    Rename columns, old name to new name.
+    """
     return data.rename(columns=columns)
 
 
@@ -53,7 +62,9 @@ def sort_rows(
     by: str | list[str],
     ascending: bool = True,
 ) -> pd.DataFrame:
-    """Sort rows by one or more columns."""
+    """
+    Sort rows by one or more columns.
+    """
     return data.sort_values(
         by=by,
         ascending=ascending,
@@ -67,7 +78,9 @@ def join(
     on: str | list[str],
     **kwargs: Any,
 ) -> pd.DataFrame:
-    """Join ``left`` and ``right`` on shared columns; ``how`` and more go to merge."""
+    """
+    Join ``left`` and ``right`` on shared columns; ``how`` and more go to merge.
+    """
     return left.merge(
         right,
         on=on,
@@ -81,7 +94,8 @@ def aggregate(
     by: str | list[str],
     columns: dict[str, str],
 ) -> pd.DataFrame:
-    """Group rows by ``by`` and aggregate each column with the named function.
+    """
+    Group rows by ``by`` and aggregate each column with the named function.
 
     ``columns`` maps a column to ``sum``, ``mean``, ``count``, ``min``,
     ``max`` or any other pandas aggregation.

@@ -1,4 +1,6 @@
-"""Excel workbooks, including ones with several sheets."""
+"""
+Excel workbooks, including ones with several sheets.
+"""
 
 import io
 from typing import Any, BinaryIO
@@ -11,7 +13,8 @@ from dagcraft.registry import register_format
 
 @register_format("excel")
 class ExcelFormat(Format):
-    """Excel workbooks, through openpyxl.
+    """
+    Excel workbooks, through openpyxl.
 
     Reading takes the first sheet unless ``args`` sets ``sheet_name``. A
     list of sheet names, or ``sheet_name: null`` for every sheet, reads the

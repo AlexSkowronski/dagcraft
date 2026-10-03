@@ -1,4 +1,6 @@
-"""Choosing the format for a file: by name, or from its extension."""
+"""
+Choosing the format for a file: by name, or from its extension.
+"""
 
 from pathlib import PurePath
 
@@ -8,7 +10,8 @@ from dagcraft.registry import FORMATS
 
 
 def resolve_format(path: str, name: str | None = None) -> Format:
-    """The format called ``name``, or the one ``path``'s extension implies.
+    """
+    The format called ``name``, or the one ``path``'s extension implies.
 
     Raises ``ValueError`` if there is no such format.
     """

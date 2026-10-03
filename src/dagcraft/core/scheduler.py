@@ -1,4 +1,6 @@
-"""Deciding which step runs next, and which steps to skip."""
+"""
+Deciding which step runs next, and which steps to skip.
+"""
 
 import heapq
 
@@ -7,7 +9,8 @@ from dagcraft.core.results import StepStatus
 
 
 class Scheduler:
-    """Tracks which steps are ready to run as others finish.
+    """
+    Tracks which steps are ready to run as others finish.
 
     A step is ready once every step it depends on has finished; among ready
     steps, the one declared first goes next. A ready step should be skipped
@@ -40,15 +43,21 @@ class Scheduler:
         ]
 
     def has_ready(self) -> bool:
-        """Whether a step is waiting to be started or skipped."""
+        """
+        Whether a step is waiting to be started or skipped.
+        """
         return bool(self._ready)
 
     def pop_ready(self) -> str:
-        """Take the earliest declared ready step."""
+        """
+        Take the earliest declared ready step.
+        """
         return heapq.heappop(self._ready)[1]
 
     def skip_reason(self, step_id: str) -> str | None:
-        """Why ``step_id`` shouldn't run, or ``None`` if it should."""
+        """
+        Why ``step_id`` shouldn't run, or ``None`` if it should.
+        """
         if self._stopped:
             return "an earlier step failed and fail_fast is on"
 
@@ -60,7 +69,9 @@ class Scheduler:
         return None
 
     def finished(self, step_id: str, status: StepStatus) -> None:
-        """Record how ``step_id`` ended, readying the steps that waited on it."""
+        """
+        Record how ``step_id`` ended, readying the steps that waited on it.
+        """
         if status == StepStatus.SUCCESS:
             self._succeeded.add(step_id)
         elif status == StepStatus.FAILED and self._fail_fast:
@@ -73,5 +84,7 @@ class Scheduler:
                 heapq.heappush(self._ready, (self._position[dependent], dependent))
 
     def position(self, step_id: str) -> int:
-        """Where ``step_id`` comes in run order, to sort steps that end together."""
+        """
+        Where ``step_id`` comes in run order, to sort steps that end together.
+        """
         return self._position[step_id]

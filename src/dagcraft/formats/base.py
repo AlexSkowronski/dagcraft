@@ -1,4 +1,6 @@
-"""The base class every file format extends."""
+"""
+The base class every file format extends.
+"""
 
 from abc import ABC, abstractmethod
 from typing import Any, BinaryIO, ClassVar
@@ -7,7 +9,8 @@ from dagcraft.extras import require_extra
 
 
 class Format(ABC):
-    """Turns an open binary file into a table, and a table back into a file.
+    """
+    Turns an open binary file into a table, and a table back into a file.
 
     ``extensions`` lists the file suffixes this format is inferred from.
     ``modules`` and ``extra`` name optional dependencies and the dagcraft
@@ -21,7 +24,9 @@ class Format(ABC):
     multiple_inputs: ClassVar[bool] = False
 
     def check_available(self) -> None:
-        """Raise ``ConfigError`` if an optional dependency is missing."""
+        """
+        Raise ``ConfigError`` if an optional dependency is missing.
+        """
         if self.modules:
             require_extra(
                 *self.modules,
@@ -31,8 +36,12 @@ class Format(ABC):
 
     @abstractmethod
     def read(self, file: BinaryIO, **args: Any) -> Any:
-        """Read ``file`` into a table; ``args`` are the step's ``args``."""
+        """
+        Read ``file`` into a table; ``args`` are the step's ``args``.
+        """
 
     @abstractmethod
     def write(self, data: Any, file: BinaryIO, **args: Any) -> None:
-        """Write ``data`` to ``file``; ``args`` are the step's ``args``."""
+        """
+        Write ``data`` to ``file``; ``args`` are the step's ``args``.
+        """

@@ -21,7 +21,9 @@ class FlakyConfig(StepConfig):
 
 @register_step("flaky")
 class FlakyStep(BaseStep):
-    """Fails ``failures`` times, then succeeds."""
+    """
+    Fails ``failures`` times, then succeeds.
+    """
 
     config_model = FlakyConfig
     config: FlakyConfig

@@ -1,4 +1,6 @@
-"""Operations for transform steps. Importing this package registers them."""
+"""
+Operations for transform steps. Importing this package registers them.
+"""
 
 from dagcraft.operations.dataframe import (
     aggregate,

@@ -1,4 +1,5 @@
-"""Registries of the components a pipeline file can name.
+"""
+Registries of the components a pipeline file can name.
 
 Built-in components register themselves when their package is imported;
 your own register the same way, with the ``register_*`` decorators.
@@ -10,14 +11,18 @@ from dagcraft.exceptions import RegistryError
 
 
 class Registry:
-    """Named components of one kind, such as step types or formats."""
+    """
+    Named components of one kind, such as step types or formats.
+    """
 
     def __init__(self, kind: str) -> None:
         self.kind = kind
         self._items: dict[str, Any] = {}
 
     def register(self, name: str):
-        """Decorator that registers a class or function under ``name``."""
+        """
+        Decorator that registers a class or function under ``name``.
+        """
 
         def decorator(item):
             if name in self._items:
@@ -30,7 +35,9 @@ class Registry:
         return decorator
 
     def get(self, name: str) -> Any:
-        """The component called ``name``; raises ``RegistryError`` if unknown."""
+        """
+        The component called ``name``; raises ``RegistryError`` if unknown.
+        """
         try:
             return self._items[name]
         except KeyError:
@@ -40,11 +47,15 @@ class Registry:
             ) from None
 
     def names(self) -> list[str]:
-        """Every registered name, sorted."""
+        """
+        Every registered name, sorted.
+        """
         return sorted(self._items)
 
     def values(self) -> list[Any]:
-        """Every registered component, in the order they were registered."""
+        """
+        Every registered component, in the order they were registered.
+        """
         return list(self._items.values())
 
     def __contains__(self, name: object) -> bool:
@@ -52,7 +63,8 @@ class Registry:
 
 
 class ConnectionTypeRegistry:
-    """Classes registered for a kind of connection, such as its reader.
+    """
+    Classes registered for a kind of connection, such as its reader.
 
     Looking up a connection finds the class registered for its own type, or
     else for the nearest base class: a reader registered for
@@ -64,7 +76,9 @@ class ConnectionTypeRegistry:
         self._items: dict[type, Any] = {}
 
     def register(self, connection_type: type):
-        """Decorator that registers a class for ``connection_type``."""
+        """
+        Decorator that registers a class for ``connection_type``.
+        """
 
         def decorator(item):
             if connection_type in self._items:
@@ -78,7 +92,9 @@ class ConnectionTypeRegistry:
         return decorator
 
     def find(self, connection: object) -> Any | None:
-        """The class registered for ``connection``'s type, or ``None``."""
+        """
+        The class registered for ``connection``'s type, or ``None``.
+        """
         for cls in type(connection).__mro__:
             if cls in self._items:
                 return self._items[cls]

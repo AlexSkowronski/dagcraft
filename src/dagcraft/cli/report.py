@@ -1,4 +1,6 @@
-"""What the ``dagcraft`` command logs about a pipeline: its plan, checks and outcome."""
+"""
+What the ``dagcraft`` command logs about a pipeline: its plan, checks and outcome.
+"""
 
 import logging
 
@@ -12,12 +14,16 @@ RULE = "-" * 50
 
 
 def log_valid(pipeline: Pipeline) -> None:
-    """Say the pipeline file passed every check."""
+    """
+    Say the pipeline file passed every check.
+    """
     logger.info("Pipeline '%s' is valid.", pipeline.name)
 
 
 def log_plan(pipeline: Pipeline, max_workers: int | None = None) -> None:
-    """Log the params and the steps in run order, for a dry run."""
+    """
+    Log the params and the steps in run order, for a dry run.
+    """
     if pipeline.params:
         params = ", ".join(f"{name}={value}" for name, value in pipeline.params.items())
         logger.info("Params: %s", params)
@@ -46,7 +52,8 @@ def log_plan(pipeline: Pipeline, max_workers: int | None = None) -> None:
 
 
 def log_checks(pipeline: Pipeline) -> bool:
-    """Check the pipeline's connections and log a table of results.
+    """
+    Check the pipeline's connections and log a table of results.
 
     Returns whether every check passed.
     """
@@ -80,7 +87,9 @@ def log_checks(pipeline: Pipeline) -> bool:
 
 
 def log_summary(result: PipelineResult) -> None:
-    """Log a table of every step's status and duration, then the outcome."""
+    """
+    Log a table of every step's status and duration, then the outcome.
+    """
     logger.info("Pipeline: %s (run %s)", result.name, result.run_id)
     logger.info(RULE)
 

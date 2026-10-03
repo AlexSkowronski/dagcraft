@@ -1,4 +1,6 @@
-"""Opening connections when a run first needs them, and closing them after."""
+"""
+Opening connections when a run first needs them, and closing them after.
+"""
 
 import threading
 
@@ -9,7 +11,8 @@ logger = get_logger(__name__)
 
 
 class ConnectionManager:
-    """A run's connections: each opened on first use, all closed at the end.
+    """
+    A run's connections: each opened on first use, all closed at the end.
 
     Connections no step asks for are never opened. Safe to use from steps
     running in parallel.
@@ -21,7 +24,9 @@ class ConnectionManager:
         self._lock = threading.Lock()
 
     def get(self, name: str) -> Connection:
-        """The connection called ``name``, opened if this is its first use."""
+        """
+        The connection called ``name``, opened if this is its first use.
+        """
         connection = self._connections[name]
 
         with self._lock:
@@ -32,7 +37,8 @@ class ConnectionManager:
         return connection
 
     def close_all(self) -> None:
-        """Close every connection opened so far, newest first.
+        """
+        Close every connection opened so far, newest first.
 
         A connection that fails to close is logged, and the rest still close.
         """

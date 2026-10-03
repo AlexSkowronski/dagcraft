@@ -1,4 +1,5 @@
-"""The ``dagcraft`` command line: ``dagcraft pipeline.yaml [--dry-run] ...``.
+"""
+The ``dagcraft`` command line: ``dagcraft pipeline.yaml [--dry-run] ...``.
 
 parser.py   the arguments
 command.py  main(): load, check, run, exit code

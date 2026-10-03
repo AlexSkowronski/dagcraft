@@ -1,4 +1,6 @@
-"""The fields of each built-in step type."""
+"""
+The fields of each built-in step type.
+"""
 
 from typing import Any, Self
 
@@ -6,7 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StepConfig(BaseModel):
-    """Fields every step has. Step types subclass this to add their own.
+    """
+    Fields every step has. Step types subclass this to add their own.
 
     ``inputs`` maps the names a step receives its inputs under to the ids of
     the steps that produce them. ``retries`` re-runs a failed step that many
@@ -24,13 +27,17 @@ class StepConfig(BaseModel):
 
 
 class FunctionStepConfig(StepConfig):
-    """Steps that call a function with their inputs plus ``args``."""
+    """
+    Steps that call a function with their inputs plus ``args``.
+    """
 
     args: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def check_names(self) -> Self:
-        """An argument can't share a name with an input."""
+        """
+        An argument can't share a name with an input.
+        """
         overlap = set(self.inputs) & set(self.args)
 
         if overlap:
@@ -40,19 +47,24 @@ class FunctionStepConfig(StepConfig):
 
 
 class TransformConfig(FunctionStepConfig):
-    """A ``transform`` step: calls a registered operation."""
+    """
+    A ``transform`` step: calls a registered operation.
+    """
 
     operation: str = Field(min_length=1)
 
 
 class PythonConfig(FunctionStepConfig):
-    """A ``python`` step: calls ``callable``, written as ``module.path:function``."""
+    """
+    A ``python`` step: calls ``callable``, written as ``module.path:function``.
+    """
 
     callable: str = Field(min_length=1)
 
 
 class ReadConfig(StepConfig):
-    """A ``read`` step.
+    """
+    A ``read`` step.
 
     The other fields (``path``, ``query``, ...) depend on the kind of
     connection, and are validated by its reader's options model.
@@ -64,14 +76,17 @@ class ReadConfig(StepConfig):
 
     @model_validator(mode="after")
     def check_no_inputs(self) -> Self:
-        """Reading starts a branch of the graph, so it takes no inputs."""
+        """
+        Reading starts a branch of the graph, so it takes no inputs.
+        """
         if self.inputs:
             raise ValueError("A read step cannot have inputs.")
         return self
 
 
 class WriteConfig(StepConfig):
-    """A ``write`` step.
+    """
+    A ``write`` step.
 
     The other fields depend on the kind of connection, and are validated by
     its writer's options model. Usually one input; formats that hold several
@@ -84,12 +99,16 @@ class WriteConfig(StepConfig):
 
     @model_validator(mode="after")
     def check_inputs(self) -> Self:
-        """Writing needs something to write."""
+        """
+        Writing needs something to write.
+        """
         if not self.inputs:
             raise ValueError("A write step needs at least one input.")
         return self
 
 
 def extra_fields(config: BaseModel) -> dict[str, Any]:
-    """The fields a step was given beyond the ones its model defines."""
+    """
+    The fields a step was given beyond the ones its model defines.
+    """
     return dict(config.model_extra or {})

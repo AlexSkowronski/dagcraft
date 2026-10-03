@@ -1,4 +1,5 @@
-"""Config-driven DAG pipelines for Python.
+"""
+Config-driven DAG pipelines for Python.
 
     from dagcraft import Pipeline
 

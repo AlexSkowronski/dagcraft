@@ -1,4 +1,5 @@
-"""Turning a pipeline file into connections, prepared steps and a graph.
+"""
+Turning a pipeline file into connections, prepared steps and a graph.
 
 Everything that can be checked without running is checked here, so a
 pipeline that compiles is one that can run.
@@ -27,7 +28,9 @@ from dagcraft.steps import BaseStep
 
 @dataclass(frozen=True)
 class CompiledPipeline:
-    """A checked pipeline: its connections and prepared steps, in graph order."""
+    """
+    A checked pipeline: its connections and prepared steps, in graph order.
+    """
 
     name: str
     params: dict[str, Any]
@@ -42,7 +45,8 @@ def compile_pipeline(
     base_dir: Path,
     params: dict[str, Any] | None = None,
 ) -> CompiledPipeline:
-    """Check ``config`` and build everything needed to run it.
+    """
+    Check ``config`` and build everything needed to run it.
 
     Raises ``ConfigError`` naming the connection or step at fault.
     """
@@ -80,7 +84,8 @@ def build_connections(
     base_dir: Path,
     params: dict[str, Any],
 ) -> tuple[dict[str, Connection], dict[str, str]]:
-    """Create each connection from its section, plus the built-in ``local``.
+    """
+    Create each connection from its section, plus the built-in ``local``.
 
     Returns the connections and each one's type name, by connection name.
     """
@@ -118,7 +123,9 @@ def build_steps(
     raw_steps: list[dict[str, Any]],
     params: dict[str, Any],
 ) -> dict[str, BaseStep]:
-    """Create each step from its entry, validated by its type's model."""
+    """
+    Create each step from its entry, validated by its type's model.
+    """
     steps: dict[str, BaseStep] = {}
 
     for position, raw in enumerate(raw_steps, start=1):
@@ -150,7 +157,9 @@ def build_steps(
 
 
 def describe(exc: Exception) -> str:
-    """An error's message, with validation errors summarised on one line."""
+    """
+    An error's message, with validation errors summarised on one line.
+    """
     if isinstance(exc, ValidationError):
         return format_validation_error(exc)
     return str(exc)

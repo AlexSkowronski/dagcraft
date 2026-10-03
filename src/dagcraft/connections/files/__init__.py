@@ -1,4 +1,6 @@
-"""Connections to storage that holds files. Importing registers the built-in ones."""
+"""
+Connections to storage that holds files. Importing registers the built-in ones.
+"""
 
 from dagcraft.connections.files.azure_blob import AzureBlobConnection
 from dagcraft.connections.files.base import FileConnection, FileMode

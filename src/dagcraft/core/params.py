@@ -1,4 +1,5 @@
-"""``${params.NAME}`` and ``${env:NAME}`` references in pipeline files.
+"""
+``${params.NAME}`` and ``${env:NAME}`` references in pipeline files.
 
 A string that is exactly one reference is replaced by the referenced value,
 keeping its type, so ``${params.limit}`` can be a number or a list. A
@@ -21,7 +22,8 @@ def resolve_params(
     declared: dict[str, Any],
     overrides: dict[str, Any],
 ) -> dict[str, Any]:
-    """Combine the file's params with overrides.
+    """
+    Combine the file's params with overrides.
 
     Params may reference environment variables but not each other.
     Overrides must name a param declared in the file.
@@ -56,7 +58,8 @@ def resolve_params(
 
 
 def substitute(value: Any, params: dict[str, Any] | None, where: str = "") -> Any:
-    """Replace references in every string inside ``value``.
+    """
+    Replace references in every string inside ``value``.
 
     ``params`` is ``None`` while the params themselves are being resolved,
     where only environment variables may be referenced. Raises
@@ -81,7 +84,9 @@ def substitute(value: Any, params: dict[str, Any] | None, where: str = "") -> An
 
 
 def substitute_text(text: str, params: dict[str, Any] | None, where: str) -> Any:
-    """Replace the references in one string; see ``substitute``."""
+    """
+    Replace the references in one string; see ``substitute``.
+    """
     whole = REFERENCE.fullmatch(text)
 
     if whole is not None and not whole.group(1):
@@ -106,7 +111,9 @@ def substitute_text(text: str, params: dict[str, Any] | None, where: str) -> Any
 
 
 def resolve(reference: str, params: dict[str, Any] | None, where: str) -> Any:
-    """The value of one reference, written without its ``${`` and ``}``."""
+    """
+    The value of one reference, written without its ``${`` and ``}``.
+    """
     if reference.startswith("env:"):
         name, has_default, default = reference.removeprefix("env:").partition(":-")
         value = os.environ.get(name)
@@ -138,10 +145,14 @@ def resolve(reference: str, params: dict[str, Any] | None, where: str) -> Any:
 
 
 def join(where: str, key: str) -> str:
-    """The location of ``key`` inside ``where``, for error messages."""
+    """
+    The location of ``key`` inside ``where``, for error messages.
+    """
     return f"{where}.{key}" if where else key
 
 
 def location(where: str) -> str:
-    """``where`` as the start of an error message, if known."""
+    """
+    ``where`` as the start of an error message, if known.
+    """
     return f"in {where}: " if where else ""

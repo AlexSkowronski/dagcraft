@@ -1,4 +1,6 @@
-"""The ``write`` step: put data somewhere through a connection."""
+"""
+The ``write`` step: put data somewhere through a connection.
+"""
 
 from typing import Any
 
@@ -13,7 +15,8 @@ from dagcraft.writers import Writer
 
 @register_step("write")
 class WriteStep(BaseStep):
-    """Writes with the writer registered for the connection's type.
+    """
+    Writes with the writer registered for the connection's type.
 
     Several inputs are written together (as Excel sheets, say) when the
     writer accepts them; the step's output is what it wrote.

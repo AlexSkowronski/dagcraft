@@ -1,4 +1,6 @@
-"""Reading from SQL databases: a query, a ``.sql`` file or a whole table."""
+"""
+Reading from SQL databases: a query, a ``.sql`` file or a whole table.
+"""
 
 from __future__ import annotations
 
@@ -29,7 +31,9 @@ logger = get_logger(__name__)
 
 @register_reader(SQLConnection)
 class SQLReader(Reader):
-    """Reads a query, a query file or a table from any SQL connection."""
+    """
+    Reads a query, a query file or a table from any SQL connection.
+    """
 
     options_model = SQLReadOptions
     options: SQLReadOptions
@@ -101,7 +105,9 @@ class SQLReader(Reader):
         return read_parts(engine, parts, self.options.args)
 
     def _parts(self, engine: sa.Engine, partition: SQLPartition) -> list[Part] | None:
-        """The queries to run, or ``None`` if a table should be read whole."""
+        """
+        The queries to run, or ``None`` if a table should be read whole.
+        """
         if self.options.table is not None:
             return table_parts(engine, self.options.table, partition)
 

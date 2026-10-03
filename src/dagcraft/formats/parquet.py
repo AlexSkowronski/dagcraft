@@ -1,4 +1,6 @@
-"""Parquet files."""
+"""
+Parquet files.
+"""
 
 from typing import Any, BinaryIO
 
@@ -10,7 +12,9 @@ from dagcraft.registry import register_format
 
 @register_format("parquet")
 class ParquetFormat(Format):
-    """Columnar Parquet, through pyarrow; ``args`` go to pandas."""
+    """
+    Columnar Parquet, through pyarrow; ``args`` go to pandas.
+    """
 
     extensions = (".parquet", ".pq")
 

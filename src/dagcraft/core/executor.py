@@ -1,4 +1,6 @@
-"""Running a compiled pipeline from start to finish."""
+"""
+Running a compiled pipeline from start to finish.
+"""
 
 import uuid
 from concurrent.futures import FIRST_COMPLETED, Future, wait
@@ -19,7 +21,8 @@ logger = get_logger(__name__)
 
 
 class Executor:
-    """Runs a compiled pipeline's steps, up to ``max_workers`` at a time.
+    """
+    Runs a compiled pipeline's steps, up to ``max_workers`` at a time.
 
     The scheduler decides what is ready, the step runner runs each step, and
     the executor connects them: it starts ready steps, waits for running ones
@@ -43,16 +46,34 @@ class Executor:
         self.run_id = run_id or uuid.uuid4().hex[:8]
 
     def run(self) -> PipelineResult:
-        """Run every step, or skip it, and report the outcome."""
-        results = {step_id: StepResult(id=step_id) for step_id in self.pipeline.steps}
+        """
+        Run every step, or skip it, and report the outcome.
+        """
+        results = {
+            step_id: StepResult(
+                id=step_id,
+            )
+            for step_id in self.pipeline.steps
+        }
         context = ExecutionContext(
             run_id=self.run_id,
             params=self.pipeline.params,
-            connections=ConnectionManager(self.pipeline.connections),
-            outputs=OutputStore(self.pipeline.graph, keep=self.keep_outputs),
+            connections=ConnectionManager(
+                self.pipeline.connections,
+            ),
+            outputs=OutputStore(
+                self.pipeline.graph,
+                keep=self.keep_outputs,
+            ),
         )
 
-        with run_context(self.pipeline.name, self.run_id), Timer() as timer:
+        with (
+            run_context(
+                self.pipeline.name,
+                self.run_id,
+            ),
+            Timer() as timer,
+        ):
             steps = f"{len(results)} step{'' if len(results) == 1 else 's'}"
             at_once = (
                 f", up to {self.max_workers} at once" if self.max_workers > 1 else ""
@@ -104,7 +125,9 @@ class Executor:
         running: dict[Future[None], str],
         results: dict[str, StepResult],
     ) -> None:
-        """Start or skip ready steps, earliest declared first, while there's room."""
+        """
+        Start or skip ready steps, earliest declared first, while there's room.
+        """
         while scheduler.has_ready() and len(running) < self.max_workers:
             step_id = scheduler.pop_ready()
             reason = scheduler.skip_reason(step_id)
@@ -125,7 +148,9 @@ class Executor:
         running: dict[Future[None], str],
         scheduler: Scheduler,
     ) -> list[str]:
-        """Wait for at least one running step; return those done, in run order."""
+        """
+        Wait for at least one running step; return those done, in run order.
+        """
         if not running:
             return []
 

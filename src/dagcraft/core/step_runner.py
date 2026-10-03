@@ -1,4 +1,6 @@
-"""Running one step: its inputs, its retries, and how it ended."""
+"""
+Running one step: its inputs, its retries, and how it ended.
+"""
 
 import time
 from typing import Any
@@ -13,7 +15,8 @@ logger = get_logger(__name__)
 
 
 class StepRunner:
-    """Runs steps one at a time (call ``run`` from several threads to overlap them).
+    """
+    Runs steps one at a time (call ``run`` from several threads to overlap them).
 
     A step gets the outputs of the steps it depends on as its inputs. A
     failed step is retried up to ``retries`` times, waiting ``retry_delay``
@@ -26,7 +29,9 @@ class StepRunner:
         self.context = context
 
     def run(self, result: StepResult) -> None:
-        """Run the step ``result`` is for, recording the outcome on ``result``."""
+        """
+        Run the step ``result`` is for, recording the outcome on ``result``.
+        """
         step = self.steps[result.id]
 
         with step_context(result.id), Timer() as timer:

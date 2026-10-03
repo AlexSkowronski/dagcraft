@@ -1,4 +1,5 @@
-"""JSON documents.
+"""
+JSON documents.
 
 Reading flattens nested objects into columns with ``pandas.json_normalize``
 (``{"user": {"id": 1}}`` becomes a ``user.id`` column), and ``args`` go to
@@ -17,7 +18,9 @@ from dagcraft.registry import register_format
 
 @register_format("json")
 class JSONFormat(Format):
-    """A JSON document: a list of records, or an object holding them."""
+    """
+    A JSON document: a list of records, or an object holding them.
+    """
 
     extensions = (".json",)
 

@@ -12,7 +12,9 @@ from dagcraft.readers.sql.partitions import split_range
 
 @pytest.fixture
 def warehouse(tmp_path):
-    """orders: order_id 1..200 plus 3 rows without an id."""
+    """
+    orders: order_id 1..200 plus 3 rows without an id.
+    """
     engine = sa.create_engine(f"sqlite:///{tmp_path / 'warehouse.db'}")
     orders = pd.DataFrame(
         {
@@ -31,7 +33,9 @@ def warehouse(tmp_path):
 
 @pytest.fixture
 def statements():
-    """Every SQL statement run, with the thread that ran it."""
+    """
+    Every SQL statement run, with the thread that ran it.
+    """
     seen: list[tuple[str, str]] = []
 
     def record(_conn, _cursor, statement, _parameters, _context, _executemany):

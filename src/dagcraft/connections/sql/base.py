@@ -1,4 +1,5 @@
-"""The base class for connections to SQL databases.
+"""
+The base class for connections to SQL databases.
 
 Reading and writing go through SQLAlchemy, so they work the same for every
 database. Each connection type only decides how to build the engine: which
@@ -24,7 +25,8 @@ POOL_OVERFLOW = 40
 
 
 class SQLConnection(Connection):
-    """A SQL database, reached through a SQLAlchemy engine.
+    """
+    A SQL database, reached through a SQLAlchemy engine.
 
     Subclasses implement ``create_engine``. ``extra`` names the package
     extra that provides the dependencies.
@@ -39,7 +41,9 @@ class SQLConnection(Connection):
 
     @abstractmethod
     def create_engine(self) -> sa.Engine:
-        """Build the engine this connection reads and writes through."""
+        """
+        Build the engine this connection reads and writes through.
+        """
 
     def open(self) -> None:
         self._engine = self.create_engine()
@@ -51,7 +55,9 @@ class SQLConnection(Connection):
 
     @property
     def engine(self) -> sa.Engine:
-        """The open engine; raises if the connection isn't open."""
+        """
+        The open engine; raises if the connection isn't open.
+        """
         if self._engine is None:
             raise self.not_open()
         return self._engine

@@ -1,4 +1,6 @@
-"""Measuring how long things take."""
+"""
+Measuring how long things take.
+"""
 
 import functools
 import logging
@@ -8,7 +10,8 @@ from typing import Any, Self
 
 
 class Timer:
-    """Measures elapsed wall-clock time, as a context manager or a decorator.
+    """
+    Measures elapsed wall-clock time, as a context manager or a decorator.
 
     As a context manager, ``elapsed`` grows while the block runs and is fixed
     once it ends::
@@ -63,7 +66,9 @@ class Timer:
 
     @property
     def elapsed(self) -> float:
-        """Seconds since the timer started; fixed once it has stopped."""
+        """
+        Seconds since the timer started; fixed once it has stopped.
+        """
         if self._start is None:
             return 0.0
         end = self._end if self._end is not None else perf_counter()

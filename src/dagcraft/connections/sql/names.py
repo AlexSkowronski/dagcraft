@@ -1,4 +1,6 @@
-"""Table and column names in pipeline files, and quoting them for a database."""
+"""
+Table and column names in pipeline files, and quoting them for a database.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +11,9 @@ if TYPE_CHECKING:
 
 
 def split_table(table: str) -> tuple[str | None, str]:
-    """Split ``name`` or ``schema.name`` into its schema and name."""
+    """
+    Split ``name`` or ``schema.name`` into its schema and name.
+    """
     match table.split("."):
         case [name] if name:
             return None, name
@@ -20,7 +24,9 @@ def split_table(table: str) -> tuple[str | None, str]:
 
 
 def quote_table(engine: sa.Engine, table: str) -> str:
-    """``schema.table`` quoted by the database's own rules, for use in SQL text."""
+    """
+    ``schema.table`` quoted by the database's own rules, for use in SQL text.
+    """
     preparer = engine.dialect.identifier_preparer
     schema, name = split_table(table)
     quoted = preparer.quote(name)
@@ -31,5 +37,7 @@ def quote_table(engine: sa.Engine, table: str) -> str:
 
 
 def quote_column(engine: sa.Engine, column: str) -> str:
-    """``column`` quoted by the database's own rules, for use in SQL text."""
+    """
+    ``column`` quoted by the database's own rules, for use in SQL text.
+    """
     return engine.dialect.identifier_preparer.quote(column)

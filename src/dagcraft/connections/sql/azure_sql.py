@@ -1,4 +1,5 @@
-"""The ``azure_sql`` connection type: Azure SQL Database and SQL Server.
+"""
+The ``azure_sql`` connection type: Azure SQL Database and SQL Server.
 
 Through pyodbc and SQLAlchemy. Requires the ``azure`` extra
 (``pip install 'dagcraft-pipelines[azure]'``) and Microsoft's ODBC Driver for
@@ -26,7 +27,8 @@ AZURE_SQL_SCOPE = "https://database.windows.net/.default"
 
 @register_connection("azure_sql")
 class AzureSQLConnection(SQLConnection):
-    """Azure SQL Database or SQL Server.
+    """
+    Azure SQL Database or SQL Server.
 
     With ``server`` and ``database``, sign-in uses an Entra ID token from
     ``DefaultAzureCredential``: your ``az login`` locally, a managed identity
@@ -77,7 +79,9 @@ class AzureSQLConnection(SQLConnection):
         return f"connected to {database} as {login}"
 
     def odbc_connection_string(self) -> str:
-        """The connection string for signing in to ``server`` and ``database``."""
+        """
+        The connection string for signing in to ``server`` and ``database``.
+        """
         return odbc.connection_string(
             self.config.server or "",
             self.config.database or "",
@@ -105,7 +109,9 @@ class AzureSQLConnection(SQLConnection):
         cargs: list[Any],
         cparams: dict[str, Any],
     ) -> None:
-        """Pass a fresh access token to each new database connection."""
+        """
+        Pass a fresh access token to each new database connection.
+        """
         if self._credential is None:
             raise self.not_open()
 

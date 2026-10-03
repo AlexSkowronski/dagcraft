@@ -113,7 +113,11 @@ ignore = [
     "D102",    # overriding methods inherit the base class's docstring
     "D105",    # magic methods are self-explanatory
     "D107",    # __init__ arguments are described in the class docstring
+    "D200",    # docstrings always open and close on their own lines...
+    "D212",    # ...with the summary on the line after the opening quotes
 ]
+# The other half of that docstring style: summary on the second line.
+extend-select = ["D213"]
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/**" = [

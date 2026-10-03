@@ -1,4 +1,5 @@
-"""The engine: compiling a pipeline file and running it.
+"""
+The engine: compiling a pipeline file and running it.
 
 params.py              ${params.X} and ${env:X} references
 compiler.py            config -> connections, prepared steps and a graph

@@ -1,4 +1,6 @@
-"""Writing a file in the format its path or the step names."""
+"""
+Writing a file in the format its path or the step names.
+"""
 
 from typing import Any
 
@@ -11,14 +13,18 @@ from dagcraft.writers.base import Writer
 
 @register_writer(FileConnection)
 class FileWriter(Writer):
-    """Writes ``path`` to any file connection with its format."""
+    """
+    Writes ``path`` to any file connection with its format.
+    """
 
     options_model = FileWriteOptions
     options: FileWriteOptions
 
     @property
     def file_format(self) -> Format:
-        """The format named in the options, or implied by the path."""
+        """
+        The format named in the options, or implied by the path.
+        """
         return resolve_format(self.options.path, self.options.format)
 
     def prepare(self, connection: FileConnection) -> None:

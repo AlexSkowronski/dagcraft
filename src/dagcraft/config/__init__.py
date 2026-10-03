@@ -1,4 +1,5 @@
-"""What a pipeline file can say: pydantic models for every part of it.
+"""
+What a pipeline file can say: pydantic models for every part of it.
 
 The models only describe and validate the file. The components that act on
 them (connections, readers, writers, steps) live in their own packages and

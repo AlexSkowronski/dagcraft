@@ -1,4 +1,6 @@
-"""What a running step can reach."""
+"""
+What a running step can reach.
+"""
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -11,7 +13,8 @@ from dagcraft.logs import RunLogger, get_logger
 
 @dataclass
 class ExecutionContext:
-    """Passed to every step's ``execute``: the run's connections, params and more.
+    """
+    Passed to every step's ``execute``: the run's connections, params and more.
 
     ``logger`` logs with the run and step in each message, for steps of your
     own; ``dagcraft.get_logger(__name__)`` does the same from any module.
@@ -24,5 +27,7 @@ class ExecutionContext:
     logger: RunLogger = field(default_factory=lambda: get_logger("dagcraft.steps"))
 
     def connection(self, name: str) -> Connection:
-        """The connection called ``name``, opened on first use in this run."""
+        """
+        The connection called ``name``, opened on first use in this run.
+        """
         return self.connections.get(name)

@@ -1,4 +1,5 @@
-"""``python -m dagcraft pipeline.yaml``: the same as the ``dagcraft`` command.
+"""
+``python -m dagcraft pipeline.yaml``: the same as the ``dagcraft`` command.
 
 Handy where the ``dagcraft`` script isn't on the PATH.
 """

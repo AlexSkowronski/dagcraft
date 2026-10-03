@@ -9,7 +9,9 @@ from dagcraft.cli import main
 
 @register_step("snapshot")
 class SnapshotStep(BaseStep):
-    """Records which step outputs are still held when it runs."""
+    """
+    Records which step outputs are still held when it runs.
+    """
 
     config_model = StepConfig
     seen: ClassVar[dict[str, list[str]]] = {}

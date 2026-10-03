@@ -1,4 +1,6 @@
-"""The dependency graph between steps, and the order they run in."""
+"""
+The dependency graph between steps, and the order they run in.
+"""
 
 import heapq
 from dataclasses import dataclass
@@ -9,14 +11,17 @@ from dagcraft.exceptions import GraphError
 
 @dataclass(frozen=True)
 class CompiledGraph:
-    """Each step's dependencies, and an order that respects them."""
+    """
+    Each step's dependencies, and an order that respects them.
+    """
 
     dependencies: dict[str, set[str]]
     order: list[str]
 
 
 def compile_graph(dependencies: dict[str, set[str]]) -> CompiledGraph:
-    """Check and order the graph.
+    """
+    Check and order the graph.
 
     ``dependencies`` maps each step id, in declared order, to the ids of the
     steps it takes inputs from. Raises ``GraphError`` for unknown steps,
@@ -41,7 +46,8 @@ def compile_graph(dependencies: dict[str, set[str]]) -> CompiledGraph:
 
 
 def topological_sort(dependencies: dict[str, set[str]]) -> list[str]:
-    """Order steps so each comes after the steps it depends on.
+    """
+    Order steps so each comes after the steps it depends on.
 
     Whenever several steps are ready, the one declared first goes next, so
     steps run in the order they're written unless a dependency says

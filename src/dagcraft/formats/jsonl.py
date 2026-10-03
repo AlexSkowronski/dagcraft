@@ -1,4 +1,6 @@
-"""JSON Lines files: one JSON record per line."""
+"""
+JSON Lines files: one JSON record per line.
+"""
 
 import json
 from typing import Any, BinaryIO
@@ -11,7 +13,9 @@ from dagcraft.registry import register_format
 
 @register_format("jsonl")
 class JSONLinesFormat(Format):
-    """One JSON record per line, flattened like JSON documents."""
+    """
+    One JSON record per line, flattened like JSON documents.
+    """
 
     extensions = (".jsonl", ".ndjson")
 

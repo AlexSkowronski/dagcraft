@@ -27,7 +27,9 @@ class ProbeOptions(BaseModel):
 
 @register_connection("probe")
 class ProbeConnection(Connection):
-    """Test connection whose check passes or fails on request."""
+    """
+    Test connection whose check passes or fails on request.
+    """
 
     config_model = ProbeConfig
     events: ClassVar[list[str]] = []

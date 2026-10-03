@@ -1,4 +1,6 @@
-"""Loading environment variables from a ``.env`` file."""
+"""
+Loading environment variables from a ``.env`` file.
+"""
 
 from pathlib import Path
 
@@ -8,7 +10,8 @@ from dagcraft.exceptions import ConfigError
 
 
 def load_env_file(path: Path) -> None:
-    """Add the variables in ``path`` to the environment.
+    """
+    Add the variables in ``path`` to the environment.
 
     Variables already set in the environment keep their values, so a real
     environment (a scheduler, a CI secret) wins over the file. Loading into

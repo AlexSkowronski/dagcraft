@@ -1,4 +1,6 @@
-"""The ``local`` connection type: files on this machine."""
+"""
+The ``local`` connection type: files on this machine.
+"""
 
 import os
 import uuid
@@ -17,7 +19,8 @@ from dagcraft.registry import register_connection
 
 @register_connection("local")
 class LocalConnection(FileConnection):
-    """Files on the local filesystem.
+    """
+    Files on the local filesystem.
 
     Step paths are relative to ``root``, and a relative ``root`` is relative
     to the directory containing the pipeline file. Parent folders are
@@ -40,7 +43,9 @@ class LocalConnection(FileConnection):
 
     @property
     def filesystem(self) -> fsspec.AbstractFileSystem:
-        """The open filesystem; raises if the connection isn't open."""
+        """
+        The open filesystem; raises if the connection isn't open.
+        """
         if self._filesystem is None:
             raise self.not_open()
         return self._filesystem
@@ -53,7 +58,9 @@ class LocalConnection(FileConnection):
         return f"{root} doesn't exist yet; writing will create it"
 
     def resolve(self, path: str) -> str:
-        """The full path of ``path``, a path relative to the connection."""
+        """
+        The full path of ``path``, a path relative to the connection.
+        """
         # normpath tidies away '..' without touching the filesystem.
         return os.path.normpath(self.base_dir / self.config.root / path)
 

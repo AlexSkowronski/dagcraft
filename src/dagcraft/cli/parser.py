@@ -1,4 +1,6 @@
-"""The ``dagcraft`` command's arguments."""
+"""
+The ``dagcraft`` command's arguments.
+"""
 
 import argparse
 
@@ -6,7 +8,9 @@ from dagcraft import __version__
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the argument parser for the ``dagcraft`` command."""
+    """
+    Build the argument parser for the ``dagcraft`` command.
+    """
     parser = argparse.ArgumentParser(
         prog="dagcraft",
         description="Check a pipeline, then run it.",
@@ -62,7 +66,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def positive_int(text: str) -> int:
-    """Parse a whole number of at least 1, for ``--max-workers``."""
+    """
+    Parse a whole number of at least 1, for ``--max-workers``.
+    """
     try:
         value = int(text)
     except ValueError:

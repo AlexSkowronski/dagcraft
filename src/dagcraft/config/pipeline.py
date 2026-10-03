@@ -1,4 +1,6 @@
-"""The top level of a pipeline file."""
+"""
+The top level of a pipeline file.
+"""
 
 from typing import Any
 
@@ -6,7 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class PipelineMeta(BaseModel):
-    """The ``pipeline`` section.
+    """
+    The ``pipeline`` section.
 
     ``max_workers`` is how many independent steps may run at once.
     ``env_file`` is a ``.env`` file, relative to the pipeline file, whose
@@ -23,7 +26,8 @@ class PipelineMeta(BaseModel):
 
 
 class PipelineConfig(BaseModel):
-    """The pipeline file as written.
+    """
+    The pipeline file as written.
 
     Connections and steps stay raw dicts here: each is validated against the
     model of its registered type when the pipeline is compiled, after

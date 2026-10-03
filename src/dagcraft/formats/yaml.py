@@ -1,4 +1,6 @@
-"""YAML documents, read and written like JSON."""
+"""
+YAML documents, read and written like JSON.
+"""
 
 import json
 from typing import Any, BinaryIO
@@ -13,7 +15,9 @@ from dagcraft.yaml_loader import load_yaml
 
 @register_format("yaml")
 class YAMLFormat(Format):
-    """A YAML document, flattened like JSON. Only true/false are booleans."""
+    """
+    A YAML document, flattened like JSON. Only true/false are booleans.
+    """
 
     extensions = (".yaml", ".yml")
 

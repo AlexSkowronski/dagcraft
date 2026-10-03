@@ -1,4 +1,6 @@
-"""The base class every connection type extends."""
+"""
+The base class every connection type extends.
+"""
 
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -10,7 +12,8 @@ from dagcraft.exceptions import ExecutionError
 
 
 class Connection(ABC):
-    """Where data lives, and how to sign in to it.
+    """
+    Where data lives, and how to sign in to it.
 
     A connection holds a client (a filesystem, an HTTP session, a database
     engine) and nothing about what to read or write: that is up to the
@@ -31,14 +34,19 @@ class Connection(ABC):
         self.base_dir = base_dir
 
     def open(self) -> None:  # noqa: B027 - most connections acquire something
-        """Acquire resources, such as clients or engines."""
+        """
+        Acquire resources, such as clients or engines.
+        """
 
     def close(self) -> None:  # noqa: B027
-        """Release anything acquired in ``open``."""
+        """
+        Release anything acquired in ``open``.
+        """
 
     @abstractmethod
     def check(self) -> str:
-        """Prove the connection works with one cheap real operation.
+        """
+        Prove the connection works with one cheap real operation.
 
         Called after ``open``, to catch problems with credentials,
         permissions, network or drivers before a run. Raises if something
@@ -46,5 +54,7 @@ class Connection(ABC):
         """
 
     def not_open(self) -> ExecutionError:
-        """The error to raise when the connection is used before ``open``."""
+        """
+        The error to raise when the connection is used before ``open``.
+        """
         return ExecutionError(f"Connection '{self.name}' is not open.")

@@ -1,4 +1,6 @@
-"""Reading files: one path, or every file matching a pattern."""
+"""
+Reading files: one path, or every file matching a pattern.
+"""
 
 import pandas as pd
 
@@ -16,7 +18,8 @@ logger = get_logger(__name__)
 
 @register_reader(FileConnection)
 class FileReader(Reader):
-    """Reads ``path`` from any file connection with its format.
+    """
+    Reads ``path`` from any file connection with its format.
 
     A path with wildcards reads every matching file, in name order, into
     one table.
@@ -27,7 +30,9 @@ class FileReader(Reader):
 
     @property
     def file_format(self) -> Format:
-        """The format named in the options, or implied by the path."""
+        """
+        The format named in the options, or implied by the path.
+        """
         return resolve_format(self.options.path, self.options.format)
 
     def prepare(self, connection: FileConnection) -> None:

@@ -20,7 +20,9 @@ def make_pipeline(*steps, connections, base_dir):
 
 
 def database(name="warehouse.db"):
-    """A SQLite connection with a path relative to the pipeline directory."""
+    """
+    A SQLite connection with a path relative to the pipeline directory.
+    """
     return {"db": {"type": "sql", "url": f"sqlite:///{name}"}}
 
 

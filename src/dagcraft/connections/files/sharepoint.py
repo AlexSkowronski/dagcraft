@@ -1,4 +1,5 @@
-"""The ``sharepoint`` connection type: SharePoint document libraries.
+"""
+The ``sharepoint`` connection type: SharePoint document libraries.
 
 Reached through Microsoft Graph. Requires the ``azure`` extra:
 ``pip install 'dagcraft-pipelines[azure]'``.
@@ -27,7 +28,8 @@ from dagcraft.registry import register_connection
 
 @register_connection("sharepoint")
 class SharePointConnection(FileConnection):
-    """Files in a SharePoint document library.
+    """
+    Files in a SharePoint document library.
 
     Signs in with ``DefaultAzureCredential``, so the identity needs Graph
     permission to the site's files (for example ``Sites.Selected`` or
@@ -57,7 +59,9 @@ class SharePointConnection(FileConnection):
 
     @property
     def graph(self) -> GraphClient:
-        """The open Graph client; raises if the connection isn't open."""
+        """
+        The open Graph client; raises if the connection isn't open.
+        """
         if self._graph is None:
             raise self.not_open()
         return self._graph
@@ -145,7 +149,9 @@ class SharePointConnection(FileConnection):
         )
 
     def _item_url(self, path: str, action: str) -> str:
-        """Graph URL for ``action`` on a file or folder, by path."""
+        """
+        Graph URL for ``action`` on a file or folder, by path.
+        """
         full_path = "/".join(
             part.strip("/") for part in (self.config.folder, path) if part.strip("/")
         )

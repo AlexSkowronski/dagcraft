@@ -1,4 +1,6 @@
-"""Running a query or reading a whole table into a DataFrame."""
+"""
+Running a query or reading a whole table into a DataFrame.
+"""
 
 from __future__ import annotations
 
@@ -20,7 +22,9 @@ def read_query(
     params: dict[str, Any],
     args: dict[str, Any],
 ) -> pd.DataFrame:
-    """Run ``query`` with ``params`` filling its ``:name`` placeholders."""
+    """
+    Run ``query`` with ``params`` filling its ``:name`` placeholders.
+    """
     import sqlalchemy as sa  # noqa: PLC0415
 
     with engine.connect() as connection:
@@ -33,7 +37,9 @@ def read_query(
 
 
 def read_table(engine: sa.Engine, table: str, args: dict[str, Any]) -> pd.DataFrame:
-    """Read every row of ``table`` (``name`` or ``schema.name``)."""
+    """
+    Read every row of ``table`` (``name`` or ``schema.name``).
+    """
     schema, name = split_table(table)
 
     with engine.connect() as connection:
@@ -41,7 +47,9 @@ def read_table(engine: sa.Engine, table: str, args: dict[str, Any]) -> pd.DataFr
 
 
 def load_query_file(base_dir: Path, query_file: str) -> str:
-    """The text of a ``.sql`` file; raises ``ValueError`` if it's missing."""
+    """
+    The text of a ``.sql`` file; raises ``ValueError`` if it's missing.
+    """
     path = base_dir / query_file
 
     try:

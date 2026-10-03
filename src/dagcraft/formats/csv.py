@@ -1,4 +1,6 @@
-"""CSV files."""
+"""
+CSV files.
+"""
 
 from typing import Any, BinaryIO
 
@@ -10,7 +12,9 @@ from dagcraft.registry import register_format
 
 @register_format("csv")
 class CSVFormat(Format):
-    """Comma-separated values; ``args`` go to ``read_csv`` and ``to_csv``."""
+    """
+    Comma-separated values; ``args`` go to ``read_csv`` and ``to_csv``.
+    """
 
     extensions = (".csv",)
 

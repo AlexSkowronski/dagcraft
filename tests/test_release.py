@@ -1,4 +1,6 @@
-"""Release metadata stays consistent: version, changelog and release notes."""
+"""
+Release metadata stays consistent: version, changelog and release notes.
+"""
 
 import importlib.util
 import tomllib

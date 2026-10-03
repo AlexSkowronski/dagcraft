@@ -1,4 +1,6 @@
-"""Helpers for steps that use a connection: finding it, and its reader or writer."""
+"""
+Helpers for steps that use a connection: finding it, and its reader or writer.
+"""
 
 from typing import Any
 
@@ -7,7 +9,9 @@ from dagcraft.registry import ConnectionTypeRegistry
 
 
 def find_connection(connections: dict[str, Connection], name: str) -> Connection:
-    """The connection called ``name``; raises ``ValueError`` listing the others."""
+    """
+    The connection called ``name``; raises ``ValueError`` listing the others.
+    """
     try:
         return connections[name]
     except KeyError:
@@ -23,7 +27,8 @@ def prepare_handler(
     fields: dict[str, Any],
     action: str,
 ) -> Any:
-    """The reader or writer for ``connection``, set up from a step's fields.
+    """
+    The reader or writer for ``connection``, set up from a step's fields.
 
     Finds the class registered for the connection's type, validates
     ``fields`` with its options model and prepares it. ``action`` ("reading"

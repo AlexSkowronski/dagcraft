@@ -1,10 +1,14 @@
-"""Turning pydantic validation errors into readable messages."""
+"""
+Turning pydantic validation errors into readable messages.
+"""
 
 from pydantic import ValidationError
 
 
 def format_validation_error(exc: ValidationError) -> str:
-    """Summarise a pydantic error as one line, one clause per problem."""
+    """
+    Summarise a pydantic error as one line, one clause per problem.
+    """
     problems = []
 
     for error in exc.errors():

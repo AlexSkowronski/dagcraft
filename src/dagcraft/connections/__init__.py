@@ -1,4 +1,5 @@
-"""Connections: where data lives and how to sign in to it.
+"""
+Connections: where data lives and how to sign in to it.
 
 Importing this package registers the built-in connection types::
 

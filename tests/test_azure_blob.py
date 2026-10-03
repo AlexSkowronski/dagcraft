@@ -39,7 +39,9 @@ def clean_environment(monkeypatch):
 
 @pytest.fixture
 def memory_filesystem(monkeypatch):
-    """Stand in for the container with fsspec's in-memory filesystem."""
+    """
+    Stand in for the container with fsspec's in-memory filesystem.
+    """
     filesystem = fsspec.filesystem("memory", skip_instance_cache=True)
     filesystem.store.clear()
     monkeypatch.setattr(

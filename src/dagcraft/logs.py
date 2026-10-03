@@ -1,4 +1,5 @@
-"""Logging for pipeline runs.
+"""
+Logging for pipeline runs.
 
 Every dagcraft module logs through ``get_logger(__name__)``. While a run is
 in progress, each message is prefixed with the pipeline and run ID, and with
@@ -27,7 +28,9 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 @dataclass(frozen=True)
 class RunInfo:
-    """The run that log messages belong to."""
+    """
+    The run that log messages belong to.
+    """
 
     pipeline: str
     run_id: str
@@ -42,7 +45,9 @@ _step: contextvars.ContextVar[str | None] = contextvars.ContextVar(
 
 
 class RunLogger(logging.LoggerAdapter[logging.Logger]):
-    """Adds the current run and step to each message and record."""
+    """
+    Adds the current run and step to each message and record.
+    """
 
     def process(
         self,
@@ -67,13 +72,17 @@ class RunLogger(logging.LoggerAdapter[logging.Logger]):
 
 
 def get_logger(name: str) -> RunLogger:
-    """A logger whose messages carry the current run and step."""
+    """
+    A logger whose messages carry the current run and step.
+    """
     return RunLogger(logging.getLogger(name))
 
 
 @contextmanager
 def run_context(pipeline: str, run_id: str) -> Generator[None]:
-    """Mark log messages logged inside the block as part of this run."""
+    """
+    Mark log messages logged inside the block as part of this run.
+    """
     token = _run.set(RunInfo(pipeline, run_id))
     try:
         yield
@@ -83,7 +92,9 @@ def run_context(pipeline: str, run_id: str) -> Generator[None]:
 
 @contextmanager
 def step_context(step_id: str) -> Generator[None]:
-    """Mark log messages logged inside the block as coming from this step."""
+    """
+    Mark log messages logged inside the block as coming from this step.
+    """
     token = _step.set(step_id)
     try:
         yield
@@ -92,7 +103,9 @@ def step_context(step_id: str) -> Generator[None]:
 
 
 def describe_data(value: Any) -> str:
-    """A short description of a step's output for logs: its size, or its type."""
+    """
+    A short description of a step's output for logs: its size, or its type.
+    """
     if isinstance(value, pd.DataFrame):
         rows, columns = value.shape
         return f"{rows:,} rows x {columns:,} columns"
@@ -107,7 +120,8 @@ def describe_data(value: Any) -> str:
 
 
 def configure_logging(level: int = logging.INFO) -> None:
-    """Print log messages to the console with a timestamp and level.
+    """
+    Print log messages to the console with a timestamp and level.
 
     ``level`` applies to dagcraft's messages; other libraries only show
     warnings and errors, since some (such as the Azure SDK) log every request

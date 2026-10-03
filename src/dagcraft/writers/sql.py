@@ -1,4 +1,6 @@
-"""Writing a table to a SQL database, in one transaction."""
+"""
+Writing a table to a SQL database, in one transaction.
+"""
 
 import pandas as pd
 
@@ -11,7 +13,8 @@ from dagcraft.writers.base import Writer
 
 @register_writer(SQLConnection)
 class SQLWriter(Writer):
-    """Writes a DataFrame to ``table``, replacing or appending as configured.
+    """
+    Writes a DataFrame to ``table``, replacing or appending as configured.
 
     The write runs in one transaction, so a failure leaves the table as it
     was.

@@ -1,4 +1,6 @@
-"""The ``python`` step: call your own function with its inputs."""
+"""
+The ``python`` step: call your own function with its inputs.
+"""
 
 import importlib
 from collections.abc import Callable
@@ -14,7 +16,9 @@ from dagcraft.steps.base import BaseStep
 
 @register_step("python")
 class PythonStep(BaseStep):
-    """Calls ``callable`` with the inputs, by name, plus ``args``."""
+    """
+    Calls ``callable`` with the inputs, by name, plus ``args``.
+    """
 
     config_model = PythonConfig
     config: PythonConfig
@@ -31,7 +35,9 @@ class PythonStep(BaseStep):
 
 
 def load_callable(path: str) -> Callable[..., Any]:
-    """Import ``module.path:function`` and return the function."""
+    """
+    Import ``module.path:function`` and return the function.
+    """
     if ":" not in path:
         raise ConfigError(
             "Python callable must use the format 'module.path:function_name'."

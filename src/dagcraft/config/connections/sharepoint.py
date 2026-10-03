@@ -1,4 +1,6 @@
-"""The ``sharepoint`` connection type."""
+"""
+The ``sharepoint`` connection type.
+"""
 
 import re
 
@@ -6,7 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SharePointConfig(BaseModel):
-    """Files in ``folder`` of a SharePoint document ``library``.
+    """
+    Files in ``folder`` of a SharePoint document ``library``.
 
     ``site`` is the site's address, e.g. ``contoso.sharepoint.com/sites/Finance``.
     """
@@ -20,7 +23,9 @@ class SharePointConfig(BaseModel):
     @field_validator("site")
     @classmethod
     def normalise_site(cls, site: str) -> str:
-        """Accept the address with or without ``https://`` and slashes."""
+        """
+        Accept the address with or without ``https://`` and slashes.
+        """
         site = re.sub(r"^https?://", "", site.strip()).strip("/")
 
         if "." not in site.partition("/")[0]:

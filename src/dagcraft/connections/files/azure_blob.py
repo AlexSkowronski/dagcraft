@@ -1,4 +1,5 @@
-"""The ``azure_blob`` connection type: Azure Blob Storage, through adlfs.
+"""
+The ``azure_blob`` connection type: Azure Blob Storage, through adlfs.
 
 Includes ADLS Gen2 accounts. Requires the ``azure`` extra:
 ``pip install 'dagcraft-pipelines[azure]'``.
@@ -27,7 +28,8 @@ ADLFS_CONNECTION_STRING_VARIABLE = "AZURE_STORAGE_CONNECTION_STRING"
 
 @register_connection("azure_blob")
 class AzureBlobConnection(FileConnection):
-    """Files in an Azure Blob Storage container.
+    """
+    Files in an Azure Blob Storage container.
 
     With ``account``, sign-in uses ``DefaultAzureCredential``: your
     ``az login`` locally, a managed identity in Azure, or service principal
@@ -51,13 +53,17 @@ class AzureBlobConnection(FileConnection):
 
     @property
     def filesystem(self) -> fsspec.AbstractFileSystem:
-        """The open filesystem; raises if the connection isn't open."""
+        """
+        The open filesystem; raises if the connection isn't open.
+        """
         if self._filesystem is None:
             raise self.not_open()
         return self._filesystem
 
     def create_filesystem(self) -> fsspec.AbstractFileSystem:
-        """An adlfs filesystem signed in as the config says."""
+        """
+        An adlfs filesystem signed in as the config says.
+        """
         # Imported here so the azure extra is only needed when it's used.
         from adlfs import AzureBlobFileSystem  # noqa: PLC0415
 
@@ -102,7 +108,9 @@ class AzureBlobConnection(FileConnection):
         return f"container '{container}' is reachable; prefix '{prefix}' {state}"
 
     def resolve(self, path: str) -> str:
-        """The full path of ``path``: container, then prefix, then path."""
+        """
+        The full path of ``path``: container, then prefix, then path.
+        """
         return posixpath.join(
             self.config.container,
             self.config.prefix.strip("/"),

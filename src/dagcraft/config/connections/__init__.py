@@ -1,4 +1,5 @@
-"""The fields of each built-in connection type.
+"""
+The fields of each built-in connection type.
 
 Secrets (connection strings, database URLs) are ``SecretStr``: they never
 show in reprs or logs. Keep them out of pipeline files by writing them as

@@ -1,4 +1,6 @@
-"""Signing in to Azure services that take an Entra ID token."""
+"""
+Signing in to Azure services that take an Entra ID token.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +11,8 @@ if TYPE_CHECKING:
 
 
 def create_credential() -> DefaultAzureCredential:
-    """A credential for whichever identity is available.
+    """
+    A credential for whichever identity is available.
 
     ``DefaultAzureCredential`` tries, in turn, service principal environment
     variables, managed identity, then your ``az login``. Imported here so the

@@ -1,4 +1,6 @@
-"""The ``read`` step: fetch data through a connection."""
+"""
+The ``read`` step: fetch data through a connection.
+"""
 
 from typing import Any
 
@@ -13,7 +15,9 @@ from dagcraft.steps.connections import find_connection, prepare_handler
 
 @register_step("read")
 class ReadStep(BaseStep):
-    """Reads with the reader registered for the connection's type."""
+    """
+    Reads with the reader registered for the connection's type.
+    """
 
     config_model = ReadConfig
     config: ReadConfig

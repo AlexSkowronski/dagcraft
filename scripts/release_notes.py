@@ -1,4 +1,5 @@
-"""Print the CHANGELOG.md section for a version, for its release notes.
+"""
+Print the CHANGELOG.md section for a version, for its release notes.
 
     python scripts/release_notes.py 0.1.0
 
@@ -16,7 +17,9 @@ CHANGELOG = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
 
 
 def section(changelog: str, version: str) -> str | None:
-    """The text under ``## [version]``, up to the next section or link list."""
+    """
+    The text under ``## [version]``, up to the next section or link list.
+    """
     pattern = (
         rf"^## \[{re.escape(version)}\][^\n]*\n"
         r"(.*?)"
@@ -30,7 +33,9 @@ def section(changelog: str, version: str) -> str | None:
 
 
 def main(argv: list[str]) -> int:
-    """Print the notes for the version in ``argv``; exit 1 if there are none."""
+    """
+    Print the notes for the version in ``argv``; exit 1 if there are none.
+    """
     try:
         [_, version] = argv
     except ValueError:

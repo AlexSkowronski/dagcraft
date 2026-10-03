@@ -1,4 +1,6 @@
-"""Checks for optional dependencies installed through dagcraft's extras."""
+"""
+Checks for optional dependencies installed through dagcraft's extras.
+"""
 
 import importlib.util
 
@@ -10,7 +12,9 @@ def require_extra(
     extra: str,
     feature: str = "this connection type",
 ) -> None:
-    """Raise ``ConfigError`` naming the extra to install if a module is missing."""
+    """
+    Raise ``ConfigError`` naming the extra to install if a module is missing.
+    """
     missing = [module for module in modules if not module_available(module)]
 
     if missing:
@@ -22,7 +26,9 @@ def require_extra(
 
 
 def module_available(module: str) -> bool:
-    """Whether ``module`` can be imported, without importing it."""
+    """
+    Whether ``module`` can be imported, without importing it.
+    """
     try:
         return importlib.util.find_spec(module) is not None
     except ModuleNotFoundError:

@@ -1,4 +1,5 @@
-"""Writers: where a write step puts its data. Importing registers the built-in ones.
+"""
+Writers: where a write step puts its data. Importing registers the built-in ones.
 
 FileConnection  ->  FileWriter  (path)  ->  Format
 SQLConnection   ->  SQLWriter   (table, if_exists)

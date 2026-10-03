@@ -1,4 +1,6 @@
-"""File formats: how a file becomes a table. Importing registers the built-in ones."""
+"""
+File formats: how a file becomes a table. Importing registers the built-in ones.
+"""
 
 from dagcraft.formats.base import Format
 from dagcraft.formats.csv import CSVFormat
