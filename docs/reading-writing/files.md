@@ -80,19 +80,19 @@ stay text.
 ### Documents into a table
 
 When you need a table, to write to SQL or CSV say, add a
-[`flatten`](../steps.md#flatten) step. Nested objects become dotted columns
+[`flatten`](../steps.md#documents) step. Nested objects become dotted columns
 (`user.id`), `record_path` takes the rows from a list inside each document,
 and `meta` copies document fields onto each row:
 
 ```yaml
   - id: events
     type: transform
-    operation: flatten
     inputs:
       data: batch
-    args:
-      record_path: events
-      meta: [batch_id]
+    operations:
+      - flatten:
+          record_path: events
+          meta: [batch_id]
 ```
 
 Writing documents where a table is needed (a CSV file, a SQL table) is an

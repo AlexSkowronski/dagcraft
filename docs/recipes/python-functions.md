@@ -82,6 +82,26 @@ def test_small_orders_are_dropped():
     assert result["amount"].tolist() == [50]
 ```
 
+## Inside a transform
+
+When your function is one part of a stage of cleaning, call it as a
+`python` operation in a transform's list instead of a step of its own. It
+gets the current table first and returns the next one:
+
+```yaml
+  - id: clean_orders
+    type: transform
+    inputs:
+      data: orders
+    operations:
+      - drop_nulls: [customer_id]
+      - python: my_functions:fix_codes                     # fix_codes(data)
+      - python: {callable: my_functions:bucket, size: 10}  # bucket(data, size=10)
+      - check: {not_null: [code]}
+```
+
+Use a `python` step for code that takes several inputs.
+
 ## Reusable operations
 
 For a function you'll use across pipelines with different settings,

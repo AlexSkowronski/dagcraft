@@ -34,9 +34,8 @@ def flatten(upstream="data", step_id="table", **args):
     return {
         "id": step_id,
         "type": "transform",
-        "operation": "flatten",
         "inputs": {"data": upstream},
-        "args": args,
+        "operations": [{"flatten": args} if args else "flatten"],
     }
 
 
@@ -120,7 +119,7 @@ def test_flatten_args_on_a_read_point_to_the_operation(tmp_path):
         run(tmp_path, read("batch.json", args={"record_path": "events"}))
 
     assert "record_path turn documents into a table" in str(exc_info.value)
-    assert "operation: flatten" in str(exc_info.value)
+    assert "flatten operation" in str(exc_info.value)
 
 
 def test_json_lines_are_read_as_a_list_of_records(tmp_path):

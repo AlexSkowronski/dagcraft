@@ -83,18 +83,14 @@ def test_valid_config_compiles():
             "Only formats that hold several tables, such as excel",
         ),
         (
-            {"id": "a", "type": "transform"},
-            "operation: Field required",
-        ),
-        (
-            {"id": "a", "type": "transform", "operation": "nope"},
-            "Unknown operation: 'nope'",
+            {"id": "a", "type": "transform", "inputs": {"data": "b"}},
+            "operations: Field required",
         ),
         (
             {
                 "id": "a",
-                "type": "transform",
-                "operation": "filter",
+                "type": "python",
+                "callable": "dagcraft:Pipeline",
                 "inputs": {"data": "b"},
                 "args": {"data": 1},
             },
@@ -230,9 +226,9 @@ steps:
     path: right.csv
   - id: joined
     type: transform
-    operation: join
-    inputs: {left: left, right: right}
-    args: {on: id, how: left}
+    inputs: {data: left, right: right}
+    operations:
+      - join: {right: right, on: id, how: left}
 """,
         encoding="utf-8",
     )

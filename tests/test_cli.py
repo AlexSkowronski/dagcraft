@@ -43,12 +43,10 @@ steps:
     path: {input_csv.as_posix()}
   - id: sorted
     type: transform
-    operation: sort
     inputs:
       data: source
-    args:
-      by: value
-      ascending: false
+    operations:
+      - sort: {{by: value, ascending: false}}
 """,
     )
 
@@ -74,11 +72,10 @@ steps:
     path: {(tmp_path / "missing.csv").as_posix()}
   - id: sorted
     type: transform
-    operation: sort
     inputs:
       data: source
-    args:
-      by: value
+    operations:
+      - sort: value
 """,
     )
 
@@ -111,9 +108,8 @@ steps:
     path: {input_csv.as_posix()}
   - id: sorted
     type: transform
-    operation: sort
     inputs: {{data: source}}
-    args: {{by: value}}
+    operations: [{{sort: value}}]
 """,
     )
 
@@ -125,7 +121,7 @@ steps:
         "Params: limit=2",
         "Steps, in run order:",
         f"  1. source  read {input_csv.as_posix()} from 'local'",
-        "  2. sorted  transform with 'sort'  <- data: source",
+        "  2. sorted  transform: sort  <- data: source",
         "  3. save    write out/sorted.csv to 'local'  <- data: sorted",
         "Dry run: nothing was run.",
     ]

@@ -7,13 +7,14 @@ importing the module that defines them.
 
 ## Operations
 
-For `transform` steps. Inputs and `args` arrive as keyword arguments:
+For `transform` steps. An operation is a function that takes the current
+table first and its options by name, and returns the next table:
 
 ```python
 from dagcraft import register_operation
 
 
-@register_operation("add_total")
+@register_operation("add_total", main="columns")
 def add_total(data, columns, name="total"):
     return data.assign(**{name: data[columns].sum(axis=1)})
 ```
@@ -21,10 +22,16 @@ def add_total(data, columns, name="total"):
 ```yaml
   - id: with_totals
     type: transform
-    operation: add_total
     inputs: {data: sales}
-    args: {columns: [q1, q2, q3, q4]}
+    operations:
+      - add_total: [q1, q2, q3, q4]                    # the main option
+      - add_total: {columns: [q1, q2], name: h1}      # options by name
 ```
+
+`main` names the option a single value fills. `tables` names options that
+refer to another input of the step, as `join`'s `right` does: the input's
+data is passed instead of its name. Options are checked against the
+function's parameters when the pipeline loads.
 
 ## Step types
 

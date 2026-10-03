@@ -24,11 +24,11 @@ from dagcraft.exceptions import (
 )
 from dagcraft.formats import Format
 from dagcraft.logs import configure_logging, get_logger
+from dagcraft.operations import register_operation
 from dagcraft.readers import Reader
 from dagcraft.registry import (
     register_connection,
     register_format,
-    register_operation,
     register_reader,
     register_step,
     register_writer,

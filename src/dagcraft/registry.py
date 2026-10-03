@@ -109,7 +109,6 @@ READERS = ConnectionTypeRegistry("reader")
 WRITERS = ConnectionTypeRegistry("writer")
 
 register_step = STEPS.register
-register_operation = OPERATIONS.register
 register_connection = CONNECTIONS.register
 register_format = FORMATS.register
 register_reader = READERS.register

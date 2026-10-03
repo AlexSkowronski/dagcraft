@@ -245,9 +245,8 @@ def test_connection_closed_when_a_step_fails():
         {
             "id": "boom",
             "type": "transform",
-            "operation": "filter",
             "inputs": {"data": "a"},
-            "args": {"expression": "x > 1"},
+            "operations": [{"filter": "x > 1"}],
         },
         connections={"rec": {"type": "recording"}},
     )

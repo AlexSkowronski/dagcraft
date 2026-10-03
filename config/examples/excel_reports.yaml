@@ -37,25 +37,19 @@ steps:
     args:
       sheet_name: Targets
 
-  - id: totals
-    type: transform
-    operation: aggregate
-    inputs:
-      data: monthly
-    args:
-      by: region
-      columns:
-        revenue: sum
-        units: sum
-
+  # Totals per region, then the targets alongside them.
   - id: against_targets
     type: transform
-    operation: join
     inputs:
-      left: totals
-      right: targets
-    args:
-      on: region
+      data: monthly
+      targets: targets
+    operations:
+      - aggregate:
+          by: region
+          columns:
+            revenue: sum
+            units: sum
+      - join: {right: targets, on: region}
 
   # Each input becomes a sheet, named after the input.
   - id: report

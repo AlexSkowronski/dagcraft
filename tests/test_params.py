@@ -34,16 +34,14 @@ def test_references_inside_text_and_as_whole_values(tmp_path):
         {
             "id": "picked",
             "type": "transform",
-            "operation": "select",
             "inputs": {"data": "source"},
-            "args": {"columns": "${params.columns}"},
+            "operations": [{"select": "${params.columns}"}],
         },
         {
             "id": "big",
             "type": "transform",
-            "operation": "filter",
             "inputs": {"data": "picked"},
-            "args": {"expression": "n >= ${params.minimum}"},
+            "operations": [{"filter": "n >= ${params.minimum}"}],
         },
         params={"name": "numbers", "columns": ["n"], "minimum": 2},
     )
@@ -61,9 +59,8 @@ def test_overrides_replace_the_files_params(tmp_path):
         {
             "id": "sorted",
             "type": "transform",
-            "operation": "sort",
             "inputs": {"data": "source"},
-            "args": {"by": "n", "ascending": "${params.ascending}"},
+            "operations": [{"sort": {"by": "n", "ascending": "${params.ascending}"}}],
         },
         {"id": "source", "type": "read", "path": "numbers.csv"},
         params={"ascending": True},
@@ -187,9 +184,8 @@ steps:
     path: numbers.csv
   - id: big
     type: transform
-    operation: filter
     inputs: {data: source}
-    args: {expression: "n >= ${params.minimum}"}
+    operations: [filter: "n >= ${params.minimum}"]
 """,
         encoding="utf-8",
     )

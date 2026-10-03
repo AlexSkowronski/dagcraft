@@ -14,9 +14,17 @@ First release.
 
 - Pipelines described in YAML and run from Python
   (`Pipeline.from_yaml(path).run()`) or the `dagcraft` command.
-- Step types: `read`, `write`, `transform` (built-in or registered
-  operations) and `python` (any importable function, including modules in
-  the folder you run from, also with the `dagcraft` command).
+- Step types: `read`, `write`, `transform` and `python` (any importable
+  function, including modules in the folder you run from, also with the
+  `dagcraft` command).
+- Transforms are a list of operations applied in order (`operations:`), so
+  one step holds a whole stage of cleaning. Operations: `filter`,
+  `drop_nulls`, `dedupe`, `sort`, `select`, `drop`, `rename`, `cast`,
+  `derive`, `fill_nulls`, `join` (with another input), `aggregate`,
+  `flatten`, `check` (data quality checks that fail or warn) and `python`
+  (your own function). Options are checked when the pipeline loads; each
+  operation logs its effect at DEBUG and is named when it fails. (In
+  0.1.0rc2 and before, a transform was one `operation:` with `args:`.)
 - Validation when a pipeline loads: every field of every step and
   connection, the operations, functions, connections, formats and query
   files it names, and the graph, with one-line error messages.
@@ -44,8 +52,6 @@ First release.
   rest: safe to re-run).
 - Partitioned SQL reads: split a large read into ranges of a whole-number
   column, read in parallel on separate connections (`partition`).
-- Operations: `drop_nulls`, `filter`, `select`, `rename`, `sort`, `join`
-  and `aggregate`.
 - Retries for any step, with a growing delay (`retries`, `retry_delay`).
 - Local files are written under a temporary name and then moved into place,
   so a failed write leaves the previous file intact.

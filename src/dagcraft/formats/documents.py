@@ -40,7 +40,7 @@ class DocumentFormat(Format):
             raise ValueError(
                 f"{', '.join(flatten_args)} turn documents into a table, which is "
                 "the flatten operation's job: read the file as it is, then add a "
-                "transform step with operation: flatten and these args."
+                "transform step with a flatten operation taking these options."
             )
 
     def combine(

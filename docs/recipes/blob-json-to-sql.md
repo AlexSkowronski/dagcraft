@@ -93,8 +93,8 @@ def purchases(batches):
     return pd.DataFrame(rows)
 ```
 
-If the documents only need flattening, a `flatten` step does it without any
-Python; see [flatten](../steps.md#flatten).
+If the documents only need flattening, a transform with a `flatten`
+operation does it without any Python; see [Documents](../steps.md#documents).
 
 ## Run it
 

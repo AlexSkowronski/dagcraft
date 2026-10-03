@@ -53,8 +53,8 @@ my_project/
 
 ## A first pipeline
 
-`configs/daily_sales.yaml` reads a CSV, keeps the big orders, and writes them
-out:
+`configs/daily_sales.yaml` reads a CSV, cleans it up, and writes the big
+orders out:
 
 ```yaml
 pipeline:
@@ -67,11 +67,12 @@ steps:
 
   - id: big_orders
     type: transform
-    operation: filter
     inputs:
       data: orders          # this step's input "data" is the output of "orders"
-    args:
-      expression: amount > 100
+    operations:             # applied in order, each to the last one's result
+      - drop_nulls: [customer_id]
+      - filter: amount > 100
+      - sort: {by: amount, ascending: false}
 
   - id: save
     type: write
@@ -81,7 +82,9 @@ steps:
 ```
 
 Each step has an `id` and a `type`. `inputs` connect the steps: the order
-they run in follows from them.
+they run in follows from them. A `transform` holds a whole list of
+operations, so one step can do all the cleaning a table needs; see
+[Steps and operations](steps.md#transform).
 
 ## Run it
 
@@ -111,7 +114,7 @@ Each step logs what it did:
 INFO    [daily_sales 4b554a3c] Starting run: 3 steps
 INFO    [daily_sales 4b554a3c] orders: started: read data/orders.csv from 'local'
 INFO    [daily_sales 4b554a3c] orders: finished in 0.008s: 120 rows x 5 columns
-INFO    [daily_sales 4b554a3c] big_orders: started: transform with 'filter'
+INFO    [daily_sales 4b554a3c] big_orders: started: transform: drop_nulls -> filter -> sort
 INFO    [daily_sales 4b554a3c] big_orders: finished in 0.003s: 41 rows x 5 columns
 ...
 INFO    [daily_sales 4b554a3c] Run succeeded in 0.021s

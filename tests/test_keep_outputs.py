@@ -36,8 +36,8 @@ def make_pipeline(tmp_path):
                 {
                     "id": "b",
                     "type": "transform",
-                    "operation": "drop_nulls",
                     "inputs": {"data": "a"},
+                    "operations": ["drop_nulls"],
                 },
                 {"id": "c", "type": "snapshot", "inputs": {"data": "b"}},
                 # Declared last, so "a" must be kept until now.

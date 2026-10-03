@@ -36,22 +36,20 @@ def test_read_transform_write(people_csv, tmp_path):
         {
             "id": "clean",
             "type": "transform",
-            "operation": "drop_nulls",
             "inputs": {"data": "people"},
+            "operations": ["drop_nulls"],
         },
         {
             "id": "high_earners",
             "type": "transform",
-            "operation": "filter",
             "inputs": {"data": "clean"},
-            "args": {"expression": "salary > 100000"},
+            "operations": [{"filter": "salary > 100000"}],
         },
         {
             "id": "names",
             "type": "transform",
-            "operation": "select",
             "inputs": {"data": "high_earners"},
-            "args": {"columns": ["name"]},
+            "operations": [{"select": ["name"]}],
         },
         {
             "id": "save",
@@ -106,9 +104,8 @@ def test_failure_skips_remaining_steps(people_csv, tmp_path):
         {
             "id": "broken",
             "type": "transform",
-            "operation": "filter",
             "inputs": {"data": "people"},
-            "args": {"expression": "no_such_column > 1"},
+            "operations": [{"filter": "no_such_column > 1"}],
         },
         {
             "id": "save",

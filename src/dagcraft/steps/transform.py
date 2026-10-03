@@ -1,32 +1,35 @@
 """
-The ``transform`` step: apply a registered operation to its inputs.
+The ``transform`` step: a list of operations applied to a table, in order.
 """
 
-from collections.abc import Callable
 from typing import Any
 
 from dagcraft.config.steps import TransformConfig
 from dagcraft.connections import Connection
 from dagcraft.core.context import ExecutionContext
-from dagcraft.registry import OPERATIONS, register_step
+from dagcraft.operations.chain import OperationCall, parse_operations, run_operations
+from dagcraft.registry import register_step
 from dagcraft.steps.base import BaseStep
 
 
 @register_step("transform")
 class TransformStep(BaseStep):
     """
-    Calls ``operation`` with the inputs, by name, plus ``args``.
+    Applies ``operations`` to the ``data`` input, each to the last one's result.
+
+    The operations are checked when the pipeline loads. Other inputs can be
+    named in operations that take a table, such as a join's ``right``.
     """
 
     config_model = TransformConfig
     config: TransformConfig
-    function: Callable[..., Any]
+    calls: list[OperationCall]
 
     def prepare(self, connections: dict[str, Connection]) -> None:
-        self.function = OPERATIONS.get(self.config.operation)
+        self.calls = parse_operations(self.config.operations, set(self.config.inputs))
 
     def describe(self) -> str:
-        return f"transform with '{self.config.operation}'"
+        return "transform: " + " -> ".join(call.operation.name for call in self.calls)
 
     def execute(self, context: ExecutionContext, inputs: dict[str, Any]) -> Any:
-        return self.function(**inputs, **self.config.args)
+        return run_operations(self.calls, inputs["data"], inputs)

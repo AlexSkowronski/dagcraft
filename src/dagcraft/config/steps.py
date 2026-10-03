@@ -26,11 +26,58 @@ class StepConfig(BaseModel):
     retry_delay: float = Field(default=5.0, ge=0)
 
 
-class FunctionStepConfig(StepConfig):
+class TransformConfig(StepConfig):
     """
-    Steps that call a function with their inputs plus ``args``.
+    A ``transform`` step: ``operations`` applied in order to its ``data`` input.
+
+    Each operation is written ``name: {option: value}``, ``name: value`` for
+    its main option, or just ``name``. Other inputs can be named in options
+    that take a table, such as a join's ``right``.
     """
 
+    operations: list[str | dict[str, Any]] = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_old_form(cls, data: Any) -> Any:
+        """
+        Point ``operation`` and ``args``, the form before 0.1.0, to ``operations``.
+        """
+        if isinstance(data, dict) and "operation" in data:
+            raise ValueError(
+                "A transform lists its operations: write "
+                "'operations: [{filter: amount > 100}]' instead of "
+                "'operation:' and 'args:'."
+            )
+        return data
+
+    @model_validator(mode="after")
+    def check_operations(self) -> Self:
+        """
+        The chain starts from ``data``, and each entry is one operation.
+        """
+        if "data" not in self.inputs:
+            raise ValueError(
+                "A transform needs a 'data' input: the table its operations start from."
+            )
+
+        for position, entry in enumerate(self.operations, start=1):
+            if isinstance(entry, dict) and len(entry) != 1:
+                raise ValueError(
+                    f"Operation {position} should be one operation, such as "
+                    "'filter: amount > 100'."
+                )
+        return self
+
+
+class PythonConfig(StepConfig):
+    """
+    A ``python`` step: calls ``callable``, written as ``module.path:function``.
+
+    The step's inputs, by name, and ``args`` are passed as keyword arguments.
+    """
+
+    callable: str = Field(min_length=1)
     args: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -44,22 +91,6 @@ class FunctionStepConfig(StepConfig):
             names = ", ".join(sorted(overlap))
             raise ValueError(f"Names used in both inputs and args: {names}")
         return self
-
-
-class TransformConfig(FunctionStepConfig):
-    """
-    A ``transform`` step: calls a registered operation.
-    """
-
-    operation: str = Field(min_length=1)
-
-
-class PythonConfig(FunctionStepConfig):
-    """
-    A ``python`` step: calls ``callable``, written as ``module.path:function``.
-    """
-
-    callable: str = Field(min_length=1)
 
 
 class ReadConfig(StepConfig):

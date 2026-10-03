@@ -20,9 +20,8 @@ def keep(step_id, upstream, expression="n > 1"):
     return {
         "id": step_id,
         "type": "transform",
-        "operation": "filter",
         "inputs": {"data": upstream},
-        "args": {"expression": expression},
+        "operations": [{"filter": expression}],
     }
 
 
@@ -90,9 +89,8 @@ def test_step_with_one_failed_input_is_skipped(tmp_path):
         {
             "id": "joined",
             "type": "transform",
-            "operation": "join",
-            "inputs": {"left": "left", "right": "bad"},
-            "args": {"on": "n"},
+            "inputs": {"data": "left", "right": "bad"},
+            "operations": [{"join": {"right": "right", "on": "n"}}],
         },
     )
 
@@ -150,9 +148,8 @@ steps:
     path: numbers.csv
   - id: bad
     type: transform
-    operation: filter
     inputs: {data: source}
-    args: {expression: "no_such_column > 1"}
+    operations: [filter: "no_such_column > 1"]
   - id: unrelated
     type: read
     path: numbers.csv

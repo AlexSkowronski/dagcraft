@@ -46,13 +46,14 @@ steps:
 
   - id: comparison
     type: transform
-    operation: join
     inputs:
-      left: budget
-      right: actuals
-    args:
-      on: [department, quarter]
-      how: left
+      data: budget
+      actuals: actuals
+    operations:
+      - join: {right: actuals, on: [department, quarter], how: left}
+      - fill_nulls: {actual: 0}
+      - derive:
+          variance: actual - budget
 
   # One sheet per input, named after it.
   - id: publish

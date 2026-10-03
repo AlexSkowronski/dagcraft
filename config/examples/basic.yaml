@@ -25,11 +25,10 @@ steps:
 
   - id: salaried
     type: transform
-    operation: drop_nulls
     inputs:
       data: employees
-    args:
-      subset: [salary]
+    operations:
+      - drop_nulls: [salary]
 
   - id: save
     type: write

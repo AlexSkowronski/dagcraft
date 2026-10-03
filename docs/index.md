@@ -28,9 +28,11 @@ steps:
 
   - id: big_orders
     type: transform
-    operation: filter
     inputs: {data: orders}
-    args: {expression: "amount > 100"}
+    operations:
+      - drop_nulls: [customer_id]
+      - filter: amount > 100
+      - check: {unique: [order_id]}
 
   - id: save
     type: write
@@ -44,7 +46,7 @@ steps:
 | --- | --- |
 | **[Connections](connections/local.md)**: where data lives, and signing in | Local files, Azure Blob Storage, SharePoint, any SQL database, Azure SQL |
 | **[Formats](reading-writing/files.md)**: how files become data | Tables: CSV, Parquet, Excel. Documents (dicts and lists): JSON, JSON Lines, YAML |
-| **[Steps](steps.md)**: what a pipeline does | `read`, `write`, `transform` (built-in operations), `python` (your own functions) |
+| **[Steps](steps.md)**: what a pipeline does | `read`, `write`, `transform` (a chain of operations: filter, join, derive, check, ...), `python` (your own functions) |
 | **[Running](running.md)** | From Python or the `dagcraft` command; dry runs, connection checks, retries, parallel steps, logs per step |
 
 ## How it works

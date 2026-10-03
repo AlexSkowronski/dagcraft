@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from dagcraft.registry import register_operation
+from dagcraft.operations.base import register_operation
 
 
 @register_operation("flatten")
