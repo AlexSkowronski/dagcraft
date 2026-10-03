@@ -137,6 +137,8 @@ proven in seconds. For Azure SQL it also shows who you signed in as.
 
 ## Next
 
+- [Autocomplete in VS Code](autocomplete.md): suggestions and red
+  squiggles as you write pipeline files.
 - [The pipeline file](pipeline-file.md): params, `.env` files and secrets.
 - [Connections](connections/local.md): reading from Azure, SharePoint and SQL.
 - [Your own Python functions](recipes/python-functions.md).

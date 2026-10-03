@@ -38,6 +38,9 @@ First release.
   `env_file` loads a `.env` file first.
 - Shared connections: pipelines `include` files of connections, so a
   project defines each connection once; a pipeline can override one.
+- Autocomplete for pipeline files in VS Code: JSON Schemas built from the
+  steps, connections and operations (`dagcraft --schema DIR`), published
+  with the guide.
 - Connections: `local`, `azure_blob` (including ADLS Gen2), `sharepoint`
   (through Microsoft Graph), `sql` (any SQLAlchemy URL) and `azure_sql`
   (Entra ID token per connection, `fast_executemany`). Signing in with

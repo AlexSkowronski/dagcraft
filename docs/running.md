@@ -67,6 +67,7 @@ on the PATH.
 | `--max-workers N` | Run up to N independent steps at once. |
 | `--run-id ID` | An ID for the run in the logs. |
 | `-v`, `--verbose` | Also log detail, such as each file and each SQL part read. |
+| `--schema DIR` | Write the JSON Schemas for [autocomplete](autocomplete.md) to DIR, instead of running a pipeline. |
 | `--version` | Show dagcraft's version. |
 
 | Exit status | |

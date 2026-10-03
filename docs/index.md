@@ -61,7 +61,8 @@ steps:
 
 ## Where next
 
-- New to dagcraft? Start with **[Getting started](getting-started.md)**.
+- New to dagcraft? Start with **[Getting started](getting-started.md)**,
+  then set up **[autocomplete in VS Code](autocomplete.md)**.
 - Moving data from Azure? See the **[recipes](recipes/blob-json-to-sql.md)**.
 - Looking something up? Every field is listed on the page for its
   connection, format or step.

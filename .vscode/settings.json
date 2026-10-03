@@ -1,0 +1,6 @@
+{
+  // Autocomplete and checks for pipeline files: see docs/autocomplete.md.
+  "yaml.schemas": {
+    "./schemas/pipeline.json": ["config/examples/*.yaml"]
+  }
+}

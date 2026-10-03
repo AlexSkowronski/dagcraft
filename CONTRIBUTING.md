@@ -28,12 +28,21 @@ src/dagcraft/
   steps/         read, write, transform, python
   operations/    built-in transform operations
   cli/           the dagcraft command: arguments, main, report
+  schema/        JSON Schemas for editor autocomplete
   data.py        describing step outputs; requiring a table
   logs.py        run and step context for log messages
 ```
 
 Docstrings open and close on their own lines, with the summary on the
 second line; ruff checks it.
+
+`schemas/` holds the JSON Schemas editors use for autocomplete, generated
+from the config models and operations. After changing either, regenerate
+them (a test fails until you do):
+
+```bash
+uv run dagcraft --schema schemas
+```
 
 ## Documentation
 

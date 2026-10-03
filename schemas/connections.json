@@ -1,0 +1,279 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alexskowronski.github.io/dagcraft/schemas/connections.json",
+  "title": "dagcraft shared connections",
+  "type": "object",
+  "required": [
+    "connections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "connections": {
+      "type": "object",
+      "description": "Named connections: where data lives and how to sign in.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "azure_blob",
+              "azure_sql",
+              "local",
+              "sharepoint",
+              "sql"
+            ],
+            "description": "The connection's type."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "azure_blob"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files in an Azure Blob Storage container.\n\nWith account, sign-in uses DefaultAzureCredential: your\naz login locally, a managed identity in Azure, or service principal\nenvironment variables. With connection_string, that string is used.\nStep paths are relative to prefix within the container.",
+              "properties": {
+                "container": {
+                  "minLength": 1,
+                  "title": "Container",
+                  "type": "string"
+                },
+                "prefix": {
+                  "default": "",
+                  "title": "Prefix",
+                  "type": "string"
+                },
+                "account": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Account"
+                },
+                "connection_string": {
+                  "anyOf": [
+                    {
+                      "format": "password",
+                      "minLength": 1,
+                      "type": "string",
+                      "writeOnly": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Connection String"
+                },
+                "type": {
+                  "const": "azure_blob"
+                }
+              },
+              "required": [
+                "container"
+              ],
+              "title": "AzureBlobConfig",
+              "type": "object",
+              "markdownDescription": "Files in an Azure Blob Storage container.\n\nWith `account`, sign-in uses `DefaultAzureCredential`: your\n`az login` locally, a managed identity in Azure, or service principal\nenvironment variables. With `connection_string`, that string is used.\nStep paths are relative to `prefix` within the container."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "azure_sql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Azure SQL Database or SQL Server.\n\nWith server and database, sign-in uses an Entra ID token from\nDefaultAzureCredential: your az login locally, a managed identity\nin Azure. A fresh token is fetched for every new database connection, so\nlong runs aren't cut off when a token expires. With\nconnection_string, that ODBC connection string is used as it is.\n\nWrites use pyodbc's fast_executemany.",
+              "properties": {
+                "server": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Server"
+                },
+                "database": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Database"
+                },
+                "driver": {
+                  "default": "ODBC Driver 18 for SQL Server",
+                  "minLength": 1,
+                  "title": "Driver",
+                  "type": "string"
+                },
+                "connection_string": {
+                  "anyOf": [
+                    {
+                      "format": "password",
+                      "minLength": 1,
+                      "type": "string",
+                      "writeOnly": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Connection String"
+                },
+                "type": {
+                  "const": "azure_sql"
+                }
+              },
+              "title": "AzureSQLConfig",
+              "type": "object",
+              "markdownDescription": "Azure SQL Database or SQL Server.\n\nWith `server` and `database`, sign-in uses an Entra ID token from\n`DefaultAzureCredential`: your `az login` locally, a managed identity\nin Azure. A fresh token is fetched for every new database connection, so\nlong runs aren't cut off when a token expires. With\n`connection_string`, that ODBC connection string is used as it is.\n\nWrites use pyodbc's `fast_executemany`."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "local"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files on the local filesystem.\n\nStep paths are relative to root, and a relative root is relative\nto the folder you run from. Parent folders are\ncreated when writing, and a file is written under a temporary name and\nonly then put in place, so a failed write leaves the old file untouched.",
+              "properties": {
+                "root": {
+                  "default": ".",
+                  "title": "Root",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "local"
+                }
+              },
+              "title": "LocalConfig",
+              "type": "object",
+              "markdownDescription": "Files on the local filesystem.\n\nStep paths are relative to `root`, and a relative `root` is relative\nto the folder you run from. Parent folders are\ncreated when writing, and a file is written under a temporary name and\nonly then put in place, so a failed write leaves the old file untouched."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "sharepoint"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files in a SharePoint document library.\n\nSigns in with DefaultAzureCredential, so the identity needs Graph\npermission to the site's files (for example Sites.Selected or\nSites.ReadWrite.All for a service principal). Step paths are\nrelative to folder in library. Wildcards are allowed in file\nnames, not in folder names. Uploads are limited to 250 MB.",
+              "properties": {
+                "site": {
+                  "minLength": 1,
+                  "title": "Site",
+                  "type": "string"
+                },
+                "library": {
+                  "default": "Documents",
+                  "minLength": 1,
+                  "title": "Library",
+                  "type": "string"
+                },
+                "folder": {
+                  "default": "",
+                  "title": "Folder",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "sharepoint"
+                }
+              },
+              "required": [
+                "site"
+              ],
+              "title": "SharePointConfig",
+              "type": "object",
+              "markdownDescription": "Files in a SharePoint document library.\n\nSigns in with `DefaultAzureCredential`, so the identity needs Graph\npermission to the site's files (for example `Sites.Selected` or\n`Sites.ReadWrite.All` for a service principal). Step paths are\nrelative to `folder` in `library`. Wildcards are allowed in file\nnames, not in folder names. Uploads are limited to 250 MB."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "sql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Any database SQLAlchemy supports, given a database URL.\n\nA relative SQLite path is relative to the folder you run from, and\nthe folder for a new SQLite file is created.",
+              "properties": {
+                "url": {
+                  "format": "password",
+                  "minLength": 1,
+                  "title": "Url",
+                  "type": "string",
+                  "writeOnly": true
+                },
+                "type": {
+                  "const": "sql"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "title": "SQLConfig",
+              "type": "object",
+              "markdownDescription": "Any database SQLAlchemy supports, given a database URL.\n\nA relative SQLite path is relative to the folder you run from, and\nthe folder for a new SQLite file is created."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {}
+}

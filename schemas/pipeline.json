@@ -1,0 +1,1802 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alexskowronski.github.io/dagcraft/schemas/pipeline.json",
+  "title": "dagcraft pipeline",
+  "type": "object",
+  "required": [
+    "pipeline",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "pipeline": {
+      "additionalProperties": false,
+      "description": "The ``pipeline`` section.\n\n``max_workers`` is how many independent steps may run at once.\n``env_file`` is a ``.env`` file, relative to the folder you run from, whose\nvariables are loaded before anything else so ``${env:NAME}`` references\nand Azure sign-in can use them. Variables already set in the environment\nkeep their values.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "max_workers": {
+          "anyOf": [
+            {
+              "default": 1,
+              "minimum": 1,
+              "title": "Max Workers",
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\$\\{[^}]+\\}$",
+              "description": "A ${params.NAME} or ${env:NAME} reference."
+            }
+          ]
+        },
+        "env_file": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Env File"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "PipelineMeta",
+      "type": "object"
+    },
+    "include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Files of shared connections, relative to the folder you run from."
+        },
+        {
+          "type": "string",
+          "pattern": "^\\$\\{[^}]+\\}$",
+          "description": "A ${params.NAME} or ${env:NAME} reference."
+        }
+      ]
+    },
+    "params": {
+      "type": "object",
+      "description": "Named values, used elsewhere as ${params.NAME}."
+    },
+    "connections": {
+      "type": "object",
+      "description": "Named connections: where data lives and how to sign in.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "azure_blob",
+              "azure_sql",
+              "local",
+              "sharepoint",
+              "sql"
+            ],
+            "description": "The connection's type."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "azure_blob"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files in an Azure Blob Storage container.\n\nWith account, sign-in uses DefaultAzureCredential: your\naz login locally, a managed identity in Azure, or service principal\nenvironment variables. With connection_string, that string is used.\nStep paths are relative to prefix within the container.",
+              "properties": {
+                "container": {
+                  "minLength": 1,
+                  "title": "Container",
+                  "type": "string"
+                },
+                "prefix": {
+                  "default": "",
+                  "title": "Prefix",
+                  "type": "string"
+                },
+                "account": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Account"
+                },
+                "connection_string": {
+                  "anyOf": [
+                    {
+                      "format": "password",
+                      "minLength": 1,
+                      "type": "string",
+                      "writeOnly": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Connection String"
+                },
+                "type": {
+                  "const": "azure_blob"
+                }
+              },
+              "required": [
+                "container"
+              ],
+              "title": "AzureBlobConfig",
+              "type": "object",
+              "markdownDescription": "Files in an Azure Blob Storage container.\n\nWith `account`, sign-in uses `DefaultAzureCredential`: your\n`az login` locally, a managed identity in Azure, or service principal\nenvironment variables. With `connection_string`, that string is used.\nStep paths are relative to `prefix` within the container."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "azure_sql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Azure SQL Database or SQL Server.\n\nWith server and database, sign-in uses an Entra ID token from\nDefaultAzureCredential: your az login locally, a managed identity\nin Azure. A fresh token is fetched for every new database connection, so\nlong runs aren't cut off when a token expires. With\nconnection_string, that ODBC connection string is used as it is.\n\nWrites use pyodbc's fast_executemany.",
+              "properties": {
+                "server": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Server"
+                },
+                "database": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Database"
+                },
+                "driver": {
+                  "default": "ODBC Driver 18 for SQL Server",
+                  "minLength": 1,
+                  "title": "Driver",
+                  "type": "string"
+                },
+                "connection_string": {
+                  "anyOf": [
+                    {
+                      "format": "password",
+                      "minLength": 1,
+                      "type": "string",
+                      "writeOnly": true
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Connection String"
+                },
+                "type": {
+                  "const": "azure_sql"
+                }
+              },
+              "title": "AzureSQLConfig",
+              "type": "object",
+              "markdownDescription": "Azure SQL Database or SQL Server.\n\nWith `server` and `database`, sign-in uses an Entra ID token from\n`DefaultAzureCredential`: your `az login` locally, a managed identity\nin Azure. A fresh token is fetched for every new database connection, so\nlong runs aren't cut off when a token expires. With\n`connection_string`, that ODBC connection string is used as it is.\n\nWrites use pyodbc's `fast_executemany`."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "local"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files on the local filesystem.\n\nStep paths are relative to root, and a relative root is relative\nto the folder you run from. Parent folders are\ncreated when writing, and a file is written under a temporary name and\nonly then put in place, so a failed write leaves the old file untouched.",
+              "properties": {
+                "root": {
+                  "default": ".",
+                  "title": "Root",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "local"
+                }
+              },
+              "title": "LocalConfig",
+              "type": "object",
+              "markdownDescription": "Files on the local filesystem.\n\nStep paths are relative to `root`, and a relative `root` is relative\nto the folder you run from. Parent folders are\ncreated when writing, and a file is written under a temporary name and\nonly then put in place, so a failed write leaves the old file untouched."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "sharepoint"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Files in a SharePoint document library.\n\nSigns in with DefaultAzureCredential, so the identity needs Graph\npermission to the site's files (for example Sites.Selected or\nSites.ReadWrite.All for a service principal). Step paths are\nrelative to folder in library. Wildcards are allowed in file\nnames, not in folder names. Uploads are limited to 250 MB.",
+              "properties": {
+                "site": {
+                  "minLength": 1,
+                  "title": "Site",
+                  "type": "string"
+                },
+                "library": {
+                  "default": "Documents",
+                  "minLength": 1,
+                  "title": "Library",
+                  "type": "string"
+                },
+                "folder": {
+                  "default": "",
+                  "title": "Folder",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "sharepoint"
+                }
+              },
+              "required": [
+                "site"
+              ],
+              "title": "SharePointConfig",
+              "type": "object",
+              "markdownDescription": "Files in a SharePoint document library.\n\nSigns in with `DefaultAzureCredential`, so the identity needs Graph\npermission to the site's files (for example `Sites.Selected` or\n`Sites.ReadWrite.All` for a service principal). Step paths are\nrelative to `folder` in `library`. Wildcards are allowed in file\nnames, not in folder names. Uploads are limited to 250 MB."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "sql"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Any database SQLAlchemy supports, given a database URL.\n\nA relative SQLite path is relative to the folder you run from, and\nthe folder for a new SQLite file is created.",
+              "properties": {
+                "url": {
+                  "format": "password",
+                  "minLength": 1,
+                  "title": "Url",
+                  "type": "string",
+                  "writeOnly": true
+                },
+                "type": {
+                  "const": "sql"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "title": "SQLConfig",
+              "type": "object",
+              "markdownDescription": "Any database SQLAlchemy supports, given a database URL.\n\nA relative SQLite path is relative to the folder you run from, and\nthe folder for a new SQLite file is created."
+            }
+          }
+        ]
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "The steps. Each has an id and a type.",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "python",
+              "read",
+              "transform",
+              "write"
+            ],
+            "description": "The step's type."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "python"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Calls callable with the inputs, by name, plus args.",
+              "properties": {
+                "id": {
+                  "minLength": 1,
+                  "title": "Id",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "python"
+                },
+                "inputs": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Inputs",
+                  "type": "object"
+                },
+                "retries": {
+                  "anyOf": [
+                    {
+                      "default": 0,
+                      "minimum": 0,
+                      "title": "Retries",
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "retry_delay": {
+                  "anyOf": [
+                    {
+                      "default": 5.0,
+                      "minimum": 0,
+                      "title": "Retry Delay",
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "callable": {
+                  "minLength": 1,
+                  "title": "Callable",
+                  "type": "string"
+                },
+                "args": {
+                  "additionalProperties": true,
+                  "title": "Args",
+                  "type": "object"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "callable"
+              ],
+              "title": "PythonConfig",
+              "type": "object",
+              "markdownDescription": "Calls `callable` with the inputs, by name, plus `args`."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "read"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Reads with the reader registered for the connection's type.",
+              "properties": {
+                "id": {
+                  "minLength": 1,
+                  "title": "Id",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "read"
+                },
+                "inputs": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Inputs",
+                  "type": "object"
+                },
+                "retries": {
+                  "anyOf": [
+                    {
+                      "default": 0,
+                      "minimum": 0,
+                      "title": "Retries",
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "retry_delay": {
+                  "anyOf": [
+                    {
+                      "default": 5.0,
+                      "minimum": 0,
+                      "title": "Retry Delay",
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "connection": {
+                  "default": "local",
+                  "title": "Connection",
+                  "type": "string"
+                },
+                "path": {
+                  "minLength": 1,
+                  "title": "Path",
+                  "type": "string",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "format": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Format",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "args": {
+                  "additionalProperties": true,
+                  "title": "Args",
+                  "type": "object",
+                  "description": "For azure_blob, local, sharepoint, azure_sql and sql connections."
+                },
+                "source_column": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Source Column",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "query": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Query",
+                  "description": "For azure_sql and sql connections."
+                },
+                "query_file": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Query File",
+                  "description": "For azure_sql and sql connections."
+                },
+                "table": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Table",
+                  "description": "For azure_sql and sql connections."
+                },
+                "params": {
+                  "additionalProperties": true,
+                  "title": "Params",
+                  "type": "object",
+                  "description": "For azure_sql and sql connections."
+                },
+                "partition": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/SQLPartition"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "For azure_sql and sql connections."
+                }
+              },
+              "required": [
+                "id",
+                "type"
+              ],
+              "title": "ReadConfig",
+              "type": "object",
+              "markdownDescription": "Reads with the reader registered for the connection's type."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "transform"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Applies operations in order, each to the last one's result.\n\nThe chain starts from the data input, or from the table the first\noperation names (join: {left: ..., right: ...}). The operations are\nchecked when the pipeline loads.",
+              "properties": {
+                "id": {
+                  "minLength": 1,
+                  "title": "Id",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "transform"
+                },
+                "inputs": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Inputs",
+                  "type": "object"
+                },
+                "retries": {
+                  "anyOf": [
+                    {
+                      "default": 0,
+                      "minimum": 0,
+                      "title": "Retries",
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "retry_delay": {
+                  "anyOf": [
+                    {
+                      "default": 5.0,
+                      "minimum": 0,
+                      "title": "Retry Delay",
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "operations": {
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "The operations, applied in order, each to the last result.",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "cast",
+                          "check",
+                          "dedupe",
+                          "derive",
+                          "drop_nulls",
+                          "fill_nulls",
+                          "flatten",
+                          "rename"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "additionalProperties": false,
+                        "properties": {
+                          "aggregate": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "columns": {
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    },
+                                    "type": "object"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "by",
+                                  "columns"
+                                ]
+                              }
+                            ],
+                            "description": "Group rows by by and aggregate each column with the named function.\n\ncolumns maps a column to sum, mean, count, min,\nmax or any other pandas aggregation.",
+                            "markdownDescription": "Group rows by `by` and aggregate each column with the named function.\n\n`columns` maps a column to `sum`, `mean`, `count`, `min`,\n`max` or any other pandas aggregation."
+                          },
+                          "cast": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {},
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Convert columns to a type, written as column: type.\n\nTypes are int, float, str, bool and datetime, or any\npandas type name, such as category or int32.",
+                            "markdownDescription": "Convert columns to a type, written as `column: type`.\n\nTypes are `int`, `float`, `str`, `bool` and `datetime`, or any\npandas type name, such as `category` or `int32`."
+                          },
+                          "check": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "columns": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "not_null": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "unique": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "accepted": {
+                                    "anyOf": [
+                                      {
+                                        "additionalProperties": {
+                                          "anyOf": [
+                                            {
+                                              "items": {},
+                                              "type": "array"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "pattern": "^\\$\\{[^}]+\\}$",
+                                              "description": "A ${params.NAME} or ${env:NAME} reference."
+                                            }
+                                          ]
+                                        },
+                                        "type": "object"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "min_rows": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "max_rows": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "warn": {
+                                    "anyOf": [
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Check the table and pass it on unchanged, or fail with every problem found.\n\ncolumns must exist; not_null columns have no missing values;\nunique columns, together, identify each row; accepted maps a\ncolumn to its allowed values; min_rows and max_rows bound the\nrow count. With warn, problems are logged as a warning instead.",
+                            "markdownDescription": "Check the table and pass it on unchanged, or fail with every problem found.\n\n`columns` must exist; `not_null` columns have no missing values;\n`unique` columns, together, identify each row; `accepted` maps a\ncolumn to its allowed values; `min_rows` and `max_rows` bound the\nrow count. With `warn`, problems are logged as a warning instead."
+                          },
+                          "dedupe": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "subset": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "keep": {
+                                    "enum": [
+                                      "first",
+                                      "last"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Drop repeated rows: the same in subset, or in every column.\n\nkeep says which of the repeats stays: the first or the last.",
+                            "markdownDescription": "Drop repeated rows: the same in `subset`, or in every column.\n\n`keep` says which of the repeats stays: the `first` or the `last`."
+                          },
+                          "derive": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {},
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Add or replace columns, written as column: expression.\n\nExpressions are arithmetic and comparisons on other columns, as for\nDataFrame.eval: total: price * quantity. Each can use the ones\nbefore it.",
+                            "markdownDescription": "Add or replace columns, written as `column: expression`.\n\nExpressions are arithmetic and comparisons on other columns, as for\n`DataFrame.eval`: `total: price * quantity`. Each can use the ones\nbefore it."
+                          },
+                          "drop": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "pattern": "^\\$\\{[^}]+\\}$",
+                                    "description": "A ${params.NAME} or ${env:NAME} reference."
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "columns": {
+                                    "anyOf": [
+                                      {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "columns"
+                                ]
+                              }
+                            ],
+                            "description": "Remove columns.",
+                            "markdownDescription": "Remove `columns`."
+                          },
+                          "drop_nulls": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "subset": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Drop rows with a missing value in any of subset, or in any column.",
+                            "markdownDescription": "Drop rows with a missing value in any of `subset`, or in any column."
+                          },
+                          "fill_nulls": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {},
+                                "additionalProperties": {}
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Fill missing values, written as column: value.",
+                            "markdownDescription": "Fill missing values, written as `column: value`."
+                          },
+                          "filter": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "expression": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "expression"
+                                ]
+                              }
+                            ],
+                            "description": "Keep the rows matching expression, such as amount > 100.\n\nWritten as for DataFrame.query: and, or, ==, in, and\nbackticks around column names with spaces.",
+                            "markdownDescription": "Keep the rows matching `expression`, such as `amount > 100`.\n\nWritten as for `DataFrame.query`: `and`, `or`, `==`, `in`, and\nbackticks around column names with spaces."
+                          },
+                          "flatten": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "record_path": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "meta": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string"
+                                                },
+                                                {
+                                                  "anyOf": [
+                                                    {
+                                                      "items": {
+                                                        "type": "string"
+                                                      },
+                                                      "type": "array"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^\\$\\{[^}]+\\}$",
+                                                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "max_level": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "sep": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Turn documents into a table, with pandas.json_normalize.\n\ndata is a document or a list of them. Nested objects become dotted\ncolumns (user.id); record_path takes the rows from a list inside\neach document, meta copies document fields onto each row (nested\nones as a list, such as [source, system]), max_level limits how\ndeep objects are flattened, and sep joins the names of nested ones.",
+                            "markdownDescription": "Turn documents into a table, with `pandas.json_normalize`.\n\n`data` is a document or a list of them. Nested objects become dotted\ncolumns (`user.id`); `record_path` takes the rows from a list inside\neach document, `meta` copies document fields onto each row (nested\nones as a list, such as `[source, system]`), `max_level` limits how\ndeep objects are flattened, and `sep` joins the names of nested ones."
+                          },
+                          "join": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "right": {
+                                    "type": "string",
+                                    "description": "The name of one of the step's inputs."
+                                  },
+                                  "on": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "how": {
+                                    "enum": [
+                                      "inner",
+                                      "left",
+                                      "right",
+                                      "outer",
+                                      "cross"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "left_on": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "right_on": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "suffixes": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "validate": {
+                                    "anyOf": [
+                                      {
+                                        "enum": [
+                                          "one_to_one",
+                                          "one_to_many",
+                                          "many_to_one",
+                                          "many_to_many"
+                                        ],
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "left": {
+                                    "type": "string",
+                                    "description": "The name of one of the step's inputs."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "right"
+                                ]
+                              }
+                            ],
+                            "description": "Join the left table with the right one on shared columns.\n\nright names another of the step's inputs. left names one too\nwhen the join comes first in a transform; later, the left side is the\nresult so far. Match on on, or on left_on and right_on when\nthe columns are named differently. how is inner, left,\nright or outer. suffixes tell apart other columns both sides\nhave (default [_x, _y]). validate fails the join unless keys\nmatch as expected, such as many_to_one.",
+                            "markdownDescription": "Join the `left` table with the `right` one on shared columns.\n\n`right` names another of the step's inputs. `left` names one too\nwhen the join comes first in a transform; later, the left side is the\nresult so far. Match on `on`, or on `left_on` and `right_on` when\nthe columns are named differently. `how` is `inner`, `left`,\n`right` or `outer`. `suffixes` tell apart other columns both sides\nhave (default `[_x, _y]`). `validate` fails the join unless keys\nmatch as expected, such as `many_to_one`."
+                          },
+                          "python": {
+                            "anyOf": [
+                              {},
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "callable": {}
+                                },
+                                "additionalProperties": {},
+                                "required": [
+                                  "callable"
+                                ]
+                              }
+                            ],
+                            "description": "Call callable (module:function) with the data and args.\n\nThe function gets the current table first, then args by name, and\nreturns the table the next operation works on.",
+                            "markdownDescription": "Call `callable` (`module:function`) with the data and `args`.\n\nThe function gets the current table first, then `args` by name, and\nreturns the table the next operation works on."
+                          },
+                          "rename": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {},
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Rename columns, written as old name: new name.",
+                            "markdownDescription": "Rename columns, written as `old name: new name`."
+                          },
+                          "select": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "items": {
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "pattern": "^\\$\\{[^}]+\\}$",
+                                    "description": "A ${params.NAME} or ${env:NAME} reference."
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "columns": {
+                                    "anyOf": [
+                                      {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "columns"
+                                ]
+                              }
+                            ],
+                            "description": "Keep only columns, in that order.",
+                            "markdownDescription": "Keep only `columns`, in that order."
+                          },
+                          "sort": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "anyOf": [
+                                      {
+                                        "items": {
+                                          "type": "string"
+                                        },
+                                        "type": "array"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "pattern": "^\\$\\{[^}]+\\}$",
+                                        "description": "A ${params.NAME} or ${env:NAME} reference."
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "by": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "type": "string"
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "ascending": {
+                                    "anyOf": [
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "type": "boolean"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "anyOf": [
+                                          {
+                                            "items": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "boolean"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "pattern": "^\\$\\{[^}]+\\}$",
+                                                  "description": "A ${params.NAME} or ${env:NAME} reference."
+                                                }
+                                              ]
+                                            },
+                                            "type": "array"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "pattern": "^\\$\\{[^}]+\\}$",
+                                            "description": "A ${params.NAME} or ${env:NAME} reference."
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "by"
+                                ]
+                              }
+                            ],
+                            "description": "Sort rows by one or more columns; ascending can be one per column.",
+                            "markdownDescription": "Sort rows by one or more columns; `ascending` can be one per column."
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "operations"
+              ],
+              "title": "TransformConfig",
+              "type": "object",
+              "markdownDescription": "Applies `operations` in order, each to the last one's result.\n\nThe chain starts from the `data` input, or from the table the first\noperation names (`join: {left: ..., right: ...}`). The operations are\nchecked when the pipeline loads."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "write"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "additionalProperties": false,
+              "description": "Writes with the writer registered for the connection's type.\n\nSeveral inputs are written together (as Excel sheets, say) when the\nwriter accepts them; the step's output is what it wrote.",
+              "properties": {
+                "id": {
+                  "minLength": 1,
+                  "title": "Id",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "write"
+                },
+                "inputs": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Inputs",
+                  "type": "object"
+                },
+                "retries": {
+                  "anyOf": [
+                    {
+                      "default": 0,
+                      "minimum": 0,
+                      "title": "Retries",
+                      "type": "integer"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "retry_delay": {
+                  "anyOf": [
+                    {
+                      "default": 5.0,
+                      "minimum": 0,
+                      "title": "Retry Delay",
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
+                "connection": {
+                  "default": "local",
+                  "title": "Connection",
+                  "type": "string"
+                },
+                "path": {
+                  "minLength": 1,
+                  "title": "Path",
+                  "type": "string",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "format": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Format",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "args": {
+                  "additionalProperties": true,
+                  "title": "Args",
+                  "type": "object",
+                  "description": "For azure_blob, local, sharepoint, azure_sql and sql connections."
+                },
+                "table": {
+                  "minLength": 1,
+                  "title": "Table",
+                  "type": "string",
+                  "description": "For azure_sql and sql connections."
+                },
+                "if_exists": {
+                  "default": "fail",
+                  "enum": [
+                    "fail",
+                    "append",
+                    "delete_rows",
+                    "replace",
+                    "upsert"
+                  ],
+                  "title": "If Exists",
+                  "type": "string",
+                  "description": "For azure_sql and sql connections."
+                },
+                "keys": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Keys",
+                      "type": "array",
+                      "description": "For azure_sql and sql connections."
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "type"
+              ],
+              "title": "WriteConfig",
+              "type": "object",
+              "markdownDescription": "Writes with the writer registered for the connection's type.\n\nSeveral inputs are written together (as Excel sheets, say) when the\nwriter accepts them; the step's output is what it wrote."
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "SQLPartition": {
+      "additionalProperties": false,
+      "description": "Split a read into ranges of a whole-number column, read at the same time.\n\nReading a ``table``, set ``column``: its range comes from the column's\nMIN and MAX unless ``lower`` and ``upper`` are set, and rows where it's\nNULL are read too. Reading a query, put ``:partition_start`` and\n``:partition_end`` where the range belongs (for example ``WHERE\norder_id BETWEEN :partition_start AND :partition_end``) and set\n``lower`` and ``upper``.",
+      "properties": {
+        "parts": {
+          "anyOf": [
+            {
+              "maximum": 32,
+              "minimum": 2,
+              "title": "Parts",
+              "type": "integer"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\$\\{[^}]+\\}$",
+              "description": "A ${params.NAME} or ${env:NAME} reference."
+            }
+          ]
+        },
+        "column": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\$\\{[^}]+\\}$",
+                  "description": "A ${params.NAME} or ${env:NAME} reference."
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lower"
+        },
+        "upper": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\$\\{[^}]+\\}$",
+                  "description": "A ${params.NAME} or ${env:NAME} reference."
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper"
+        }
+      },
+      "required": [
+        "parts"
+      ],
+      "title": "SQLPartition",
+      "type": "object"
+    }
+  }
+}

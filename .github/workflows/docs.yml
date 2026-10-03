@@ -25,6 +25,11 @@ jobs:
       - name: Build the site
         run: uv run --locked --only-group docs mkdocs build --strict
 
+      # The schemas for editor autocomplete, published beside the guide. A
+      # test keeps the committed copies in step with the code.
+      - name: Add the schemas
+        run: cp -r schemas site/schemas
+
       - uses: actions/upload-pages-artifact@v5
         if: github.event_name == 'push'
         with:

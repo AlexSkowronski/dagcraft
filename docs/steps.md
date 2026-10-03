@@ -121,7 +121,7 @@ names the operation: `operation 4 (join) failed: ...`.
 
 | Operation | Options |
 | --- | --- |
-| `join` | `left` and `right`: inputs of the step; `on`: shared column(s); `how`: `inner` (default), `left`, `right` or `outer`; plus any [`DataFrame.merge`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.merge.html) option, such as `suffixes`. After the first operation, leave out `left`: the left side is the result so far. |
+| `join` | `left` and `right`: inputs of the step (after the first operation, leave out `left`: the left side is the result so far); `on`: shared column(s), or `left_on` and `right_on` when they're named differently; `how`: `inner` (default), `left`, `right` or `outer`; `suffixes`: for other columns both sides have, default `[_x, _y]`; `validate`: fail unless keys match as `one_to_one`, `one_to_many`, `many_to_one` or `many_to_many`. |
 | `aggregate` | `by`: column(s) to group by; `columns`: `column: function` pairs, with `sum`, `mean`, `count`, `min`, `max`, ... |
 
 ### Checking

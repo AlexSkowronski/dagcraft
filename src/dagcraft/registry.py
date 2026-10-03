@@ -58,6 +58,12 @@ class Registry:
         """
         return list(self._items.values())
 
+    def items(self) -> list[tuple[str, Any]]:
+        """
+        Every name and component, sorted by name.
+        """
+        return sorted(self._items.items())
+
     def __contains__(self, name: object) -> bool:
         return name in self._items
 
@@ -90,6 +96,12 @@ class ConnectionTypeRegistry:
             return item
 
         return decorator
+
+    def items(self) -> list[tuple[type, Any]]:
+        """
+        Every connection type and the class registered for it.
+        """
+        return list(self._items.items())
 
     def find(self, connection: object) -> Any | None:
         """

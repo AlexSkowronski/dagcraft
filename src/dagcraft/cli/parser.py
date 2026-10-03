@@ -21,7 +21,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "config",
+        nargs="?",
         help="Path to the pipeline YAML file.",
+    )
+    parser.add_argument(
+        "--schema",
+        metavar="DIR",
+        help=(
+            "Write JSON Schemas for pipeline files to DIR, for autocomplete in "
+            "editors, instead of running a pipeline."
+        ),
     )
     parser.add_argument(
         "--dry-run",

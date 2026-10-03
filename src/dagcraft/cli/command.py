@@ -5,6 +5,7 @@ The ``dagcraft`` command: check a pipeline file, then run it.
 import argparse
 import logging
 from enum import IntEnum
+from pathlib import Path
 
 from dagcraft.cli import report
 from dagcraft.cli.parser import build_parser
@@ -12,6 +13,7 @@ from dagcraft.config import RunOptions
 from dagcraft.core.pipeline import Pipeline
 from dagcraft.exceptions import ConfigError, RunError
 from dagcraft.logs import configure_logging, get_logger
+from dagcraft.schema import write_schemas
 
 logger = get_logger(__name__)
 
@@ -32,8 +34,14 @@ def main(argv: list[str] | None = None) -> int:
 
     Returns the exit code: see ``ExitCode``.
     """
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.INFO)
+
+    if args.schema is not None:
+        return schema(Path(args.schema))
+    if args.config is None:
+        parser.error("the following arguments are required: config")
 
     try:
         # Check the options first: they're cheap, and loading isn't.
@@ -49,6 +57,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run or args.check_connections:
         return check(pipeline, args, options)
     return run(pipeline, options)
+
+
+def schema(folder: Path) -> ExitCode:
+    """
+    Write the JSON Schemas for editors, including your own components.
+    """
+    for path in write_schemas(folder):
+        logger.info("Wrote %s", path)
+    return ExitCode.SUCCESS
 
 
 def run_options(args: argparse.Namespace) -> RunOptions:
