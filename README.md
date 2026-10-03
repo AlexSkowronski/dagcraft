@@ -249,6 +249,7 @@ keyword arguments.
 | `sort`       | `data`          | `by` (column or list), `ascending` (default `true`) |
 | `join`       | `left`, `right` | `on`, plus any `DataFrame.merge` argument, such as `how` |
 | `aggregate`  | `data`          | `by` (column or list), `columns` (mapping of column to `sum`, `mean`, `count`, `min`, `max`, ...) |
+| `flatten`    | `data` (documents) | Turns documents into a table with `pandas.json_normalize`: `record_path`, `meta`, `max_level`, ... |
 
 ## Connections
 
@@ -261,7 +262,7 @@ A read or write step combines three things, each with one job:
 | ----------------------- | ------------------------------------- | ------------------------------------------- |
 | Connection              | Where the data is, and signing in     | `local`, `azure_blob`, `sharepoint`, `sql`, `azure_sql` |
 | Reader / writer         | What to read or write there           | Files (`path`), SQL (`query`, `table`)      |
-| Format (files only)     | How a file's bytes become a table     | `csv`, `parquet`, `excel`, `json`, `jsonl`, `yaml` |
+| Format (files only)     | How a file's bytes become data        | `csv`, `parquet`, `excel`, `json`, `jsonl`, `yaml` |
 
 So the fields a step takes depend on its connection's kind: file
 connections take a `path`, SQL connections a `query` or `table`.
@@ -275,34 +276,83 @@ Read and write steps on file connections take:
 | `path`          | File path, relative to the connection's root. Reads can use wildcards. |
 | `format`        | Optional when the extension says which (see below).        |
 | `args`          | Passed to the format's reader or writer, e.g. `{sep: ";"}`. |
-| `source_column` | Reads with wildcards: a column naming each row's file.      |
+| `source_column` | Reads with wildcards: a column (or key) naming each row's file. |
 
 | Format    | Extensions         | Notes                                              |
 | --------- | ------------------ | -------------------------------------------------- |
 | `csv`     | `.csv`             | `args` go to `pandas.read_csv` / `to_csv`.         |
 | `parquet` | `.parquet`, `.pq`  | `args` go to `pandas.read_parquet` / `to_parquet`. |
 | `excel`   | `.xlsx`, `.xlsm`   | Needs `dagcraft-pipelines[excel]`. See below.                |
-| `json`    | `.json`            | Nested objects become dotted columns (`user.id`). `args` go to `pandas.json_normalize`, e.g. `record_path` and `meta`. |
-| `jsonl`   | `.jsonl`, `.ndjson`| One JSON record per line; read like `json`.        |
-| `yaml`    | `.yaml`, `.yml`    | Read like `json`.                                  |
+| `json`    | `.json`            | A document (see below). `args` go to `json.load` / `json.dumps`, e.g. `indent: 2`. |
+| `jsonl`   | `.jsonl`, `.ndjson`| One JSON record per line: a list of records.       |
+| `yaml`    | `.yaml`, `.yml`    | A document; only `true`/`false` are booleans.      |
 
-Writes leave out the DataFrame index unless `args` sets `index: true`.
+`csv`, `parquet` and `excel` read and write tables (DataFrames). Writes leave
+out the DataFrame index unless `args` sets `index: true`.
+
+#### Documents: JSON, JSON Lines and YAML
+
+These are read as the plain Python data they hold (dicts, lists, strings,
+numbers), ready for your own functions in `python` steps, and written from
+it as they are. A DataFrame is written as one record per row, with dates as
+ISO text.
+
+```yaml
+  - id: batch
+    type: read
+    connection: lake
+    path: events/2026-10-02.json        # a dict, as the file has it
+
+  - id: purchases
+    type: python
+    callable: my_project.events:purchases   # def purchases(data): ...
+    inputs:
+      data: batch
+
+  - id: save
+    type: write
+    connection: lake
+    path: purchases/2026-10-02.json
+    inputs:
+      data: purchases                   # whatever purchases returned
+```
+
+When you want a table instead, for SQL or CSV say, add a `flatten` step:
+nested objects become dotted columns (`user.id`), `record_path` takes the
+rows from a list inside each document and `meta` copies document fields
+onto each row:
+
+```yaml
+  - id: events
+    type: transform
+    operation: flatten
+    inputs:
+      data: batch
+    args:
+      record_path: events
+      meta: [batch_id]
+```
+
+Writing documents where a table is needed (a CSV file, a SQL table) is an
+error that says so.
 
 #### Many files at once
 
 A read `path` with wildcards (`*`, `?`, `[...]`, and `**` for any depth)
-reads every matching file into one table, in path order. No matching files
-is an error.
+reads every matching file, in path order. No matching files is an error.
+
+| Format             | Many files give                                          |
+| ------------------ | -------------------------------------------------------- |
+| `csv`, `parquet`, `excel` | One table; `source_column` adds a column naming each row's file. |
+| `json`, `yaml`     | A list of the documents; `source_column` adds a key naming the file to each object (or each object in a list). |
+| `jsonl`            | One list of every file's records, each with the `source_column` key. |
 
 ```yaml
-  - id: events
+  - id: batches
     type: read
     connection: lake
     path: events/2026-10-*.json
-    source_column: source_file    # which file each row came from
-    args:
-      record_path: events         # the records inside each document
-      meta: [batch_id]            # document fields to copy onto each record
+    source_column: source_file    # each document gets source_file: events/...
 ```
 
 #### Excel sheets

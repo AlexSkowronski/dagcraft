@@ -1,11 +1,10 @@
 import logging
 import threading
 
-import pandas as pd
 import pytest
 
 from dagcraft import get_logger
-from dagcraft.logs import describe_data, run_context, step_context
+from dagcraft.logs import run_context, step_context
 
 logger = get_logger("dagcraft.tests")
 
@@ -52,16 +51,3 @@ def test_new_threads_start_without_the_context(caplog):
         thread.join()
 
     assert last_record(caplog).getMessage() == "from a thread"
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        (pd.DataFrame({"a": range(1234), "b": 0}), "1,234 rows x 2 columns"),
-        ({"North": pd.DataFrame(), "South": pd.DataFrame()}, "2 tables (North, South)"),
-        (None, "no output"),
-        (42, "int"),
-    ],
-)
-def test_describe_data(value, expected):
-    assert describe_data(value) == expected

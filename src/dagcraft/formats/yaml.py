@@ -1,32 +1,36 @@
 """
-YAML documents, read and written like JSON.
+YAML documents.
 """
 
-import json
 from typing import Any, BinaryIO
 
-import pandas as pd
 import yaml
 
-from dagcraft.formats.base import Format
+from dagcraft.formats.documents import DocumentFormat, plain
 from dagcraft.registry import register_format
 from dagcraft.yaml_loader import load_yaml
 
 
 @register_format("yaml")
-class YAMLFormat(Format):
+class YAMLFormat(DocumentFormat):
     """
-    A YAML document, flattened like JSON. Only true/false are booleans.
+    A YAML document, read as the dicts and lists it holds.
+
+    Only true/false are booleans, as in YAML 1.2. Writing passes ``args`` to
+    ``yaml.safe_dump``.
     """
 
     extensions = (".yaml", ".yml")
 
-    def read(self, file: BinaryIO, **args: Any) -> pd.DataFrame:
-        return pd.json_normalize(load_yaml(file.read().decode("utf-8")), **args)
+    def check_args(self, args: dict[str, Any]) -> None:
+        super().check_args(args)
 
-    def write(self, data: pd.DataFrame, file: BinaryIO, **args: Any) -> None:
-        # Round-trip through JSON to get plain values (dates as ISO text,
-        # missing values as null) that YAML can represent.
-        records = json.loads(data.to_json(orient="records", date_format="iso"))
-        text = yaml.safe_dump(records, sort_keys=False, allow_unicode=True, **args)
-        file.write(text.encode("utf-8"))
+        if args:
+            raise ValueError("Reading YAML takes no args.")
+
+    def read(self, file: BinaryIO, **args: Any) -> Any:
+        return load_yaml(file.read().decode("utf-8"))
+
+    def write(self, data: Any, file: BinaryIO, **args: Any) -> None:
+        args = {"sort_keys": False, "allow_unicode": True, **args}
+        file.write(yaml.safe_dump(plain(data), **args).encode("utf-8"))

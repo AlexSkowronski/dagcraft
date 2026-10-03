@@ -32,14 +32,22 @@ connections:
     database: analytics
 
 steps:
-  - id: events
+  # The day's JSON files as a list of documents, each naming its file.
+  # Swap the flatten step below for a python step to parse them your way.
+  - id: batches
     type: read
     connection: lake
     path: ${params.run_date}/*.json
     source_column: source_file
+
+  - id: events
+    type: transform
+    operation: flatten
+    inputs:
+      data: batches
     args:
       record_path: events
-      meta: [batch_id]
+      meta: [batch_id, source_file]
 
   - id: purchases
     type: transform

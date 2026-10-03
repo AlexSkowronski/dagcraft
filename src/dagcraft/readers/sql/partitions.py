@@ -17,8 +17,9 @@ import pandas as pd
 
 from dagcraft.config.readers import SQLPartition
 from dagcraft.connections.sql.names import quote_column, quote_table
+from dagcraft.data import describe_data
 from dagcraft.exceptions import ExecutionError
-from dagcraft.logs import describe_data, get_logger
+from dagcraft.logs import get_logger
 from dagcraft.readers.sql.query import read_query
 
 if TYPE_CHECKING:

@@ -20,8 +20,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
-import pandas as pd
-
 LOG_FORMAT = "%(asctime)s %(levelname)-7s %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -100,23 +98,6 @@ def step_context(step_id: str) -> Generator[None]:
         yield
     finally:
         _step.reset(token)
-
-
-def describe_data(value: Any) -> str:
-    """
-    A short description of a step's output for logs: its size, or its type.
-    """
-    if isinstance(value, pd.DataFrame):
-        rows, columns = value.shape
-        return f"{rows:,} rows x {columns:,} columns"
-
-    if isinstance(value, dict) and value:
-        return f"{len(value)} tables ({', '.join(map(str, value))})"
-
-    if value is None:
-        return "no output"
-
-    return type(value).__name__
 
 
 def configure_logging(level: int = logging.INFO) -> None:

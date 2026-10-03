@@ -2,7 +2,7 @@
 Reading files: one path, or every file matching a pattern.
 """
 
-import pandas as pd
+from typing import Any
 
 from dagcraft.config.readers import FileReadOptions
 from dagcraft.connections.files import FileConnection
@@ -21,8 +21,8 @@ class FileReader(Reader):
     """
     Reads ``path`` from any file connection with its format.
 
-    A path with wildcards reads every matching file, in name order, into
-    one table.
+    A path with wildcards reads every matching file, in name order, and the
+    format combines them: tables into one table, documents into a list.
     """
 
     options_model = FileReadOptions
@@ -37,6 +37,7 @@ class FileReader(Reader):
 
     def prepare(self, connection: FileConnection) -> None:
         self.file_format.check_available()
+        self.file_format.check_args(self.options.args)
 
         if has_wildcards(self.options.path):
             connection.check_pattern(self.options.path)
@@ -44,7 +45,7 @@ class FileReader(Reader):
     def describe(self) -> str:
         return self.options.path
 
-    def read(self, connection: FileConnection) -> pd.DataFrame:
+    def read(self, connection: FileConnection) -> Any:
         pattern = self.options.path
 
         if not has_wildcards(pattern):
@@ -58,19 +59,10 @@ class FileReader(Reader):
             )
 
         logger.info("found %d files matching %s", len(paths), pattern)
-        frames = []
+        parts = [(path, self._read_file(connection, path)) for path in paths]
+        return self.file_format.combine(parts, self.options.source_column)
 
-        for path in paths:
-            frame = self._read_file(connection, path)
-
-            if self.options.source_column is not None:
-                frame[self.options.source_column] = path
-
-            frames.append(frame)
-
-        return pd.concat(frames, ignore_index=True)
-
-    def _read_file(self, connection: FileConnection, path: str) -> pd.DataFrame:
+    def _read_file(self, connection: FileConnection, path: str) -> Any:
         logger.debug("reading %s", path)
 
         with connection.open_file(path, "rb") as file:

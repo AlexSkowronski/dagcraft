@@ -1,6 +1,7 @@
 import json
 
 import fsspec
+import pandas as pd
 import pytest
 
 from dagcraft import ConfigError, Pipeline, RunError
@@ -34,8 +35,8 @@ def events(tmp_path):
 
 
 @pytest.mark.usefixtures("events")
-def test_wildcard_reads_every_matching_file_in_order(tmp_path):
-    frame = (
+def test_wildcard_json_gives_a_list_of_documents_in_order(tmp_path):
+    documents = (
         make_pipeline(
             tmp_path,
             {
@@ -49,19 +50,70 @@ def test_wildcard_reads_every_matching_file_in_order(tmp_path):
         .output("events")
     )
 
+    # Each file holds a list of objects, and each object names its file.
+    assert documents == [
+        [
+            {"id": 1, "file": "events/2026-10-01.json"},
+            {"id": 2, "file": "events/2026-10-01.json"},
+        ],
+        [{"id": 3, "file": "events/2026-10-02.json"}],
+    ]
+
+
+def test_wildcard_tables_are_stacked_into_one(tmp_path):
+    (tmp_path / "daily").mkdir()
+    for day, ids in {"02": [3], "01": [1, 2]}.items():
+        pd.DataFrame({"id": ids}).to_csv(tmp_path / "daily" / f"{day}.csv", index=False)
+
+    frame = (
+        make_pipeline(
+            tmp_path,
+            {
+                "id": "days",
+                "type": "read",
+                "path": "daily/*.csv",
+                "source_column": "file",
+            },
+        )
+        .run()
+        .output("days")
+    )
+
     assert frame.to_dict("list") == {
         "id": [1, 2, 3],
-        "file": [
-            "events/2026-10-01.json",
-            "events/2026-10-01.json",
-            "events/2026-10-02.json",
-        ],
+        "file": ["daily/01.csv", "daily/01.csv", "daily/02.csv"],
     }
+
+
+def test_wildcard_json_lines_give_one_list_of_records(tmp_path):
+    for day, ids in {"02": [3], "01": [1, 2]}.items():
+        lines = "".join(json.dumps({"id": i}) + "\n" for i in ids)
+        (tmp_path / f"{day}.jsonl").write_text(lines)
+
+    records = (
+        make_pipeline(tmp_path, {"id": "lines", "type": "read", "path": "*.jsonl"})
+        .run()
+        .output("lines")
+    )
+
+    assert records == [{"id": 1}, {"id": 2}, {"id": 3}]
+
+
+def test_source_column_needs_objects(tmp_path):
+    (tmp_path / "a.json").write_text('"just text"')
+
+    pipeline = make_pipeline(
+        tmp_path,
+        {"id": "docs", "type": "read", "path": "*.json", "source_column": "file"},
+    )
+
+    with pytest.raises(RunError, match=r"source_column needs a\.json to hold objects"):
+        pipeline.run()
 
 
 @pytest.mark.usefixtures("events")
 def test_double_star_matches_any_depth(tmp_path):
-    frame = (
+    documents = (
         make_pipeline(
             tmp_path,
             {"id": "events", "type": "read", "path": "events/**/*.json"},
@@ -70,7 +122,12 @@ def test_double_star_matches_any_depth(tmp_path):
         .output("events")
     )
 
-    assert sorted(frame["id"]) == [1, 2, 3, 4]
+    assert sorted(record["id"] for document in documents for record in document) == [
+        1,
+        2,
+        3,
+        4,
+    ]
 
 
 @pytest.mark.usefixtures("events")
@@ -127,7 +184,7 @@ def test_wildcards_in_blob_storage(tmp_path, memory_container):
         with memory_container.open(f"raw/landing/events/2026-10-{day}.json", "wb") as f:
             f.write(json.dumps([{"id": i} for i in ids]).encode())
 
-    frame = (
+    documents = (
         make_pipeline(
             tmp_path,
             {
@@ -150,8 +207,9 @@ def test_wildcards_in_blob_storage(tmp_path, memory_container):
         .output("events")
     )
 
-    assert frame["id"].tolist() == [1, 2, 3]
-    assert frame["blob"].tolist() == [
+    records = [record for document in documents for record in document]
+    assert [record["id"] for record in records] == [1, 2, 3]
+    assert [record["blob"] for record in records] == [
         "events/2026-10-01.json",
         "events/2026-10-02.json",
         "events/2026-10-02.json",

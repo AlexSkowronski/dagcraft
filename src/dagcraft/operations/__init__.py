@@ -11,11 +11,13 @@ from dagcraft.operations.dataframe import (
     select_columns,
     sort_rows,
 )
+from dagcraft.operations.documents import flatten
 
 __all__ = [
     "aggregate",
     "drop_nulls",
     "filter_rows",
+    "flatten",
     "join",
     "rename_columns",
     "select_columns",

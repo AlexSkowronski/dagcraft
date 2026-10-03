@@ -31,8 +31,10 @@ First release.
   (through Microsoft Graph), `sql` (any SQLAlchemy URL) and `azure_sql`
   (Entra ID token per connection, `fast_executemany`). Signing in with
   `az login`, managed identity, a service principal or a connection string.
-- Formats: CSV, Parquet, Excel (several sheets in, one sheet per input
-  out), JSON, JSON Lines and YAML (nested objects flattened into columns).
+- Formats: CSV, Parquet and Excel (several sheets in, one sheet per input
+  out) as tables; JSON, JSON Lines and YAML as plain Python data (dicts and
+  lists) for your own python steps, with a `flatten` operation to turn
+  documents into a table. (In 0.1.0rc1, documents were read as tables.)
 - Reading many files at once with wildcard paths, optionally recording
   each row's source file.
 - SQL reads from inline queries, `.sql` files or whole tables, with bound

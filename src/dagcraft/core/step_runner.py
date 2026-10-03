@@ -7,7 +7,8 @@ from typing import Any
 
 from dagcraft.core.context import ExecutionContext
 from dagcraft.core.results import StepResult, StepStatus
-from dagcraft.logs import describe_data, get_logger, step_context
+from dagcraft.data import describe_data
+from dagcraft.logs import get_logger, step_context
 from dagcraft.steps import BaseStep
 from dagcraft.timing import Timer
 

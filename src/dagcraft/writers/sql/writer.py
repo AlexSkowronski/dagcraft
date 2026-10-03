@@ -2,11 +2,12 @@
 Writing a table to a SQL database, in one transaction.
 """
 
-import pandas as pd
+from typing import Any
 
 from dagcraft.config.writers import SQLWriteOptions
 from dagcraft.connections.sql import SQLConnection
 from dagcraft.connections.sql.names import split_table
+from dagcraft.data import require_table
 from dagcraft.logs import get_logger
 from dagcraft.registry import register_writer
 from dagcraft.writers.base import Writer
@@ -38,7 +39,9 @@ class SQLWriter(Writer):
 
         return f"table {self.options.table} (if it exists: {if_exists})"
 
-    def write(self, connection: SQLConnection, data: pd.DataFrame) -> None:
+    def write(self, connection: SQLConnection, data: Any) -> None:
+        data = require_table(data, "A SQL table")
+
         if self.options.if_exists == "upsert":
             counts = upsert(
                 connection.engine,
