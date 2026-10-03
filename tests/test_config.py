@@ -47,7 +47,7 @@ def test_valid_config_compiles():
         ),
         (
             {"id": "a", "type": "read"},
-            "Step 'a': path: Field required",
+            "Step 'a': Set 'path', or give a 'paths' input listing the files",
         ),
         (
             {"id": "a", "type": "read", "path": "x.csv", "pth": "y.csv"},
@@ -55,7 +55,7 @@ def test_valid_config_compiles():
         ),
         (
             {"id": "a", "type": "read", "path": "x.csv", "inputs": {"data": "b"}},
-            "A read step cannot have inputs.",
+            "A read step's only input is 'paths'",
         ),
         (
             {"id": "a", "type": "read", "path": "notes.txt"},

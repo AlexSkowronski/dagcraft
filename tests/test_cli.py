@@ -141,7 +141,7 @@ steps:
     )
 
     assert main([str(pipeline), "--dry-run"]) == ExitCode.INVALID
-    assert "Step 'source': path: Field required" in caplog.text
+    assert "Step 'source': Set 'path', or give a 'paths' input" in caplog.text
 
 
 @pytest.mark.parametrize(

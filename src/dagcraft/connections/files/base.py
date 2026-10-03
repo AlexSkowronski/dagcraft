@@ -32,6 +32,16 @@ class FileConnection(Connection):
         The files matching ``pattern``, relative to the connection.
         """
 
+    def relative_path(self, path: str) -> str:
+        """
+        ``path``, from a list another step made, as a path in this connection.
+
+        Paths are relative to the connection already; subclasses also accept
+        other forms, such as full URLs. Raises ``ExecutionError`` for one
+        that isn't in this connection.
+        """
+        return path
+
     def check_pattern(self, pattern: str) -> None:
         """
         Raise ``ValueError`` if ``pattern`` can't be matched here.

@@ -453,7 +453,7 @@
             },
             "then": {
               "additionalProperties": false,
-              "description": "Reads with the reader registered for the connection's type.",
+              "description": "Reads with the reader registered for the connection's type.\n\nThe files to read can come from another step, as a paths input.\nFinding nothing (no rows, no files) fails the step, unless if_empty\nsays to stop or continue; it's never quiet.",
               "properties": {
                 "id": {
                   "minLength": 1,
@@ -505,10 +505,42 @@
                   "title": "Connection",
                   "type": "string"
                 },
+                "if_empty": {
+                  "default": "fail",
+                  "enum": [
+                    "fail",
+                    "stop",
+                    "continue"
+                  ],
+                  "title": "If Empty",
+                  "type": "string"
+                },
                 "path": {
-                  "minLength": 1,
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
                   "title": "Path",
-                  "type": "string",
+                  "description": "For azure_blob, local and sharepoint connections."
+                },
+                "path_column": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Path Column",
                   "description": "For azure_blob, local and sharepoint connections."
                 },
                 "format": {
@@ -543,6 +575,23 @@
                   "default": null,
                   "title": "Source Column",
                   "description": "For azure_blob, local and sharepoint connections."
+                },
+                "parallel": {
+                  "anyOf": [
+                    {
+                      "default": 4,
+                      "maximum": 32,
+                      "minimum": 1,
+                      "title": "Parallel",
+                      "type": "integer",
+                      "description": "For azure_blob, local and sharepoint connections."
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
                 },
                 "query": {
                   "anyOf": [
@@ -611,7 +660,7 @@
               ],
               "title": "ReadConfig",
               "type": "object",
-              "markdownDescription": "Reads with the reader registered for the connection's type."
+              "markdownDescription": "Reads with the reader registered for the connection's type.\n\nThe files to read can come from another step, as a `paths` input.\nFinding nothing (no rows, no files) fails the step, unless `if_empty`\nsays to `stop` or `continue`; it's never quiet."
             }
           },
           {

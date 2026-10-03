@@ -144,7 +144,12 @@ def test_partitioned_query_file(warehouse):
 
 
 def test_empty_table_is_read_whole(warehouse):
-    frame = read(warehouse, table="empty", partition={"column": "order_id", "parts": 4})
+    frame = read(
+        warehouse,
+        table="empty",
+        partition={"column": "order_id", "parts": 4},
+        if_empty="continue",
+    )
 
     assert frame.empty
     assert frame.columns.tolist() == ["order_id"]

@@ -94,11 +94,19 @@ def log_summary(result: PipelineResult) -> None:
     logger.info(RULE)
 
     for step in result.steps.values():
-        logger.info("%-10s %-25s %.3fs", step.status.value, step.id, step.duration)
+        status = "EMPTY" if step.found_nothing else step.status.value
+        logger.info("%-10s %-25s %.3fs", status, step.id, step.duration)
 
     logger.info(RULE)
+    stopped = [f"'{step.id}' found nothing" for step in result.found_nothing]
 
-    if result.success:
-        logger.info("SUCCESS in %.3fs", result.duration)
-    else:
+    if not result.success:
         logger.error("FAILED in %.3fs", result.duration)
+    elif stopped:
+        logger.warning(
+            "SUCCESS in %.3fs, but stopped early: %s",
+            result.duration,
+            "; ".join(stopped),
+        )
+    else:
+        logger.info("SUCCESS in %.3fs", result.duration)

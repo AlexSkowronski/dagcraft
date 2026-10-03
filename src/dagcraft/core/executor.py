@@ -20,6 +20,14 @@ from dagcraft.timing import Timer
 logger = get_logger(__name__)
 
 
+def stopped_early(results: dict[str, StepResult]) -> str:
+    """
+    Why the run stopped early, such as "stopped early: 'batches' found nothing".
+    """
+    steps = [f"'{r.id}'" for r in results.values() if r.found_nothing]
+    return f"but stopped early: {', '.join(steps)} found nothing" if steps else ""
+
+
 class Executor:
     """
     Runs a compiled pipeline's steps, up to ``max_workers`` at a time.
@@ -86,11 +94,14 @@ class Executor:
                 context.connections.close_all()
 
             success = not any(r.status == StepStatus.FAILED for r in results.values())
+            stopped = stopped_early(results)
 
-            if success:
-                logger.info("Run succeeded in %.3fs", timer.elapsed)
-            else:
+            if not success:
                 logger.error("Run failed after %.3fs", timer.elapsed)
+            elif stopped:
+                logger.warning("Run succeeded in %.3fs, %s", timer.elapsed, stopped)
+            else:
+                logger.info("Run succeeded in %.3fs", timer.elapsed)
 
         return PipelineResult(
             name=self.pipeline.name,
@@ -169,5 +180,7 @@ class Executor:
         scheduler: Scheduler,
         context: ExecutionContext,
     ) -> None:
-        scheduler.finished(step_id, result.status)
+        scheduler.finished(
+            step_id, result.status, found_nothing=result.found_nothing is not None
+        )
         context.outputs.step_finished(step_id)

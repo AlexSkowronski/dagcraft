@@ -137,7 +137,7 @@ def test_no_matches_is_an_error(tmp_path):
         {"id": "events", "type": "read", "path": "events/2025-*.json"},
     )
 
-    with pytest.raises(RunError, match="No files in connection 'local' match"):
+    with pytest.raises(RunError, match=r"Found nothing in events/2025-\*\.json"):
         pipeline.run()
 
 
@@ -146,7 +146,7 @@ def test_no_matches_is_an_error(tmp_path):
     [
         (
             {"type": "read", "path": "events.json", "source_column": "file"},
-            "'source_column' only applies when 'path' has wildcards.",
+            "'source_column' only applies when several files are read",
         ),
         (
             {"type": "write", "path": "out/*.json", "inputs": {"data": "source"}},

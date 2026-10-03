@@ -42,6 +42,15 @@ class ExecutionError(PipelineError):
     """
 
 
+class NothingFound(PipelineError):  # noqa: N818 - a signal, not a failure
+    """
+    Raised by a step that found nothing and was told to stop there.
+
+    It isn't a failure: the step counts as done, the steps that need its
+    output are skipped, and the run still succeeds.
+    """
+
+
 class RunError(PipelineError):
     """
     Raised by ``Pipeline.run`` when a step fails.

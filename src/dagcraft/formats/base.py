@@ -62,8 +62,11 @@ class Format(ABC):
         Combine what several files read, as ``(path, data)`` pairs, into one.
 
         Tables are stacked into one table; ``source_column`` adds a column
-        naming each row's file.
+        naming each row's file. No files give an empty table.
         """
+        if not parts:
+            return pd.DataFrame()
+
         frames = []
 
         for path, frame in parts:

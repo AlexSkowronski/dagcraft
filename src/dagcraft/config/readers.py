@@ -16,27 +16,37 @@ class FileReadOptions(BaseModel):
     """
     Reading from a file connection.
 
-    ``format`` is inferred from the file extension unless set; ``args`` go
-    to the format's reader (``pandas.read_csv`` and so on). A ``path`` with
-    wildcards (``*``, ``?``, ``[...]``, ``**`` for any depth) reads every
-    matching file into one table; ``source_column`` then adds a column
-    naming each row's file.
+    Read one ``path``, every file matching a ``path`` with wildcards (``*``,
+    ``?``, ``[...]``, ``**`` for any depth), or the files another step
+    lists in its output, given as the step's ``paths`` input: a list, or a
+    table with the paths in ``path_column``. ``format`` is inferred from
+    the file extension unless set; ``args`` go to the format's reader
+    (``pandas.read_csv`` and so on). With several files, ``source_column``
+    names each row's (or document's) file, and up to ``parallel`` files
+    are read at once.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    path: str = Field(min_length=1)
+    path: str | None = Field(default=None, min_length=1)
+    path_column: str | None = Field(default=None, min_length=1)
     format: str | None = None
     args: dict[str, Any] = Field(default_factory=dict)
     source_column: str | None = Field(default=None, min_length=1)
+    parallel: int = Field(default=4, ge=1, le=32)
 
     @model_validator(mode="after")
     def check_source_column(self) -> Self:
         """
         ``source_column`` only makes sense when several files are read.
         """
-        if self.source_column is not None and not has_wildcards(self.path):
-            raise ValueError("'source_column' only applies when 'path' has wildcards.")
+        one_file = self.path is not None and not has_wildcards(self.path)
+
+        if self.source_column is not None and one_file:
+            raise ValueError(
+                "'source_column' only applies when several files are read: a "
+                "'path' with wildcards, or a 'paths' input."
+            )
         return self
 
 

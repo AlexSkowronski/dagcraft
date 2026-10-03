@@ -49,8 +49,12 @@ First release.
   out) as tables; JSON, JSON Lines and YAML as plain Python data (dicts and
   lists) for your own python steps, with a `flatten` operation to turn
   documents into a table. (In 0.1.0rc1, documents were read as tables.)
-- Reading many files at once with wildcard paths, optionally recording
-  each row's source file.
+- Reading many files at once, up to `parallel` at a time: by wildcard, or
+  the files another step lists (`inputs: {paths: ...}`, with `path_column`),
+  including full Azure Blob URLs. Optionally recording each row's file.
+- A read that finds nothing (no rows, no files) is never quiet: it fails by
+  default, or with `if_empty: stop` skips the steps that need it and the
+  run succeeds with a warning; `continue` carries on with the empty result.
 - SQL reads from inline queries, `.sql` files or whole tables, with bound
   parameters; transactional writes with `fail`, `append`, `delete_rows`,
   `replace` or `upsert` (replace the rows whose `keys` match, add the

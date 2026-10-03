@@ -7,8 +7,6 @@ a large table comes back several times faster than through one connection.
 
 from __future__ import annotations
 
-import contextvars
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
@@ -21,6 +19,7 @@ from dagcraft.data import describe_data
 from dagcraft.exceptions import ExecutionError
 from dagcraft.logs import get_logger
 from dagcraft.readers.sql.query import read_query
+from dagcraft.threads import map_in_threads
 
 if TYPE_CHECKING:
     import sqlalchemy as sa
@@ -101,7 +100,8 @@ def read_parts(
     Run every part at once, each on its own connection, then combine them.
     """
 
-    def read_part(number: int, part: Part) -> pd.DataFrame:
+    def read_part(numbered: tuple[int, Part]) -> pd.DataFrame:
+        number, part = numbered
         frame = read_query(engine, part.query, part.params, args)
         logger.debug(
             "read part %d of %d (%s): %s",
@@ -112,13 +112,12 @@ def read_parts(
         )
         return frame
 
-    with ThreadPoolExecutor(len(parts), thread_name_prefix="dagcraft-sql") as pool:
-        # Each thread gets a copy of the context, so its logs name the step.
-        futures = [
-            pool.submit(contextvars.copy_context().run, read_part, number, part)
-            for number, part in enumerate(parts, start=1)
-        ]
-        frames = [future.result() for future in futures]
+    frames = map_in_threads(
+        read_part,
+        list(enumerate(parts, start=1)),
+        workers=len(parts),
+        name="dagcraft-sql",
+    )
 
     # The NULL part's key column is all-empty (object dtype); infer types
     # again so the result matches an unpartitioned read.

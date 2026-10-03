@@ -17,10 +17,12 @@ class Reader(ABC):
     ``options_model`` validates the step's own fields (``path``, ``query``
     and so on). ``prepare`` runs when the pipeline compiles, so problems
     show up before anything runs; ``read`` runs during the run, with the
-    connection open.
+    connection open. A reader that ``accepts_paths`` can also read the files
+    another step lists, with ``read_listed``.
     """
 
     options_model: ClassVar[type[BaseModel]]
+    accepts_paths: ClassVar[bool] = False
 
     def __init__(self, options: Any) -> None:
         self.options = options
@@ -29,6 +31,19 @@ class Reader(ABC):
         """
         Check the options against the connection. Raise ``ValueError``.
         """
+
+    def expect_paths(self, listed: bool) -> None:
+        """
+        Check the options suit having a ``paths`` input (``listed``) or not.
+
+        Raises ``ValueError``. Only readers that ``accepts_paths`` can read
+        files another step lists.
+        """
+        if listed and not self.accepts_paths:
+            raise ValueError(
+                "This connection doesn't read files, so the step can't take a "
+                "'paths' input."
+            )
 
     def describe(self) -> str:
         """
@@ -41,3 +56,9 @@ class Reader(ABC):
         """
         Read from the open ``connection`` and return the data.
         """
+
+    def read_listed(self, connection: Any, listed: Any) -> Any:
+        """
+        Read the files another step ``listed``; for readers that ``accepts_paths``.
+        """
+        raise NotImplementedError

@@ -7,9 +7,11 @@ Includes ADLS Gen2 accounts. Requires the ``azure`` extra:
 
 import os
 import posixpath
+import re
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, BinaryIO
+from urllib.parse import unquote, urlsplit
 
 import fsspec
 
@@ -106,6 +108,51 @@ class AzureBlobConnection(FileConnection):
 
         state = "has files" if self.filesystem.exists(self.resolve("")) else "is empty"
         return f"container '{container}' is reachable; prefix '{prefix}' {state}"
+
+    def relative_path(self, path: str) -> str:
+        """
+        A path in the container, from a relative path or a full blob URL.
+
+        A URL such as ``https://acct.blob.core.windows.net/raw/events/a.json``
+        must be for this connection's account (when known), container and
+        prefix.
+        """
+        if not path.lower().startswith(("https://", "http://")):
+            return path
+
+        url = urlsplit(path)
+        account = url.netloc.split(".", 1)[0]
+        container, _, blob = unquote(url.path).lstrip("/").partition("/")
+        expected = self.account_name()
+        prefix = self.config.prefix.strip("/")
+
+        if container != self.config.container or (expected and account != expected):
+            where = f"container '{self.config.container}'"
+            if expected:
+                where += f" of account '{expected}'"
+            raise ExecutionError(
+                f"Connection '{self.name}' reads {where}, so it can't read {path}."
+            )
+
+        if prefix and not blob.startswith(f"{prefix}/"):
+            raise ExecutionError(
+                f"Connection '{self.name}' reads under '{prefix}/', so it can't "
+                f"read {path}."
+            )
+
+        return blob[len(prefix) + 1 :] if prefix else blob
+
+    def account_name(self) -> str | None:
+        """
+        The storage account, from ``account`` or the connection string.
+        """
+        if self.config.account is not None:
+            return self.config.account
+
+        secret = self.config.connection_string
+        text = secret.get_secret_value() if secret is not None else ""
+        match = re.search(r"AccountName=([^;]+)", text)
+        return match.group(1) if match else None
 
     def resolve(self, path: str) -> str:
         """

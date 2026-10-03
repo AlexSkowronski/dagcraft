@@ -31,6 +31,19 @@ def describe_data(value: Any) -> str:
     return type(value).__name__
 
 
+def is_empty(value: Any) -> bool:
+    """
+    Whether ``value`` holds nothing: no rows, no items, or None.
+    """
+    if value is None:
+        return True
+    if isinstance(value, pd.DataFrame):
+        return value.empty or len(value) == 0
+    if isinstance(value, (list, tuple, dict)):
+        return not value
+    return False
+
+
 def count(number: int, noun: str) -> str:
     """
     ``number`` and ``noun``, made plural unless it's 1: "1 item", "2 items".

@@ -96,6 +96,28 @@ def purchases(batches):
 If the documents only need flattening, a transform with a `flatten`
 operation does it without any Python; see [Documents](../steps.md#documents).
 
+## When a table lists the files
+
+If another system records which blobs are new, in a table, read those
+instead of a day's folder. Swap the `batches` step for these two:
+
+```yaml
+  - id: pending
+    type: read
+    connection: warehouse
+    query: SELECT blob_path FROM etl.landed_files WHERE loaded_at IS NULL
+    if_empty: stop                  # nothing new: say so and skip the rest
+
+  - id: batches
+    type: read
+    connection: lake
+    inputs:
+      paths: pending
+    path_column: blob_path          # relative paths or full blob URLs
+    source_column: source_file
+    parallel: 8
+```
+
 ## Run it
 
 ```bash

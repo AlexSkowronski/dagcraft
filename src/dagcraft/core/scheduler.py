@@ -30,6 +30,7 @@ class Scheduler:
             step_id: [] for step_id in graph.order
         }
         self._succeeded: set[str] = set()
+        self._found_nothing: set[str] = set()
         self._stopped = False
 
         for step_id in graph.order:
@@ -64,15 +65,28 @@ class Scheduler:
         dependencies = self._graph.dependencies[step_id]
 
         for upstream in self._graph.order:
+            if upstream in dependencies and upstream in self._found_nothing:
+                return f"'{upstream}' found nothing"
             if upstream in dependencies and upstream not in self._succeeded:
                 return f"upstream step '{upstream}' did not succeed"
         return None
 
-    def finished(self, step_id: str, status: StepStatus) -> None:
+    def finished(
+        self,
+        step_id: str,
+        status: StepStatus,
+        *,
+        found_nothing: bool = False,
+    ) -> None:
         """
         Record how ``step_id`` ended, readying the steps that waited on it.
+
+        Steps after one that ``found_nothing`` are skipped, but that isn't a
+        failure, so ``fail_fast`` doesn't stop the others.
         """
-        if status == StepStatus.SUCCESS:
+        if found_nothing:
+            self._found_nothing.add(step_id)
+        elif status == StepStatus.SUCCESS:
             self._succeeded.add(step_id)
         elif status == StepStatus.FAILED and self._fail_fast:
             self._stopped = True

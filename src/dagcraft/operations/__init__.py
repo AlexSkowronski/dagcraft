@@ -1,12 +1,12 @@
 """
 Operations for transform steps. Importing this package registers the built-in ones.
 
-    rows.py       filter, drop_nulls, dedupe, sort
-    columns.py    select, drop, rename, cast, derive, fill_nulls
-    combine.py    join, aggregate
-    checks.py     check
-    documents.py  flatten
-    python.py     python: your own function
+    rows.py             filter, drop_nulls, dedupe, sort
+    columns.py          select, drop, rename, cast, derive, fill_nulls
+    combine.py          join, aggregate
+    checks.py           check
+    documents.py        flatten
+    python_function.py  python: your own function
 """
 
 from dagcraft.operations.base import Operation, register_operation
@@ -21,7 +21,7 @@ from dagcraft.operations.columns import (
 )
 from dagcraft.operations.combine import aggregate, join
 from dagcraft.operations.documents import flatten
-from dagcraft.operations.python import python
+from dagcraft.operations.python_function import python
 from dagcraft.operations.rows import dedupe, drop_nulls, filter_rows, sort_rows
 
 __all__ = [

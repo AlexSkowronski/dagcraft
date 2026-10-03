@@ -203,7 +203,13 @@ def test_url_can_come_from_an_environment_variable(tmp_path, monkeypatch):
     execute(tmp_path, "CREATE TABLE scores (name TEXT, score INTEGER)")
 
     result = make_pipeline(
-        {"id": "scores", "type": "read", "connection": "db", "table": "scores"},
+        {
+            "id": "scores",
+            "type": "read",
+            "connection": "db",
+            "table": "scores",
+            "if_empty": "continue",
+        },
         connections={"db": {"type": "sql", "url": "${env:WAREHOUSE_URL}"}},
         base_dir=tmp_path,
     ).run()

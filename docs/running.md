@@ -98,6 +98,22 @@ INFO      warehouse  azure_sql   OK      connected to analytics as etl-app@conto
 ERROR   1 of 3 connection(s) failed.
 ```
 
+## When a step finds nothing
+
+A read that finds nothing fails by default; with `if_empty: stop` it skips
+the steps that need it and the run still succeeds, saying so. The summary
+marks the step `EMPTY`:
+
+```
+SUCCESS    pending                   0.211s
+EMPTY      batches                   0.004s
+SKIPPED    load                      0.000s
+--------------------------------------------------
+SUCCESS in 0.215s, but stopped early: 'batches' found nothing
+```
+
+See [Finding nothing](steps.md#finding-nothing).
+
 ## When a step fails
 
 The steps that depend on it, directly or further down, are skipped, and the

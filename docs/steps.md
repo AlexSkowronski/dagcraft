@@ -15,18 +15,42 @@ from. Otherwise steps run in the order they're written.
 
 ## read
 
-Fetches data through a connection. Takes no inputs.
+Fetches data through a connection.
 
 ```yaml
   - id: orders
     type: read
     connection: warehouse     # defaults to local
     table: sales.orders
+    if_empty: fail            # the default; or stop, or continue
 ```
+
+| Field | |
+| --- | --- |
+| `connection` | Where to read from. Defaults to `local`. |
+| `if_empty` | What happens if it finds nothing (no rows, no files): `fail` (the default), `stop` or `continue`. See [below](#finding-nothing). |
+| `inputs` | Only `paths`: another step's [list of files to read](reading-writing/files.md#files-another-step-lists). |
 
 The other fields depend on the connection: a `path` for
 [files](reading-writing/files.md), a `query` or `table` for
 [SQL](reading-writing/sql.md).
+
+### Finding nothing
+
+A read that finds nothing (a query with no rows, a wildcard matching no
+files, an empty list of paths) is never quiet. `if_empty` decides how loud:
+
+| `if_empty` | |
+| --- | --- |
+| `fail` | The default. The step fails, so the run does: `Found nothing in events/*.json from 'lake'`. |
+| `stop` | A warning; the steps that need this one are skipped; the run still succeeds, and its summary says it stopped early. For "no new files is normal, but tell me". |
+| `continue` | A warning; later steps get the empty result. |
+
+```
+WARNING [nightly a1b2c3d4] batches: found nothing: the files 'pending' lists: it listed none; skipping what needs it
+WARNING [nightly a1b2c3d4] load: skipped: 'batches' found nothing
+WARNING [nightly a1b2c3d4] Run succeeded in 2.104s, but stopped early: 'batches' found nothing
+```
 
 ## write
 

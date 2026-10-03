@@ -9,7 +9,9 @@ Read and write steps on file connections ([local](../connections/local.md),
 | `path` | The file, relative to the connection. Reads can use [wildcards](#many-files-at-once). |
 | `format` | The format, when the extension doesn't say: `csv`, `parquet`, `excel`, `json`, `jsonl` or `yaml`. |
 | `args` | Options for the format's reader or writer (below). |
-| `source_column` | For wildcard reads: names each row's (or document's) file. |
+| `source_column` | When reading several files: names each row's (or document's) file. |
+| `parallel` | When reading several files: how many to read at once. Default 4, up to 32. |
+| `path_column` | With a [`paths` input](#files-another-step-lists): the column holding the paths. |
 
 ```yaml
   - id: orders
@@ -101,7 +103,9 @@ error that says so.
 ## Many files at once
 
 A read `path` with wildcards (`*`, `?`, `[...]`, and `**` for any depth of
-folders) reads every matching file, in path order. No match is an error.
+folders) reads every matching file, in path order, up to `parallel` at once.
+No match is [nothing found](../steps.md#finding-nothing), which fails the
+step unless `if_empty` says otherwise.
 
 | Format | Many files give |
 | --- | --- |
@@ -116,6 +120,43 @@ folders) reads every matching file, in path order. No match is an error.
     path: events/2026-10-*.json
     source_column: source_file       # each document gets source_file: events/...
 ```
+
+## Files another step lists
+
+When the files to read come from data, say a table of new blobs, give the
+read step a `paths` input: the step whose output lists them.
+
+```yaml
+  - id: pending
+    type: read
+    connection: warehouse
+    query: SELECT blob_path FROM etl.files WHERE loaded_at IS NULL
+
+  - id: batches
+    type: read
+    connection: lake
+    inputs:
+      paths: pending          # the files to read: this step's output
+    path_column: blob_path    # the column holding them
+    source_column: source_file
+    if_empty: stop            # no new files: say so, skip the rest, succeed
+```
+
+- The list can be a table, with the paths in `path_column` (not needed if
+  it has one column), or a plain list of strings, say from a `python`
+  operation.
+- Paths are relative to the connection, like a step's `path`. For Azure
+  Blob, full URLs work too
+  (`https://mystorage.blob.core.windows.net/raw/events/a.json`), if they're
+  in the connection's account, container and prefix.
+- The files are read up to `parallel` at once, and combined as for a
+  [wildcard](#many-files-at-once): tables into one, documents into a list.
+- The files must share a format, unless `format` says how to read them all.
+- A missing file fails the step, naming it. An empty list is [nothing
+  found](../steps.md#finding-nothing).
+
+If your table holds something other than paths (IDs, or a path split across
+columns), turn it into a column of paths first, with a transform.
 
 ## Excel
 

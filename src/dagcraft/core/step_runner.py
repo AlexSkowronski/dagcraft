@@ -8,6 +8,7 @@ from typing import Any
 from dagcraft.core.context import ExecutionContext
 from dagcraft.core.results import StepResult, StepStatus
 from dagcraft.data import describe_data
+from dagcraft.exceptions import NothingFound
 from dagcraft.logs import get_logger, step_context
 from dagcraft.steps import BaseStep
 from dagcraft.timing import Timer
@@ -41,6 +42,13 @@ class StepRunner:
 
             try:
                 value = self._execute_with_retries(step, result)
+            except NothingFound as signal:
+                # Not a failure: the steps that need this output are skipped.
+                result.duration = timer.elapsed
+                result.status = StepStatus.SUCCESS
+                result.found_nothing = str(signal)
+                logger.warning("found nothing: %s; skipping what needs it", signal)
+                return
             except Exception as exc:
                 result.duration = timer.elapsed
                 result.status = StepStatus.FAILED
@@ -65,6 +73,8 @@ class StepRunner:
         while True:
             try:
                 return step.execute(self.context, inputs)
+            except NothingFound:
+                raise  # trying again won't find anything new
             except Exception as exc:
                 if result.attempts == attempts:
                     raise

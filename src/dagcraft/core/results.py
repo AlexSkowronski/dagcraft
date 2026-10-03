@@ -23,6 +23,9 @@ class StepStatus(StrEnum):
 class StepResult:
     """
     The outcome of one step: its status, timing, attempts and any error.
+
+    ``found_nothing`` says what a step found nothing in, when it stopped
+    there (``if_empty: stop``); the steps after it were skipped.
     """
 
     id: str
@@ -31,6 +34,7 @@ class StepResult:
     attempts: int = 0
     error: str | None = None
     exception: BaseException | None = field(default=None, repr=False)
+    found_nothing: str | None = None
 
 
 @dataclass
@@ -69,6 +73,13 @@ class PipelineResult:
         return [
             step for step in self.steps.values() if step.status == StepStatus.FAILED
         ]
+
+    @property
+    def found_nothing(self) -> list[StepResult]:
+        """
+        The steps that found nothing and stopped the steps after them.
+        """
+        return [step for step in self.steps.values() if step.found_nothing]
 
     @property
     def failed_step(self) -> StepResult | None:

@@ -2,7 +2,7 @@
 The fields of each built-in step type.
 """
 
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -94,20 +94,31 @@ class ReadConfig(StepConfig):
     A ``read`` step.
 
     The other fields (``path``, ``query``, ...) depend on the kind of
-    connection, and are validated by its reader's options model.
+    connection, and are validated by its reader's options model. Its only
+    possible input is ``paths``: another step's list of files to read.
+    ``if_empty`` says what happens when it finds nothing: ``fail`` (the
+    default), ``stop`` (skip the steps that need it; the run still
+    succeeds) or ``continue`` with the empty result. Either way, a warning
+    is logged.
     """
 
     model_config = ConfigDict(extra="allow")
 
     connection: str = "local"
+    if_empty: Literal["fail", "stop", "continue"] = "fail"
 
     @model_validator(mode="after")
-    def check_no_inputs(self) -> Self:
+    def check_inputs(self) -> Self:
         """
-        Reading starts a branch of the graph, so it takes no inputs.
+        A read takes no inputs but ``paths``, the files to read.
         """
-        if self.inputs:
-            raise ValueError("A read step cannot have inputs.")
+        others = sorted(set(self.inputs) - {"paths"})
+
+        if others:
+            raise ValueError(
+                "A read step's only input is 'paths': another step's list of "
+                f"files to read. It can't take {', '.join(others)}."
+            )
         return self
 
 
