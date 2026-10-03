@@ -1,12 +1,15 @@
 # The pipeline file
 
-A pipeline file has four sections:
+A pipeline file has these sections:
 
 ```yaml
 pipeline:          # about the pipeline itself
   name: daily_sales
   max_workers: 1   # optional: independent steps to run at once
   env_file: .env   # optional: load environment variables first
+
+include:           # optional: files of shared connections
+  - connections.yaml
 
 params:            # optional: values to use in the rest of the file
   run_date: 2026-10-02
@@ -27,9 +30,55 @@ steps:             # what to do
 | Section | |
 | --- | --- |
 | `pipeline` | `name` (required), `max_workers` (see [parallel steps](running.md#running-steps-in-parallel)), `env_file` (see [below](#env-files)). |
+| `include` | Files of [shared connections](#sharing-connections). |
 | `params` | Named values, used as `${params.NAME}`. |
 | `connections` | Named connections, each with a `type`. A `local` one is always there. See [Connections](connections/local.md). |
 | `steps` | The steps. See [Steps and operations](steps.md). |
+
+## Sharing connections
+
+Pipelines in one project usually use the same connections. Define them once
+in a file of their own and `include` it:
+
+```yaml
+# connections.yaml, in the folder you run from
+connections:
+  lake:
+    type: azure_blob
+    account: ${env:STORAGE_ACCOUNT}
+    container: raw
+  warehouse:
+    type: azure_sql
+    server: ${env:SQL_SERVER}
+    database: ${env:SQL_DATABASE}
+```
+
+```yaml
+# configs/events_to_sql.yaml
+pipeline:
+  name: events_to_sql
+  env_file: .env
+
+include:
+  - connections.yaml
+
+steps:
+  - id: batches
+    type: read
+    connection: lake
+    path: events/*.json
+```
+
+- An included file holds only `connections`. Its path is relative to the
+  folder you run from.
+- Only the connections a pipeline's steps use are opened or checked, so a
+  shared file can list every connection the project has.
+- A connection the pipeline defines itself, under its own `connections`,
+  replaces a shared one of the same name: say, `warehouse` pointing at a
+  test database.
+- Two included files defining the same connection is an error.
+- Errors in a shared connection name its file:
+  `Connection 'lake' (from connections.yaml): container: Field required`.
 
 ## Params and references
 

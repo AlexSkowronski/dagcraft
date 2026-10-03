@@ -4,7 +4,7 @@ The top level of a pipeline file.
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class PipelineMeta(BaseModel):
@@ -29,14 +29,43 @@ class PipelineConfig(BaseModel):
     """
     The pipeline file as written.
 
-    Connections and steps stay raw dicts here: each is validated against the
-    model of its registered type when the pipeline is compiled, after
-    ``${...}`` references are filled in.
+    ``include`` lists files of shared connections, relative to the folder
+    you run from; connections defined here override shared ones of the same
+    name. Connections and steps stay raw dicts here: each is validated
+    against the model of its registered type when the pipeline is compiled,
+    after ``${...}`` references are filled in.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     pipeline: PipelineMeta
+    include: list[str] = Field(default_factory=list)
     params: dict[str, Any] = Field(default_factory=dict)
     connections: dict[str, dict[str, Any]] = Field(default_factory=dict)
     steps: list[dict[str, Any]]
+
+
+class SharedConnections(BaseModel):
+    """
+    A file of connections that pipelines ``include``: only ``connections``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    connections: dict[str, dict[str, Any]]
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_only_connections(cls, data: Any) -> Any:
+        """
+        Say plainly that nothing but connections can be shared.
+        """
+        if isinstance(data, dict):
+            others = sorted(set(data) - {"connections"})
+
+            if others:
+                raise ValueError(
+                    "An included file can only hold 'connections'; it has "
+                    f"{', '.join(others)}."
+                )
+        return data

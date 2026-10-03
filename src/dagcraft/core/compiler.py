@@ -19,6 +19,7 @@ from dagcraft.config import PipelineConfig, format_validation_error
 from dagcraft.config.connections import LocalConfig
 from dagcraft.connections import Connection, LocalConnection
 from dagcraft.core.graph import CompiledGraph, compile_graph
+from dagcraft.core.includes import load_shared_connections
 from dagcraft.core.params import resolve_params, substitute
 from dagcraft.env import load_env_file
 from dagcraft.exceptions import ConfigError, PipelineError
@@ -58,8 +59,19 @@ def compile_pipeline(
     make_importable(base_dir)
 
     values = resolve_params(config.params, params or {})
+
+    # Connections defined in the pipeline file override shared ones.
+    shared = load_shared_connections(config.include, base_dir)
+    origins = {
+        name: connection.file
+        for name, connection in shared.items()
+        if name not in config.connections
+    }
     connections, connection_types = build_connections(
-        config.connections, base_dir, values
+        {**{name: c.fields for name, c in shared.items()}, **config.connections},
+        base_dir,
+        values,
+        origins,
     )
     steps = build_steps(config.steps, values)
 
@@ -87,11 +99,14 @@ def build_connections(
     raw_connections: dict[str, dict[str, Any]],
     base_dir: Path,
     params: dict[str, Any],
+    origins: dict[str, str] | None = None,
 ) -> tuple[dict[str, Connection], dict[str, str]]:
     """
     Create each connection from its section, plus the built-in ``local``.
 
-    Returns the connections and each one's type name, by connection name.
+    ``origins`` names the included file each shared connection came from,
+    for error messages. Returns the connections and each one's type name,
+    by connection name.
     """
     # A "local" connection rooted at the base directory is always
     # available; defining one in the file replaces it.
@@ -101,22 +116,27 @@ def build_connections(
     types = {"local": "local"}
 
     for name, raw in raw_connections.items():
+        label = f"Connection '{name}'"
+
+        if origins and name in origins:
+            label += f" (from {origins[name]})"
+
         try:
             fields = substitute(raw, params)
         except ValueError as exc:
-            raise ConfigError(f"Connection '{name}': {exc}") from exc
+            raise ConfigError(f"{label}: {exc}") from exc
 
         connection_type = fields.pop("type", None)
 
         if not isinstance(connection_type, str):
-            raise ConfigError(f"Connection '{name}' needs a 'type'.")
+            raise ConfigError(f"{label} needs a 'type'.")
 
         try:
             connection_class = CONNECTIONS.get(connection_type)
             connection_config = connection_class.config_model.model_validate(fields)
             connections[name] = connection_class(name, connection_config, base_dir)
         except (ValueError, PipelineError) as exc:
-            raise ConfigError(f"Connection '{name}': {describe(exc)}") from exc
+            raise ConfigError(f"{label}: {describe(exc)}") from exc
 
         types[name] = connection_type
 

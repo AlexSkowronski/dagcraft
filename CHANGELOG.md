@@ -36,6 +36,8 @@ First release.
   Python.
 - Secrets written as `${env:NAME}` are held as secrets, never shown in logs;
   `env_file` loads a `.env` file first.
+- Shared connections: pipelines `include` files of connections, so a
+  project defines each connection once; a pipeline can override one.
 - Connections: `local`, `azure_blob` (including ADLS Gen2), `sharepoint`
   (through Microsoft Graph), `sql` (any SQLAlchemy URL) and `azure_sql`
   (Entra ID token per connection, `fast_executemany`). Signing in with

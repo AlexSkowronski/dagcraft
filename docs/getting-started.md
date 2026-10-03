@@ -35,6 +35,7 @@ the project's root:
 ```
 my_project/
   .env                    # settings and secrets, not committed
+  connections.yaml        # connections the pipelines share
   configs/
     daily_sales.yaml      # the pipeline
   sql/
@@ -42,6 +43,9 @@ my_project/
   my_functions.py         # your own Python, for python steps
   main.py
 ```
+
+Pipelines `include: [connections.yaml]` instead of repeating the same
+connections; see [Sharing connections](pipeline-file.md#sharing-connections).
 
 !!! tip "Paths are relative to where you run"
     Every relative path, both the one you pass to `from_yaml` and the ones
