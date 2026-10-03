@@ -6,7 +6,7 @@ Reached through Microsoft Graph. Requires the ``azure`` extra:
 
 import fnmatch
 import io
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -88,7 +88,7 @@ class SharePointConnection(FileConnection):
             )
 
     @contextmanager
-    def open_file(self, path: str, mode: FileMode) -> Iterator[BinaryIO]:
+    def open_file(self, path: str, mode: FileMode) -> Generator[BinaryIO]:
         url = self._item_url(path, "content")
 
         if mode == "rb":

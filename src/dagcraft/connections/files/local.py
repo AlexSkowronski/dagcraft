@@ -2,7 +2,7 @@
 
 import os
 import uuid
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -58,7 +58,7 @@ class LocalConnection(FileConnection):
         return os.path.normpath(self.base_dir / self.config.root / path)
 
     @contextmanager
-    def open_file(self, path: str, mode: FileMode) -> Iterator[BinaryIO]:
+    def open_file(self, path: str, mode: FileMode) -> Generator[BinaryIO]:
         if mode == "rb":
             with open_binary(self.filesystem, self.resolve(path), mode) as file:
                 yield file

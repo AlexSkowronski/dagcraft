@@ -144,6 +144,8 @@ ban-relative-imports = "all"
 include = ["src", "tests", "scripts"]
 pythonVersion = "3.11"
 typeCheckingMode = "standard"
+# Pylance strikes deprecated calls through; fail on them here too.
+reportDeprecated = "error"
 
 [dependency-groups]
 dev = [

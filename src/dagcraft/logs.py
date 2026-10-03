@@ -14,7 +14,7 @@ uses; otherwise configure the ``dagcraft`` logger as you would any other.
 
 import contextvars
 import logging
-from collections.abc import Iterator, MutableMapping
+from collections.abc import Generator, MutableMapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
@@ -72,7 +72,7 @@ def get_logger(name: str) -> RunLogger:
 
 
 @contextmanager
-def run_context(pipeline: str, run_id: str) -> Iterator[None]:
+def run_context(pipeline: str, run_id: str) -> Generator[None]:
     """Mark log messages logged inside the block as part of this run."""
     token = _run.set(RunInfo(pipeline, run_id))
     try:
@@ -82,7 +82,7 @@ def run_context(pipeline: str, run_id: str) -> Iterator[None]:
 
 
 @contextmanager
-def step_context(step_id: str) -> Iterator[None]:
+def step_context(step_id: str) -> Generator[None]:
     """Mark log messages logged inside the block as coming from this step."""
     token = _step.set(step_id)
     try:
