@@ -213,7 +213,10 @@ def test_max_workers_is_validated():
     with pytest.raises(ConfigError, match="max_workers: Input should be greater"):
         make_pipeline(tracked("a"), max_workers=0)
 
-    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+    with pytest.raises(
+        ConfigError,
+        match="Invalid run options: max_workers: Input should be greater",
+    ):
         make_pipeline(tracked("a")).run(max_workers=0)
 
 

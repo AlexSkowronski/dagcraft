@@ -512,7 +512,7 @@ Every error dagcraft raises is a `PipelineError`:
 
 | Error            | Raised when                                                |
 | ---------------- | ---------------------------------------------------------- |
-| `ConfigError`    | The pipeline file is invalid (raised when loading).        |
+| `ConfigError`    | The pipeline file is invalid (raised when loading), or `run()` got invalid options. |
 | `GraphError`     | A kind of `ConfigError`: a cycle, or an unknown input.     |
 | `ExecutionError` | A step or connection couldn't do its work.                 |
 | `RunError`       | `run()` had failed steps; `.result` has the details.       |
@@ -651,7 +651,7 @@ the PATH.
 | ----------- | ----------------------------------------------- |
 | 0           | Success.                                        |
 | 1           | A step or a connection check failed.            |
-| 2           | The pipeline file is invalid, or the arguments. |
+| 2           | The pipeline file or the options are invalid; options are checked first, by the same rules as `run()`'s. |
 
 ## Extending dagcraft
 

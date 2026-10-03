@@ -8,6 +8,7 @@ from enum import IntEnum
 
 from dagcraft.cli import report
 from dagcraft.cli.parser import build_parser
+from dagcraft.config import RunOptions
 from dagcraft.core.pipeline import Pipeline
 from dagcraft.exceptions import ConfigError, RunError
 from dagcraft.logs import configure_logging, get_logger
@@ -35,43 +36,56 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging(logging.DEBUG if args.verbose else logging.INFO)
 
     try:
+        # Check the options first: they're cheap, and loading isn't.
+        options = run_options(args)
         pipeline = Pipeline.from_yaml(args.config)
     except ConfigError as exc:
-        # A problem with the file: show the message, not a traceback.
+        # A problem with the options or the file: the message, no traceback.
         logger.error("%s", exc)  # noqa: TRY400
         return ExitCode.INVALID
 
     report.log_valid(pipeline)
 
     if args.dry_run or args.check_connections:
-        return check(pipeline, args)
-    return run(pipeline, args)
+        return check(pipeline, args, options)
+    return run(pipeline, options)
 
 
-def check(pipeline: Pipeline, args: argparse.Namespace) -> ExitCode:
+def run_options(args: argparse.Namespace) -> RunOptions:
+    """
+    The run's options from the arguments, checked like ``Pipeline.run``'s.
+    """
+    return RunOptions.parse(
+        fail_fast=args.fail_fast,
+        run_id=args.run_id,
+        # The command line never reads outputs, so don't keep them.
+        keep_outputs=False,
+        max_workers=args.max_workers,
+    )
+
+
+def check(
+    pipeline: Pipeline,
+    args: argparse.Namespace,
+    options: RunOptions,
+) -> ExitCode:
     """
     Show the plan and/or check the connections, without running.
     """
     if args.dry_run:
-        report.log_plan(pipeline, args.max_workers)
+        report.log_plan(pipeline, options.max_workers)
 
     if args.check_connections and not report.log_checks(pipeline):
         return ExitCode.FAILED
     return ExitCode.SUCCESS
 
 
-def run(pipeline: Pipeline, args: argparse.Namespace) -> ExitCode:
+def run(pipeline: Pipeline, options: RunOptions) -> ExitCode:
     """
     Run the pipeline and log a summary of every step.
     """
     try:
-        # The command line never reads outputs, so don't keep them.
-        result = pipeline.run(
-            fail_fast=args.fail_fast,
-            run_id=args.run_id,
-            keep_outputs=False,
-            max_workers=args.max_workers,
-        )
+        result = pipeline.run(**options.model_dump())
     except RunError as exc:
         report.log_summary(exc.result)
         return ExitCode.FAILED

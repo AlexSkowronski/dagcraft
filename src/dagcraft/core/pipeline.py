@@ -8,7 +8,7 @@ from typing import Any, Self
 import yaml
 from pydantic import ValidationError
 
-from dagcraft.config import PipelineConfig, format_validation_error
+from dagcraft.config import PipelineConfig, RunOptions, format_validation_error
 from dagcraft.core.checks import check_connection
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
 from dagcraft.core.executor import Executor
@@ -177,18 +177,23 @@ class Pipeline:
 
         ``max_workers`` overrides the pipeline file's ``max_workers``: how
         many independent steps may run at once, each in its own thread.
-        """
-        # TODO: Would we not want to validate the argparse arguments earlier?
-        # Maybe through an args config? What do you think?
-        if max_workers is not None and max_workers < 1:
-            raise ValueError("max_workers must be at least 1.")
 
-        result = Executor(
-            self.compiled,
+        The options are checked by ``RunOptions``, as the command line's
+        are; invalid ones raise ``ConfigError``.
+        """
+        options = RunOptions.parse(
             fail_fast=fail_fast,
             run_id=run_id,
             keep_outputs=keep_outputs,
-            max_workers=max_workers or self.max_workers,
+            max_workers=max_workers,
+        )
+
+        result = Executor(
+            self.compiled,
+            fail_fast=options.fail_fast,
+            run_id=options.run_id,
+            keep_outputs=options.keep_outputs,
+            max_workers=options.max_workers or self.max_workers,
         ).run()
 
         if not result.success:

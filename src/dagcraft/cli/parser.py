@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--max-workers",
-        type=positive_int,
+        type=int,
         metavar="N",
         help="Run up to N independent steps at once (overrides the file).",
     )
@@ -63,19 +63,3 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
     return parser
-
-
-def positive_int(text: str) -> int:
-    """
-    Parse a whole number of at least 1, for ``--max-workers``.
-    """
-    try:
-        value = int(text)
-    except ValueError:
-        value = 0
-
-    if value < 1:
-        raise argparse.ArgumentTypeError(
-            f"expected a whole number of at least 1, got '{text}'"
-        )
-    return value

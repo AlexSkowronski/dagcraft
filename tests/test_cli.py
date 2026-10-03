@@ -148,6 +148,25 @@ steps:
     assert "Step 'source': path: Field required" in caplog.text
 
 
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    [
+        (
+            ["--max-workers", "0"],
+            "max_workers: Input should be greater than or equal to 1",
+        ),
+        (["--run-id", ""], "run_id: String should have at least 1 character"),
+    ],
+)
+def test_invalid_options_exit_2_before_loading(tmp_path, caplog, arguments, message):
+    missing = str(tmp_path / "nowhere.yaml")
+
+    assert main([missing, *arguments]) == ExitCode.INVALID
+    assert f"Invalid run options: {message}" in caplog.text
+    # Checked before the file is read.
+    assert "Could not read pipeline file" not in caplog.text
+
+
 def test_missing_file_exits_2(tmp_path, caplog):
     assert main([str(tmp_path / "nowhere.yaml")]) == ExitCode.INVALID
     assert "Could not read pipeline file" in caplog.text
