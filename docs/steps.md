@@ -7,11 +7,27 @@ Every step has these fields; each type adds its own.
 | `id` | A name for the step, unique in the file. Other steps use it in `inputs`. |
 | `type` | `read`, `write`, `transform` or `python`. |
 | `inputs` | The steps whose outputs this one takes, as `name: step_id`. |
+| `after` | Steps to wait for without taking their output, such as the write to a table this step then reads. |
 | `retries` | Run the step again this many times if it fails. Default 0. |
 | `retry_delay` | Seconds before the first retry, doubling after each. Default 5. |
 
-`inputs` decide the order: a step runs after every step it takes an input
-from. Otherwise steps run in the order they're written.
+`inputs` and `after` decide the order: a step runs once every step it
+takes an input from, or is `after`, has finished, and is skipped if one of
+them didn't succeed. Otherwise steps run in the order they're written.
+
+```yaml
+  - id: load
+    type: write
+    connection: warehouse
+    table: staging.orders
+    inputs: {data: orders}
+
+  - id: totals
+    type: read
+    connection: warehouse
+    query: SELECT region, SUM(amount) AS total FROM staging.orders GROUP BY region
+    after: [load]          # read the table only once it's loaded
+```
 
 ## read
 

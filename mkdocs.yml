@@ -42,6 +42,9 @@ markdown_extensions:
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
+  - pymdownx.snippets:
+      base_path: [.]
+      check_paths: true
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -68,4 +71,5 @@ nav:
       - Blob JSON into Azure SQL: recipes/blob-json-to-sql.md
       - SharePoint Excel report: recipes/sharepoint-report.md
       - Your own Python functions: recipes/python-functions.md
+      - Check your SQL Server: recipes/check-sql-server.md
   - Extending dagcraft: extending.md

@@ -51,7 +51,7 @@ def test_fail_fast_skips_everything_after_a_failure():
 
 
 def test_outputs_are_released_once_their_consumers_finish():
-    outputs = OutputStore(GRAPH, keep=False)
+    outputs = OutputStore(GRAPH.dependencies, keep=False)
     for step_id in ("a", "b"):
         outputs.put(step_id, step_id.upper())
         outputs.step_finished(step_id)
@@ -69,7 +69,7 @@ def test_outputs_are_released_once_their_consumers_finish():
 
 
 def test_outputs_are_all_kept_when_asked():
-    outputs = OutputStore(GRAPH, keep=True)
+    outputs = OutputStore(GRAPH.dependencies, keep=True)
     for step_id in ("a", "b", "c", "d"):
         outputs.put(step_id, step_id)
         outputs.step_finished(step_id)

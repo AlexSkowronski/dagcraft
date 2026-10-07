@@ -12,9 +12,11 @@ class StepConfig(BaseModel):
     Fields every step has. Step types subclass this to add their own.
 
     ``inputs`` maps the names a step receives its inputs under to the ids of
-    the steps that produce them. ``retries`` re-runs a failed step that many
-    more times, waiting ``retry_delay`` seconds before the first retry and
-    twice as long before each one after that.
+    the steps that produce them. ``after`` lists steps this one must wait
+    for without taking their output, such as a write to the table it reads.
+    ``retries`` re-runs a failed step that many more times, waiting
+    ``retry_delay`` seconds before the first retry and twice as long before
+    each one after that.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -22,6 +24,7 @@ class StepConfig(BaseModel):
     id: str = Field(min_length=1)
     type: str = Field(min_length=1)
     inputs: dict[str, str] = Field(default_factory=dict)
+    after: list[str] = Field(default_factory=list)
     retries: int = Field(default=0, ge=0)
     retry_delay: float = Field(default=5.0, ge=0)
 

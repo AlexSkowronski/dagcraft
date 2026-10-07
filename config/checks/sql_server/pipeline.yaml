@@ -1,0 +1,83 @@
+# Checks dagcraft against your SQL Server or Azure SQL database: writing a
+# table, upserting into it, partitioned reads and query parameters. Copy this
+# folder, fill in .env (from .env.example), and run it from here:
+#
+#   dagcraft pipeline.yaml
+#
+# It creates a small table, dagcraft_check_orders (or CHECK_TABLE), and leaves
+# it there: drop it afterwards with DROP TABLE.
+
+pipeline:
+  name: sql_server_check
+  env_file: .env
+
+include:
+  - connections.yaml
+
+params:
+  table: ${env:CHECK_TABLE:-dagcraft_check_orders}
+
+steps:
+  # 1. Write three orders, replacing the table from any earlier check.
+  - id: seed
+    type: read
+    path: seed.csv
+
+  - id: write_seed
+    type: write
+    connection: warehouse
+    table: ${params.table}
+    if_exists: replace
+    inputs: {data: seed}
+
+  # 2. Upsert: order 3 changes and order 4 is new. This needs permission to
+  #    create a staging table in the table's schema.
+  - id: changes
+    type: read
+    path: changes.csv
+
+  - id: upsert
+    type: write
+    connection: warehouse
+    table: ${params.table}
+    if_exists: upsert
+    keys: [order_id]
+    inputs: {data: changes}
+    after: [write_seed]
+
+  # 3. Read it back: the whole table in two parallel parts, and a query with
+  #    a parameter.
+  - id: read_back
+    type: read
+    connection: warehouse
+    table: ${params.table}
+    partition: {column: order_id, parts: 2}
+    after: [upsert]
+
+  - id: big_orders
+    type: read
+    connection: warehouse
+    query: SELECT order_id, amount FROM ${params.table} WHERE amount >= :minimum
+    params: {minimum: 100}
+    after: [upsert]
+
+  # 4. Check what came back. If anything's wrong, the run fails saying what.
+  - id: check_table
+    type: transform
+    inputs: {data: read_back}
+    operations:
+      - check:
+          unique: [order_id]
+          not_null: [order_id, amount]
+          min_rows: 4
+          max_rows: 4
+      - filter: (order_id == 3 and amount == 300) or (order_id == 4 and amount == 40)
+      - check: {min_rows: 2, max_rows: 2}
+
+  - id: check_query
+    type: transform
+    inputs: {data: big_orders}
+    operations:
+      - check: {min_rows: 1, max_rows: 1}
+      - filter: order_id == 3
+      - check: {min_rows: 1}

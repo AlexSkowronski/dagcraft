@@ -5,8 +5,6 @@ Holding step outputs during a run, and letting go of them when done.
 import threading
 from typing import Any
 
-from dagcraft.core.graph import CompiledGraph
-
 
 class OutputStore:
     """
@@ -17,15 +15,21 @@ class OutputStore:
     needed. With ``keep`` true, every output stays, for the run's result.
     """
 
-    def __init__(self, graph: CompiledGraph, *, keep: bool) -> None:
-        self._dependencies = graph.dependencies
+    def __init__(self, inputs: dict[str, set[str]], *, keep: bool) -> None:
+        """
+        ``inputs`` maps each step to the steps whose outputs it takes.
+
+        Steps a step only runs ``after`` aren't in it: their outputs needn't
+        be kept for it.
+        """
+        self._inputs = inputs
         self._keep = keep
         self._values: dict[str, Any] = {}
         self._lock = threading.Lock()
         # How many steps still to finish take each step's output as an input.
-        self._consumers = dict.fromkeys(graph.order, 0)
+        self._consumers = dict.fromkeys(inputs, 0)
 
-        for upstream_ids in graph.dependencies.values():
+        for upstream_ids in inputs.values():
             for upstream in upstream_ids:
                 self._consumers[upstream] += 1
 
@@ -51,7 +55,7 @@ class OutputStore:
             return
 
         with self._lock:
-            for upstream in self._dependencies[step_id]:
+            for upstream in self._inputs[step_id]:
                 self._consumers[upstream] -= 1
 
                 if self._consumers[upstream] == 0:

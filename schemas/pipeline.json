@@ -389,6 +389,22 @@
                   "title": "Inputs",
                   "type": "object"
                 },
+                "after": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "After",
+                      "type": "array"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
+                },
                 "retries": {
                   "anyOf": [
                     {
@@ -469,6 +485,22 @@
                   },
                   "title": "Inputs",
                   "type": "object"
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "After",
+                      "type": "array"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
                 },
                 "retries": {
                   "anyOf": [
@@ -692,6 +724,22 @@
                   },
                   "title": "Inputs",
                   "type": "object"
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "After",
+                      "type": "array"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
                 },
                 "retries": {
                   "anyOf": [
@@ -1654,6 +1702,22 @@
                   },
                   "title": "Inputs",
                   "type": "object"
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "After",
+                      "type": "array"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\$\\{[^}]+\\}$",
+                      "description": "A ${params.NAME} or ${env:NAME} reference."
+                    }
+                  ]
                 },
                 "retries": {
                   "anyOf": [

@@ -1,0 +1,8 @@
+# The database to check. Signs in as you (az login), with the server and
+# database from .env; or swap in a connection string.
+connections:
+  warehouse:
+    type: azure_sql
+    server: ${env:SQL_SERVER}
+    database: ${env:SQL_DATABASE}
+    # connection_string: ${env:AZURE_SQL_CONNECTION}

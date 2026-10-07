@@ -14,6 +14,10 @@ First release.
 
 - Pipelines described in YAML and run from Python
   (`Pipeline.from_yaml(path).run()`) or the `dagcraft` command.
+- `after:` on any step: wait for other steps without taking their output,
+  such as reading a table once it's loaded.
+- A self-checking pipeline in `config/checks/sql_server` proves writes,
+  upserts, partitioned reads and query parameters against your database.
 - Step types: `read`, `write`, `transform` and `python` (any importable
   function, including modules in the folder you run from, also with the
   `dagcraft` command).

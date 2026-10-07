@@ -81,8 +81,12 @@ def compile_pipeline(
         except (ValueError, PipelineError) as exc:
             raise ConfigError(f"Step '{step_id}': {describe(exc)}") from exc
 
+    # A step waits for the steps it takes inputs from, and those it's after.
     graph = compile_graph(
-        {step_id: set(step.config.inputs.values()) for step_id, step in steps.items()}
+        {
+            step_id: {*step.config.inputs.values(), *step.config.after}
+            for step_id, step in steps.items()
+        }
     )
 
     return CompiledPipeline(

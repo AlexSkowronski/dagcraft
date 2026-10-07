@@ -70,7 +70,10 @@ class Executor:
                 self.pipeline.connections,
             ),
             outputs=OutputStore(
-                self.pipeline.graph,
+                {
+                    step_id: set(step.config.inputs.values())
+                    for step_id, step in self.pipeline.steps.items()
+                },
                 keep=self.keep_outputs,
             ),
         )

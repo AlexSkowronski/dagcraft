@@ -99,6 +99,7 @@ class PlannedStep:
     id: str
     description: str
     inputs: dict[str, str]
+    after: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

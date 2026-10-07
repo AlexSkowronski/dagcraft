@@ -123,6 +123,7 @@ class Pipeline:
                 id=step_id,
                 description=self.compiled.steps[step_id].describe(),
                 inputs=dict(self.compiled.steps[step_id].config.inputs),
+                after=list(self.compiled.steps[step_id].config.after),
             )
             for step_id in self.compiled.graph.order
         ]

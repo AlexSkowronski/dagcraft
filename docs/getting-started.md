@@ -133,7 +133,9 @@ dagcraft configs/daily_sales.yaml --check-connections  # sign in to each connect
 
 `--check-connections` does one cheap real operation per connection (lists
 a folder, runs `SELECT 1`), so credentials, permissions and drivers are
-proven in seconds. For Azure SQL it also shows who you signed in as.
+proven in seconds. For Azure SQL it also shows who you signed in as. To go
+further and prove writes, upserts and parallel reads on your database, run
+the [SQL Server check](recipes/check-sql-server.md).
 
 ## Next
 

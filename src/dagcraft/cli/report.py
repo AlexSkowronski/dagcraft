@@ -38,14 +38,15 @@ def log_plan(pipeline: Pipeline, max_workers: int | None = None) -> None:
     logger.info("Steps, in run order:")
 
     for number, step in enumerate(plan, start=1):
-        inputs = ", ".join(f"{name}: {source}" for name, source in step.inputs.items())
+        needs = [f"{name}: {source}" for name, source in step.inputs.items()]
+        needs += [f"after {source}" for source in step.after]
         logger.info(
             "%3d. %-*s  %s%s",
             number,
             width,
             step.id,
             step.description,
-            f"  <- {inputs}" if inputs else "",
+            f"  <- {', '.join(needs)}" if needs else "",
         )
 
     logger.info("Dry run: nothing was run.")
