@@ -7,6 +7,8 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
+from dagcraft.templates import Templates
+
 
 class Reader(ABC):
     """
@@ -15,21 +17,30 @@ class Reader(ABC):
     Register a reader for a connection type with ``register_reader``; read
     steps on connections of that type (or a subclass) then use it.
     ``options_model`` validates the step's own fields (``path``, ``query``
-    and so on). ``prepare`` runs when the pipeline compiles, so problems
-    show up before anything runs; ``read`` runs during the run, with the
-    connection open. A reader that ``accepts_paths`` can also read the files
-    another step lists, with ``read_listed``.
+    and so on); its ``template_fields`` are Jinja templates, rendered before
+    they're checked. ``prepare`` runs when the pipeline compiles, so
+    problems show up before anything runs; ``read`` runs during the run,
+    with the connection open. A reader that ``accepts_paths`` can also read
+    the files another step lists, with ``read_listed``.
     """
 
     options_model: ClassVar[type[BaseModel]]
+    template_fields: ClassVar[tuple[str, ...]] = ()
     accepts_paths: ClassVar[bool] = False
 
     def __init__(self, options: Any) -> None:
         self.options = options
 
-    def prepare(self, connection: Any) -> None:  # noqa: B027 - optional hook
+    def prepare(  # noqa: B027 - optional hook
+        self,
+        connection: Any,
+        templates: Templates,
+    ) -> None:
         """
         Check the options against the connection. Raise ``ValueError``.
+
+        ``templates`` renders any other text the options name, such as a
+        query file.
         """
 
     def expect_paths(self, listed: bool) -> None:

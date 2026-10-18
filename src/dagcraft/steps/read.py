@@ -14,6 +14,7 @@ from dagcraft.readers import Reader
 from dagcraft.registry import READERS, register_step
 from dagcraft.steps.base import BaseStep
 from dagcraft.steps.connections import find_connection, prepare_handler
+from dagcraft.templates import Templates
 
 logger = get_logger(__name__)
 
@@ -32,10 +33,18 @@ class ReadStep(BaseStep):
     config: ReadConfig
     reader: Reader
 
-    def prepare(self, connections: dict[str, Connection]) -> None:
+    def prepare(
+        self,
+        connections: dict[str, Connection],
+        templates: Templates,
+    ) -> None:
         connection = find_connection(connections, self.config.connection)
         self.reader = prepare_handler(
-            READERS, connection, extra_fields(self.config), "reading"
+            READERS,
+            connection,
+            extra_fields(self.config),
+            templates,
+            "reading",
         )
         self.reader.expect_paths(self.lister is not None)
 

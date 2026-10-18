@@ -17,6 +17,7 @@ from dagcraft.paths import has_wildcards
 from dagcraft.readers.base import Reader
 from dagcraft.readers.listed_paths import listed_paths
 from dagcraft.registry import register_reader
+from dagcraft.templates import Templates
 from dagcraft.threads import map_in_threads
 
 logger = get_logger(__name__)
@@ -35,9 +36,10 @@ class FileReader(Reader):
 
     options_model = FileReadOptions
     options: FileReadOptions
+    template_fields = ("path",)
     accepts_paths = True
 
-    def prepare(self, connection: FileConnection) -> None:
+    def prepare(self, connection: FileConnection, templates: Templates) -> None:
         path = self.options.path
 
         # Listed files' format is only known now if it's named.

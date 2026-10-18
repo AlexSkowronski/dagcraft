@@ -81,6 +81,7 @@ dagcraft configs/daily_sales.yaml             # run it
 | [Connections](https://alexskowronski.github.io/dagcraft/connections/local/) | Local files, Azure Blob Storage, SharePoint, any SQL database, Azure SQL. Sign in with `az login`, a managed identity or a connection string. |
 | [Formats](https://alexskowronski.github.io/dagcraft/reading-writing/files/) | CSV, Parquet and Excel as tables; JSON, JSON Lines and YAML as plain dicts and lists. Many files at once with wildcards. |
 | [SQL](https://alexskowronski.github.io/dagcraft/reading-writing/sql/) | `.sql` files with parameters, parallel reads of big tables, transactional writes and upserts. |
+| [Templates](https://alexskowronski.github.io/dagcraft/reading-writing/templates/) | Jinja in SQL and paths: dated folders, optional filters, your own functions. |
 | [Transforms](https://alexskowronski.github.io/dagcraft/steps/#transform) | A whole stage of cleaning in one step: filter, join, derive, cast, dedupe, aggregate, flatten, data checks, and [your own Python functions](https://alexskowronski.github.io/dagcraft/recipes/python-functions/). |
 | [Running](https://alexskowronski.github.io/dagcraft/running/) | Everything checked before it runs, connection checks, retries, parallel steps, and a log line per step. |
 | [Autocomplete](https://alexskowronski.github.io/dagcraft/autocomplete/) | Suggestions and red squiggles in VS Code as you write pipeline files. |

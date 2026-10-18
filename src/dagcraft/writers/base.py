@@ -7,6 +7,8 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
+from dagcraft.templates import Templates
+
 
 class Writer(ABC):
     """
@@ -14,18 +16,26 @@ class Writer(ABC):
 
     Register a writer for a connection type with ``register_writer``.
     ``options_model`` validates the step's own fields (``path``, ``table``
-    and so on). ``prepare`` runs when the pipeline compiles; ``write`` runs
-    during the run, with the connection open.
+    and so on); its ``template_fields`` are Jinja templates, rendered before
+    they're checked. ``prepare`` runs when the pipeline compiles; ``write``
+    runs during the run, with the connection open.
     """
 
     options_model: ClassVar[type[BaseModel]]
+    template_fields: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, options: Any) -> None:
         self.options = options
 
-    def prepare(self, connection: Any) -> None:  # noqa: B027 - optional hook
+    def prepare(  # noqa: B027 - optional hook
+        self,
+        connection: Any,
+        templates: Templates,
+    ) -> None:
         """
         Check the options against the connection. Raise ``ValueError``.
+
+        ``templates`` renders any other text the options name.
         """
 
     def describe(self) -> str:

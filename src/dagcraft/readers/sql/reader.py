@@ -22,6 +22,7 @@ from dagcraft.readers.sql.partitions import (
 from dagcraft.readers.sql.query import load_query_file, read_query, read_table
 from dagcraft.readers.sql.query_text import check_partition_placeholders
 from dagcraft.registry import register_reader
+from dagcraft.templates import Templates
 
 if TYPE_CHECKING:
     import sqlalchemy as sa
@@ -33,22 +34,29 @@ logger = get_logger(__name__)
 class SQLReader(Reader):
     """
     Reads a query, a query file or a table from any SQL connection.
+
+    The query, the table and a query file's contents are Jinja templates.
     """
 
     options_model = SQLReadOptions
     options: SQLReadOptions
+    template_fields = ("query", "table")
 
     def __init__(self, options: SQLReadOptions) -> None:
         super().__init__(options)
         # The query text; for query_file, filled in by prepare.
         self.query = options.query
 
-    def prepare(self, connection: SQLConnection) -> None:
+    def prepare(self, connection: SQLConnection, templates: Templates) -> None:
         if self.options.table is not None:
             split_table(self.options.table)
 
         if self.options.query_file is not None:
-            self.query = load_query_file(connection.base_dir, self.options.query_file)
+            text = load_query_file(connection.base_dir, self.options.query_file)
+            self.query = templates.render(text, self.options.query_file)
+
+            if self.query != text:
+                logger.debug("%s rendered:\n%s", self.options.query_file, self.query)
 
         if self.options.partition is not None and self.query is not None:
             check_partition_placeholders(self.query)

@@ -621,6 +621,7 @@ version = "0.1.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "fsspec" },
+    { name = "jinja2" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "pydantic" },
@@ -678,6 +679,7 @@ requires-dist = [
     { name = "azure-identity", marker = "extra == 'azure'", specifier = ">=1.15.0" },
     { name = "dagcraft-pipelines", extras = ["azure", "excel", "sql"], marker = "extra == 'all'" },
     { name = "fsspec", specifier = ">=2024.6.0" },
+    { name = "jinja2", specifier = ">=3.1" },
     { name = "openpyxl", marker = "extra == 'excel'", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=3.0" },
     { name = "pyarrow", specifier = ">=16.0" },

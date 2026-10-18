@@ -10,6 +10,7 @@ from dagcraft.core.context import ExecutionContext
 from dagcraft.operations.chain import OperationCall, parse_operations, run_operations
 from dagcraft.registry import register_step
 from dagcraft.steps.base import BaseStep
+from dagcraft.templates import Templates
 
 
 @register_step("transform")
@@ -26,7 +27,11 @@ class TransformStep(BaseStep):
     config: TransformConfig
     calls: list[OperationCall]
 
-    def prepare(self, connections: dict[str, Connection]) -> None:
+    def prepare(
+        self,
+        connections: dict[str, Connection],
+        templates: Templates,
+    ) -> None:
         self.calls = parse_operations(self.config.operations, set(self.config.inputs))
 
     def describe(self) -> str:

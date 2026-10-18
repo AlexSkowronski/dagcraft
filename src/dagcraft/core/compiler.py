@@ -28,6 +28,7 @@ from dagcraft.exceptions import ConfigError, PipelineError
 from dagcraft.imports import import_module, make_importable
 from dagcraft.registry import CONNECTIONS, STEPS
 from dagcraft.steps import BaseStep
+from dagcraft.templates import Templates
 
 
 @dataclass(frozen=True)
@@ -75,10 +76,11 @@ def compile_pipeline(
         origins,
     )
     steps = build_steps(config.steps, references)
+    templates = Templates(values, run_date)
 
     for step_id, step in steps.items():
         try:
-            step.prepare(connections)
+            step.prepare(connections, templates)
         except (ValueError, PipelineError) as exc:
             raise ConfigError(f"Step '{step_id}': {describe(exc)}") from exc
 

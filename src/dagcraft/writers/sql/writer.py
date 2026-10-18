@@ -10,6 +10,7 @@ from dagcraft.connections.sql.names import split_table
 from dagcraft.data import require_table
 from dagcraft.logs import get_logger
 from dagcraft.registry import register_writer
+from dagcraft.templates import Templates
 from dagcraft.writers.base import Writer
 from dagcraft.writers.sql.upsert import upsert
 
@@ -27,8 +28,9 @@ class SQLWriter(Writer):
 
     options_model = SQLWriteOptions
     options: SQLWriteOptions
+    template_fields = ("table",)
 
-    def prepare(self, connection: SQLConnection) -> None:
+    def prepare(self, connection: SQLConnection, templates: Templates) -> None:
         split_table(self.options.table)
 
     def describe(self) -> str:

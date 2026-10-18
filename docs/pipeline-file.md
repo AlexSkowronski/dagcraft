@@ -134,6 +134,10 @@ steps:
     inputs: {data: events}
 ```
 
+For other layouts, such as `events/2026/10/17`, use a
+[template](reading-writing/templates.md#dated-folders-and-files):
+`path: events/{{ run_date.strftime('%Y/%m/%d') }}/*.json`.
+
 To load another day, such as one that failed, set it when you run:
 
 ```bash

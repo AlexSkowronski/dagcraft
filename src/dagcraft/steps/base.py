@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 from dagcraft.config.steps import StepConfig
 from dagcraft.connections import Connection
 from dagcraft.core.context import ExecutionContext
+from dagcraft.templates import Templates
 
 
 class BaseStep(ABC):
@@ -16,7 +17,8 @@ class BaseStep(ABC):
 
     ``config_model`` validates the step's entry in the pipeline file.
     ``prepare`` runs when the pipeline compiles, so references to
-    operations, connections and so on are checked before anything runs.
+    operations, connections and so on are checked before anything runs;
+    ``templates`` renders the Jinja templates in its fields, if it has any.
     ``execute`` receives the outputs of the steps named in ``inputs``, by
     input name, and returns this step's output.
     """
@@ -26,7 +28,11 @@ class BaseStep(ABC):
     def __init__(self, config: StepConfig) -> None:
         self.config = config
 
-    def prepare(self, connections: dict[str, Connection]) -> None:  # noqa: B027
+    def prepare(  # noqa: B027 - optional hook
+        self,
+        connections: dict[str, Connection],
+        templates: Templates,
+    ) -> None:
         """
         Resolve and check references. Raise ``ValueError`` if invalid.
         """

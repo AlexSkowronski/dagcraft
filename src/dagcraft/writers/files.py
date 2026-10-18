@@ -8,6 +8,7 @@ from dagcraft.config.writers import FileWriteOptions
 from dagcraft.connections.files import FileConnection
 from dagcraft.formats import Format, resolve_format
 from dagcraft.registry import register_writer
+from dagcraft.templates import Templates
 from dagcraft.writers.base import Writer
 
 
@@ -19,6 +20,7 @@ class FileWriter(Writer):
 
     options_model = FileWriteOptions
     options: FileWriteOptions
+    template_fields = ("path",)
 
     @property
     def file_format(self) -> Format:
@@ -27,7 +29,7 @@ class FileWriter(Writer):
         """
         return resolve_format(self.options.path, self.options.format)
 
-    def prepare(self, connection: FileConnection) -> None:
+    def prepare(self, connection: FileConnection, templates: Templates) -> None:
         self.file_format.check_available()
 
     def describe(self) -> str:

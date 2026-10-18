@@ -34,6 +34,7 @@ from dagcraft.registry import (
     register_writer,
 )
 from dagcraft.steps import BaseStep
+from dagcraft.templates import template_function
 from dagcraft.timing import Timer
 from dagcraft.writers import Writer
 
@@ -71,4 +72,5 @@ __all__ = [
     "register_reader",
     "register_step",
     "register_writer",
+    "template_function",
 ]

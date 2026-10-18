@@ -65,6 +65,7 @@ nav:
   - Reading and writing:
       - Files and formats: reading-writing/files.md
       - SQL: reading-writing/sql.md
+      - Templates: reading-writing/templates.md
   - Steps and operations: steps.md
   - Running pipelines: running.md
   - Recipes:

@@ -72,9 +72,11 @@ class SampleStep(BaseStep):
 
 `execute` gets the step's inputs by name and an `ExecutionContext` with
 `context.connection(name)` (opened on first use), `context.params`,
-`context.run_date` and `context.logger`. `prepare(connections)` runs when
-the pipeline loads, to check things early; raise `ValueError` there for a
-clear config error.
+`context.run_date` and `context.logger`. `prepare(connections, templates)`
+runs when the pipeline loads, to check things early; raise `ValueError`
+there for a clear config error. `templates.render(text, where)` renders a
+[Jinja template](reading-writing/templates.md), for steps whose fields can
+be one.
 
 ## Connections, readers and writers
 
@@ -115,6 +117,7 @@ class ApiConnection(Connection):
 @register_reader(ApiConnection)
 class ApiReader(Reader):
     options_model = ApiReadOptions        # the read step's fields
+    template_fields = ("endpoint",)       # rendered as Jinja templates
 
     def describe(self):
         return self.options.endpoint

@@ -10,6 +10,7 @@ from dagcraft.core.context import ExecutionContext
 from dagcraft.registry import WRITERS, register_step
 from dagcraft.steps.base import BaseStep
 from dagcraft.steps.connections import find_connection, prepare_handler
+from dagcraft.templates import Templates
 from dagcraft.writers import Writer
 
 
@@ -26,10 +27,18 @@ class WriteStep(BaseStep):
     config: WriteConfig
     writer: Writer
 
-    def prepare(self, connections: dict[str, Connection]) -> None:
+    def prepare(
+        self,
+        connections: dict[str, Connection],
+        templates: Templates,
+    ) -> None:
         connection = find_connection(connections, self.config.connection)
         self.writer = prepare_handler(
-            WRITERS, connection, extra_fields(self.config), "writing"
+            WRITERS,
+            connection,
+            extra_fields(self.config),
+            templates,
+            "writing",
         )
 
         if len(self.config.inputs) > 1 and not self.writer.accepts_multiple_inputs():

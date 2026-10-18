@@ -11,6 +11,7 @@ from dagcraft.core.context import ExecutionContext
 from dagcraft.imports import load_callable
 from dagcraft.registry import register_step
 from dagcraft.steps.base import BaseStep
+from dagcraft.templates import Templates
 
 
 @register_step("python")
@@ -23,7 +24,11 @@ class PythonStep(BaseStep):
     config: PythonConfig
     function: Callable[..., Any]
 
-    def prepare(self, connections: dict[str, Connection]) -> None:
+    def prepare(
+        self,
+        connections: dict[str, Connection],
+        templates: Templates,
+    ) -> None:
         self.function = load_callable(self.config.callable)
 
     def describe(self) -> str:

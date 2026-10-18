@@ -102,6 +102,13 @@ gets the current table first and returns the next one:
 
 Use a `python` step for code that takes several inputs.
 
+## In templates
+
+A function can also fill in a path or a query: register it with
+`template_function`, list its module in `imports`, and call it by name in a
+[template](../reading-writing/templates.md#your-own-functions), such as
+`path: sales/{{ last_business_day(run_date) }}/*.csv`.
+
 ## Reusable operations
 
 For a function you'll use across pipelines, register it as an operation.

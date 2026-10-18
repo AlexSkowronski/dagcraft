@@ -22,6 +22,12 @@ First release.
   today unless set with `--run-date` or `run_date=`. `--param NAME=VALUE`
   sets params from the command line. Dates, including ones written in the
   file, can be used inside text.
+- Jinja templates in the fields that say what to read and write (`path`,
+  `query`, `table`) and in query files, with `params`, `run_date`, `env`
+  and your own functions (`template_function`). Rendered when the pipeline
+  loads, so a dry run shows the result. Readers and writers name their
+  `template_fields`, and `prepare` gets the templates. (In 0.1.0rc2 and
+  before, a step's `prepare` took only the connections.)
 - `after:` on any step: wait for other steps without taking their output,
   such as reading a table once it's loaded.
 - A self-checking pipeline in `config/checks/sql_server` proves writes,

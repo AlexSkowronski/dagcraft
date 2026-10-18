@@ -48,8 +48,8 @@ Set one of `query`, `query_file` or `table`:
 
 | Field | |
 | --- | --- |
-| `query` | SQL to run. Use `:name` placeholders for values. |
-| `query_file` | Or a `.sql` file, relative to the folder you run from. Same placeholders. |
+| `query` | SQL to run. Use `:name` placeholders for values, and a [template](templates.md#sql) for its shape. |
+| `query_file` | Or a `.sql` file, relative to the folder you run from. Same placeholders; its contents can be a [template](templates.md#sql) too. |
 | `table` | Or a whole table, as `name` or `schema.name`. |
 | `params` | Values for the placeholders. They're sent separately from the SQL, never pasted into it. |
 | `args` | Passed to `pandas.read_sql`, e.g. `{parse_dates: [posted_on]}`. |

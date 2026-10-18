@@ -6,7 +6,7 @@ Read and write steps on file connections ([local](../connections/local.md),
 
 | Field | |
 | --- | --- |
-| `path` | The file, relative to the connection. Reads can use [wildcards](#many-files-at-once). |
+| `path` | The file, relative to the connection. Reads can use [wildcards](#many-files-at-once). Can be a [template](templates.md), such as a dated folder. |
 | `format` | The format, when the extension doesn't say: `csv`, `parquet`, `excel`, `json`, `jsonl` or `yaml`. |
 | `args` | Options for the format's reader or writer (below). |
 | `source_column` | When reading several files: names each row's (or document's) file. |

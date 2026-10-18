@@ -117,6 +117,7 @@ STEPS = Registry("step type")
 OPERATIONS = Registry("operation")
 CONNECTIONS = Registry("connection type")
 FORMATS = Registry("format")
+TEMPLATE_FUNCTIONS = Registry("template function")
 READERS = ConnectionTypeRegistry("reader")
 WRITERS = ConnectionTypeRegistry("writer")
 
