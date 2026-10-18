@@ -17,13 +17,14 @@ from dagcraft import readers as _readers  # noqa: F401
 from dagcraft import writers as _writers  # noqa: F401
 from dagcraft.config import PipelineConfig, format_validation_error
 from dagcraft.config.connections import LocalConfig
+from dagcraft.config.pipeline import PipelineMeta
 from dagcraft.connections import Connection, LocalConnection
 from dagcraft.core.graph import CompiledGraph, compile_graph
 from dagcraft.core.includes import load_shared_connections
 from dagcraft.core.params import resolve_params, substitute
 from dagcraft.env import load_env_file
 from dagcraft.exceptions import ConfigError, PipelineError
-from dagcraft.imports import make_importable
+from dagcraft.imports import import_module, make_importable
 from dagcraft.registry import CONNECTIONS, STEPS
 from dagcraft.steps import BaseStep
 
@@ -52,12 +53,7 @@ def compile_pipeline(
 
     Raises ``ConfigError`` naming the connection or step at fault.
     """
-    if config.pipeline.env_file is not None:
-        load_env_file(base_dir / config.pipeline.env_file)
-
-    # python steps import your modules from the project, like a script would.
-    make_importable(base_dir)
-
+    load_project(config.pipeline, base_dir)
     values = resolve_params(config.params, params or {})
 
     # Connections defined in the pipeline file override shared ones.
@@ -97,6 +93,23 @@ def compile_pipeline(
         steps=steps,
         graph=graph,
     )
+
+
+def load_project(meta: PipelineMeta, base_dir: Path) -> None:
+    """
+    Load the project's environment variables, then import its modules.
+
+    Runs before anything else, so ``${env:...}`` references can use the
+    ``env_file``, and what the ``imports`` register can be named in the file.
+    """
+    if meta.env_file is not None:
+        load_env_file(base_dir / meta.env_file)
+
+    # Your modules are imported from the project, like a script's would be.
+    make_importable(base_dir)
+
+    for name in meta.imports:
+        import_module(name)
 
 
 def build_connections(

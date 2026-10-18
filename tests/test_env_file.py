@@ -21,8 +21,11 @@ steps:
 
 @pytest.fixture(autouse=True)
 def clean_environment(monkeypatch):
-    # Recorded as unset, so whatever the .env file sets is removed afterwards.
-    monkeypatch.delenv("DAGCRAFT_TEST_ROOT", raising=False)
+    # Set, then unset, so it's recorded as unset and whatever the .env file
+    # sets is removed afterwards. (Unsetting alone records nothing when the
+    # variable isn't set to begin with.)
+    monkeypatch.setenv("DAGCRAFT_TEST_ROOT", "")
+    monkeypatch.delenv("DAGCRAFT_TEST_ROOT")
 
 
 @pytest.fixture

@@ -27,7 +27,7 @@ class Registry:
         def decorator(item):
             if name in self._items:
                 raise RegistryError(
-                    f"A {self.kind} named '{name}' is already registered."
+                    f"The name '{name}' is already taken by another {self.kind}."
                 )
             self._items[name] = item
             return item

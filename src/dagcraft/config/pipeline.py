@@ -2,9 +2,12 @@
 The top level of a pipeline file.
 """
 
+import re
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+MODULE_NAME = re.compile(r"[A-Za-z_]\w*(\.[A-Za-z_]\w*)*")
 
 
 class PipelineMeta(BaseModel):
@@ -15,7 +18,9 @@ class PipelineMeta(BaseModel):
     ``env_file`` is a ``.env`` file, relative to the folder you run from, whose
     variables are loaded before anything else so ``${env:NAME}`` references
     and Azure sign-in can use them. Variables already set in the environment
-    keep their values.
+    keep their values. ``imports`` lists modules of yours to import next, so
+    the operations, step types, connections and formats they register can be
+    named in the file, with the ``dagcraft`` command as well as from Python.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -23,6 +28,21 @@ class PipelineMeta(BaseModel):
     name: str = Field(min_length=1)
     max_workers: int = Field(default=1, ge=1)
     env_file: str | None = Field(default=None, min_length=1)
+    imports: list[str] = Field(default_factory=list)
+
+    @field_validator("imports")
+    @classmethod
+    def check_imports(cls, names: list[str]) -> list[str]:
+        """
+        Modules are written as Python imports them, not as files.
+        """
+        for name in names:
+            if not MODULE_NAME.fullmatch(name):
+                raise ValueError(
+                    f"'{name}' isn't a module name: write it as you would "
+                    "import it, such as my_project.cleaning."
+                )
+        return names
 
 
 class PipelineConfig(BaseModel):

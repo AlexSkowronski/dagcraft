@@ -1,14 +1,15 @@
 """
-Importing your own code from the project, for ``python`` steps and operations.
+Importing your own code: ``imports``, and ``python`` steps and operations.
 """
 
 import importlib
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
-from dagcraft.exceptions import ConfigError
+from dagcraft.exceptions import ConfigError, RegistryError
 
 
 def make_importable(directory: Path) -> None:
@@ -36,12 +37,7 @@ def load_callable(path: str) -> Callable[..., Any]:
         )
 
     module_name, function_name = path.split(":", maxsplit=1)
-
-    try:
-        module = importlib.import_module(module_name)
-    except ImportError as exc:
-        raise ConfigError(f"Could not import module '{module_name}'.") from exc
-
+    module = import_module(module_name)
     function = getattr(module, function_name, None)
 
     if function is None:
@@ -53,3 +49,31 @@ def load_callable(path: str) -> Callable[..., Any]:
         raise ConfigError(f"'{path}' is not callable.")
 
     return function
+
+
+def import_module(name: str) -> ModuleType:
+    """
+    Import ``name``, or raise ``ConfigError`` saying why it can't be imported.
+
+    A module that registers a component under a name already taken counts
+    as one that can't be imported.
+    """
+    try:
+        return importlib.import_module(name)
+    except ImportError as exc:
+        raise ConfigError(
+            f"Could not import module '{name}': {import_failure(name, exc)}"
+        ) from exc
+    except RegistryError as exc:
+        raise ConfigError(f"Could not import module '{name}': {exc}") from exc
+
+
+def import_failure(name: str, exc: ImportError) -> str:
+    """
+    Why importing ``name`` failed: it isn't there, or something it imports isn't.
+    """
+    missing = exc.name if isinstance(exc, ModuleNotFoundError) else None
+
+    if missing is not None and (name == missing or name.startswith(f"{missing}.")):
+        return "it isn't in the folder you run from or an installed package."
+    return str(exc)

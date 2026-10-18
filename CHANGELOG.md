@@ -14,6 +14,10 @@ First release.
 
 - Pipelines described in YAML and run from Python
   (`Pipeline.from_yaml(path).run()`) or the `dagcraft` command.
+- `imports:` in the `pipeline` section imports your modules before the rest
+  of the file is checked, so the operations, step types, connections and
+  formats they register can be named, with the `dagcraft` command too. A
+  module that can't be imported says why.
 - `after:` on any step: wait for other steps without taking their output,
   such as reading a table once it's loaded.
 - A self-checking pipeline in `config/checks/sql_server` proves writes,

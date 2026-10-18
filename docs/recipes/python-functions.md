@@ -104,6 +104,33 @@ Use a `python` step for code that takes several inputs.
 
 ## Reusable operations
 
-For a function you'll use across pipelines with different settings,
-register it as an operation and use it in `transform` steps; see
+For a function you'll use across pipelines, register it as an operation.
+Then list its module in `imports`, and transforms can name it like a
+built-in one:
+
+```python
+# my_functions.py
+from dagcraft import register_operation
+
+
+@register_operation("fix_codes")
+def fix_codes(data):
+    return data.assign(code=data["code"].str.upper())
+```
+
+```yaml
+pipeline:
+  name: daily_sales
+  imports: [my_functions]
+
+steps:
+  - id: clean_orders
+    type: transform
+    inputs:
+      data: orders
+    operations:
+      - fix_codes
+```
+
+For options, and operations that take other inputs as `join` does, see
 [Extending dagcraft](../extending.md#operations).

@@ -2,8 +2,18 @@
 
 Everything a pipeline file can name (operations, step types, connection
 types, formats) comes from a registry, and yours register the same way.
-Register them before loading a pipeline that uses them, for example by
-importing the module that defines them.
+List the modules that define them in the pipeline's
+[`imports`](pipeline-file.md#your-own-modules), so they're imported before
+the rest of the file is checked, with the `dagcraft` command too:
+
+```yaml
+pipeline:
+  name: daily_sales
+  imports: [my_project.cleaning]
+```
+
+From Python, importing the module yourself before loading the pipeline
+works as well.
 
 ## Operations
 

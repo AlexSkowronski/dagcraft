@@ -7,6 +7,8 @@ pipeline:          # about the pipeline itself
   name: daily_sales
   max_workers: 1   # optional: independent steps to run at once
   env_file: .env   # optional: load environment variables first
+  imports:         # optional: your modules that register operations and so on
+    - my_project.cleaning
 
 include:           # optional: files of shared connections
   - connections.yaml
@@ -29,7 +31,7 @@ steps:             # what to do
 
 | Section | |
 | --- | --- |
-| `pipeline` | `name` (required), `max_workers` (see [parallel steps](running.md#running-steps-in-parallel)), `env_file` (see [below](#env-files)). |
+| `pipeline` | `name` (required), `max_workers` (see [parallel steps](running.md#running-steps-in-parallel)), `env_file` (see [below](#env-files)), `imports` (see [below](#your-own-modules)). |
 | `include` | Files of [shared connections](#sharing-connections). |
 | `params` | Named values, used as `${params.NAME}`. |
 | `connections` | Named connections, each with a `type`. A `local` one is always there. See [Connections](connections/local.md). |
@@ -142,6 +144,50 @@ connections:
 - A service principal's `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and
   `AZURE_CLIENT_SECRET` in the file are used for Azure sign-in too.
 - Don't commit `.env` files.
+
+## Your own modules
+
+`imports` lists modules of yours to import before the rest of the file is
+checked. Use it for modules that register operations, step types,
+connections or formats, so the file can name them, with the `dagcraft`
+command as well as from Python:
+
+```python
+# my_project/cleaning.py
+from dagcraft import register_operation
+
+
+@register_operation("strip_names", main="column")
+def strip_names(data, column):
+    return data.assign(**{column: data[column].str.strip()})
+```
+
+```yaml
+pipeline:
+  name: daily_sales
+  imports:
+    - my_project.cleaning
+
+steps:
+  - id: orders
+    type: read
+    path: data/orders.csv
+
+  - id: clean
+    type: transform
+    inputs: {data: orders}
+    operations:
+      - strip_names: customer
+```
+
+- Write each module as you'd import it, `my_project.cleaning`, not as a
+  file path.
+- Modules are found in the folder you run from and in installed packages,
+  as a `python` step's `callable` is.
+- They're imported after the `env_file` loads, so they can use its
+  variables.
+- Functions named with `callable:` don't need listing: they're imported by
+  name.
 
 ## Secrets
 

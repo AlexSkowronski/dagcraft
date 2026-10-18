@@ -11,7 +11,7 @@
   "properties": {
     "pipeline": {
       "additionalProperties": false,
-      "description": "The ``pipeline`` section.\n\n``max_workers`` is how many independent steps may run at once.\n``env_file`` is a ``.env`` file, relative to the folder you run from, whose\nvariables are loaded before anything else so ``${env:NAME}`` references\nand Azure sign-in can use them. Variables already set in the environment\nkeep their values.",
+      "description": "The ``pipeline`` section.\n\n``max_workers`` is how many independent steps may run at once.\n``env_file`` is a ``.env`` file, relative to the folder you run from, whose\nvariables are loaded before anything else so ``${env:NAME}`` references\nand Azure sign-in can use them. Variables already set in the environment\nkeep their values. ``imports`` lists modules of yours to import next, so\nthe operations, step types, connections and formats they register can be\nnamed in the file, with the ``dagcraft`` command as well as from Python.",
       "properties": {
         "name": {
           "minLength": 1,
@@ -45,6 +45,22 @@
           ],
           "default": null,
           "title": "Env File"
+        },
+        "imports": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "title": "Imports",
+              "type": "array"
+            },
+            {
+              "type": "string",
+              "pattern": "^\\$\\{[^}]+\\}$",
+              "description": "A ${params.NAME} or ${env:NAME} reference."
+            }
+          ]
         }
       },
       "required": [

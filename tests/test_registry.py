@@ -20,7 +20,9 @@ def test_registry_rejects_duplicate_names():
     registry = Registry("widget")
     registry.register("a")(object)
 
-    with pytest.raises(RegistryError, match="A widget named 'a' is already"):
+    with pytest.raises(
+        RegistryError, match="The name 'a' is already taken by another widget"
+    ):
         registry.register("a")(object)
 
 
