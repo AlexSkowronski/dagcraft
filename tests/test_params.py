@@ -137,9 +137,10 @@ def test_connections_can_use_params(tmp_path):
             "Step 'a': in path: environment variable 'DAGCRAFT_UNSET' is not set.",
         ),
         (
-            {"id": "a", "type": "read", "path": "${run_date}.csv"},
+            {"id": "a", "type": "read", "path": "${today}.csv"},
             {},
-            "isn't a reference dagcraft understands",
+            "isn't a reference dagcraft understands. Use ${params.NAME}, "
+            "${env:NAME} or ${run_date}.",
         ),
         (
             {"id": "a", "type": "read", "path": "x_${params.cols}.csv"},

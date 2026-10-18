@@ -6,6 +6,7 @@ pipeline that compiles is one that can run.
 """
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ from dagcraft.config.pipeline import PipelineMeta
 from dagcraft.connections import Connection, LocalConnection
 from dagcraft.core.graph import CompiledGraph, compile_graph
 from dagcraft.core.includes import load_shared_connections
-from dagcraft.core.params import resolve_params, substitute
+from dagcraft.core.params import References, resolve_params, substitute
 from dagcraft.env import load_env_file
 from dagcraft.exceptions import ConfigError, PipelineError
 from dagcraft.imports import import_module, make_importable
@@ -37,6 +38,7 @@ class CompiledPipeline:
 
     name: str
     params: dict[str, Any]
+    run_date: date
     connections: dict[str, Connection]
     connection_types: dict[str, str]
     steps: dict[str, BaseStep]
@@ -46,15 +48,18 @@ class CompiledPipeline:
 def compile_pipeline(
     config: PipelineConfig,
     base_dir: Path,
+    run_date: date,
     params: dict[str, Any] | None = None,
 ) -> CompiledPipeline:
     """
     Check ``config`` and build everything needed to run it.
 
-    Raises ``ConfigError`` naming the connection or step at fault.
+    ``run_date`` is what ``${run_date}`` stands for. Raises ``ConfigError``
+    naming the connection or step at fault.
     """
     load_project(config.pipeline, base_dir)
-    values = resolve_params(config.params, params or {})
+    values = resolve_params(config.params, params or {}, run_date)
+    references = References(run_date, values)
 
     # Connections defined in the pipeline file override shared ones.
     shared = load_shared_connections(config.include, base_dir)
@@ -66,10 +71,10 @@ def compile_pipeline(
     connections, connection_types = build_connections(
         {**{name: c.fields for name, c in shared.items()}, **config.connections},
         base_dir,
-        values,
+        references,
         origins,
     )
-    steps = build_steps(config.steps, values)
+    steps = build_steps(config.steps, references)
 
     for step_id, step in steps.items():
         try:
@@ -88,6 +93,7 @@ def compile_pipeline(
     return CompiledPipeline(
         name=config.pipeline.name,
         params=values,
+        run_date=run_date,
         connections=connections,
         connection_types=connection_types,
         steps=steps,
@@ -115,7 +121,7 @@ def load_project(meta: PipelineMeta, base_dir: Path) -> None:
 def build_connections(
     raw_connections: dict[str, dict[str, Any]],
     base_dir: Path,
-    params: dict[str, Any],
+    references: References,
     origins: dict[str, str] | None = None,
 ) -> tuple[dict[str, Connection], dict[str, str]]:
     """
@@ -139,7 +145,7 @@ def build_connections(
             label += f" (from {origins[name]})"
 
         try:
-            fields = substitute(raw, params)
+            fields = substitute(raw, references)
         except ValueError as exc:
             raise ConfigError(f"{label}: {exc}") from exc
 
@@ -162,7 +168,7 @@ def build_connections(
 
 def build_steps(
     raw_steps: list[dict[str, Any]],
-    params: dict[str, Any],
+    references: References,
 ) -> dict[str, BaseStep]:
     """
     Create each step from its entry, validated by its type's model.
@@ -174,7 +180,7 @@ def build_steps(
         label = f"'{step_id}'" if isinstance(step_id, str) else f"#{position}"
 
         try:
-            fields = substitute(raw, params)
+            fields = substitute(raw, references)
         except ValueError as exc:
             raise ConfigError(f"Step {label}: {exc}") from exc
 

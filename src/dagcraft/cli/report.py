@@ -22,8 +22,10 @@ def log_valid(pipeline: Pipeline) -> None:
 
 def log_plan(pipeline: Pipeline, max_workers: int | None = None) -> None:
     """
-    Log the params and the steps in run order, for a dry run.
+    Log the run date, the params and the steps in run order, for a dry run.
     """
+    logger.info("Run date: %s", pipeline.run_date)
+
     if pipeline.params:
         params = ", ".join(f"{name}={value}" for name, value in pipeline.params.items())
         logger.info("Params: %s", params)

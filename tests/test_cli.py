@@ -114,10 +114,14 @@ steps:
     )
 
     with caplog.at_level(logging.INFO):
-        assert main([str(pipeline), "--dry-run"]) == ExitCode.SUCCESS
+        assert (
+            main([str(pipeline), "--dry-run", "--run-date", "2026-10-17"])
+            == ExitCode.SUCCESS
+        )
 
     assert report_lines(caplog) == [
         "Pipeline 'demo' is valid.",
+        "Run date: 2026-10-17",
         "Params: limit=2",
         "Steps, in run order:",
         f"  1. source  read {input_csv.as_posix()} from 'local'",

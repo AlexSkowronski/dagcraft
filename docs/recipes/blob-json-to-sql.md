@@ -28,9 +28,6 @@ pipeline:
   name: events_to_sql
   env_file: .env
 
-params:
-  run_date: ${env:RUN_DATE:-2026-10-02}    # set RUN_DATE to load another day
-
 connections:
   lake:
     type: azure_blob
@@ -47,7 +44,7 @@ steps:
   - id: batches
     type: read
     connection: lake
-    path: ${params.run_date}/*.json
+    path: ${run_date}/*.json          # today's, unless --run-date says
     source_column: source_file
     retries: 2
 
@@ -123,6 +120,7 @@ instead of a day's folder. Swap the `batches` step for these two:
 ```bash
 dagcraft configs/events_to_sql.yaml --check-connections   # first time: prove sign-in works
 dagcraft configs/events_to_sql.yaml
+dagcraft configs/events_to_sql.yaml --run-date 2026-10-16   # load another day again
 ```
 
 The identity you run as needs *Storage Blob Data Reader* on the storage

@@ -3,6 +3,7 @@ What a running step can reach.
 """
 
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
 
 from dagcraft.connections import Connection
@@ -16,12 +17,14 @@ class ExecutionContext:
     """
     Passed to every step's ``execute``: the run's connections, params and more.
 
+    ``run_date`` is what ``${run_date}`` stood for when the pipeline loaded.
     ``logger`` logs with the run and step in each message, for steps of your
     own; ``dagcraft.get_logger(__name__)`` does the same from any module.
     """
 
     run_id: str
     params: dict[str, Any]
+    run_date: date
     connections: ConnectionManager
     outputs: OutputStore
     logger: RunLogger = field(default_factory=lambda: get_logger("dagcraft.steps"))

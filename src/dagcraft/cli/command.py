@@ -46,7 +46,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # Check the options first: they're cheap, and loading isn't.
         options = run_options(args)
-        pipeline = Pipeline.from_yaml(args.config)
+        pipeline = Pipeline.from_yaml(
+            args.config,
+            params=dict(args.params or []),
+            run_date=args.run_date,
+        )
     except ConfigError as exc:
         # A problem with the options or the file: the message, no traceback.
         logger.error("%s", exc)  # noqa: TRY400

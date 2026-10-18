@@ -34,6 +34,17 @@ The result has `success`, `duration`, `run_id`, `steps` (each with
 A pipeline can be run any number of times; connections open and close for
 each run.
 
+Params and the [run date](pipeline-file.md#the-run-date) are set when the
+pipeline loads:
+
+```python
+Pipeline.from_yaml(
+    "configs/daily_sales.yaml",
+    params={"region": "south"},
+    run_date="2026-10-16",
+)
+```
+
 ### Where paths are relative to
 
 Relative paths, the one you pass to `from_yaml` and those inside the file,
@@ -54,6 +65,7 @@ Pipeline.from_yaml(
 dagcraft configs/daily_sales.yaml                      # check, then run
 dagcraft configs/daily_sales.yaml --dry-run            # check and show the plan
 dagcraft configs/daily_sales.yaml --check-connections  # check and sign in to each connection
+dagcraft configs/daily_sales.yaml --run-date 2026-10-16 --param region=south
 ```
 
 `python -m dagcraft ...` does the same, where the `dagcraft` command isn't
@@ -63,6 +75,8 @@ on the PATH.
 | --- | --- |
 | `--dry-run` | Check the pipeline and show the steps it would run, in order. |
 | `--check-connections` | Check the pipeline and prove each connection it uses works. |
+| `--param NAME=VALUE` | Set a param for this run; repeat for more. The value is read as YAML, so `10` is a number and `[a, b]` a list. |
+| `--run-date YYYY-MM-DD` | The day [`${run_date}`](pipeline-file.md#the-run-date) stands for. Today if unset. |
 | `--fail-fast` | Skip every remaining step after the first failure. |
 | `--max-workers N` | Run up to N independent steps at once. |
 | `--run-id ID` | An ID for the run in the logs. |

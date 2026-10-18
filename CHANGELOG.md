@@ -18,6 +18,10 @@ First release.
   of the file is checked, so the operations, step types, connections and
   formats they register can be named, with the `dagcraft` command too. A
   module that can't be imported says why.
+- `${run_date}`: the day a run is for, for dated folders and files. It's
+  today unless set with `--run-date` or `run_date=`. `--param NAME=VALUE`
+  sets params from the command line. Dates, including ones written in the
+  file, can be used inside text.
 - `after:` on any step: wait for other steps without taking their output,
   such as reading a table once it's loaded.
 - A self-checking pipeline in `config/checks/sql_server` proves writes,

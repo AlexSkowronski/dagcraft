@@ -71,9 +71,10 @@ class SampleStep(BaseStep):
 ```
 
 `execute` gets the step's inputs by name and an `ExecutionContext` with
-`context.connection(name)` (opened on first use), `context.params` and
-`context.logger`. `prepare(connections)` runs when the pipeline loads, to
-check things early; raise `ValueError` there for a clear config error.
+`context.connection(name)` (opened on first use), `context.params`,
+`context.run_date` and `context.logger`. `prepare(connections)` runs when
+the pipeline loads, to check things early; raise `ValueError` there for a
+clear config error.
 
 ## Connections, readers and writers
 

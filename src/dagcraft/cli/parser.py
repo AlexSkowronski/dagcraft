@@ -3,8 +3,12 @@ The ``dagcraft`` command's arguments.
 """
 
 import argparse
+from typing import Any
+
+import yaml
 
 from dagcraft import __version__
+from dagcraft.yaml_loader import load_yaml
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -46,6 +50,25 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--param",
+        action="append",
+        type=param,
+        dest="params",
+        metavar="NAME=VALUE",
+        help=(
+            "Set a param for this run; repeat for more. VALUE is read as YAML, "
+            "as if written in the file, so 10 is a number and [a, b] a list."
+        ),
+    )
+    parser.add_argument(
+        "--run-date",
+        metavar="YYYY-MM-DD",
+        help=(
+            "The date ${run_date} stands for, such as a day to load again. "
+            "Today if unset."
+        ),
+    )
+    parser.add_argument(
         "--max-workers",
         type=int,
         metavar="N",
@@ -72,3 +95,22 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
     return parser
+
+
+def param(text: str) -> tuple[str, Any]:
+    """
+    A ``NAME=VALUE`` argument's name, and its value read as YAML.
+    """
+    name, equals, value = text.partition("=")
+
+    if not equals or not name:
+        raise argparse.ArgumentTypeError(
+            f"'{text}' should be NAME=VALUE, such as region=north"
+        )
+
+    try:
+        return name, load_yaml(value) if value else ""
+    except yaml.YAMLError:
+        raise argparse.ArgumentTypeError(
+            f"the value in '{text}' isn't valid YAML"
+        ) from None

@@ -14,7 +14,7 @@ include:           # optional: files of shared connections
   - connections.yaml
 
 params:            # optional: values to use in the rest of the file
-  run_date: 2026-10-02
+  region: north
 
 connections:       # optional: where data lives (local files need none)
   lake:
@@ -26,7 +26,7 @@ steps:             # what to do
   - id: orders
     type: read
     connection: lake
-    path: orders/${params.run_date}.parquet
+    path: orders/${params.region}/${run_date}.parquet
 ```
 
 | Section | |
@@ -89,30 +89,68 @@ Write `${...}` anywhere in `params`, `connections` or `steps`:
 | Reference | Replaced by |
 | --- | --- |
 | `${params.NAME}` | A param's value. |
+| `${run_date}` | The day the run is for, such as `2026-10-17`: today, unless [set](#the-run-date). |
 | `${env:NAME}` | An environment variable. If it's unset, the pipeline won't load. |
 | `${env:NAME:-default}` | An environment variable, or `default` if it's unset. |
 | `$${...}` | A literal `${...}`. |
 
 ```yaml
 params:
-  run_date: ${env:RUN_DATE:-2026-10-02}   # RUN_DATE, or a default
-  region: north
+  region: ${env:REGION:-north}   # REGION, or a default
 
 steps:
   - id: orders
     type: read
-    path: data/${params.region}/${params.run_date}.csv
+    path: data/${params.region}/${run_date}.csv
 ```
 
 - A value that's exactly one reference keeps its type, so
   `columns: ${params.columns}` can be a list. Inside longer text, the value
   is inserted as text.
-- Params can use environment variables, but not other params.
-- From Python, you can override params when loading, by name:
-  `Pipeline.from_yaml(path, params={"run_date": "2026-10-03"})`.
+- Params can use environment variables and `${run_date}`, but not other
+  params.
+- Override params for one run, by name: `--param region=south` on the
+  [command line](running.md#from-the-command-line), or
+  `Pipeline.from_yaml(path, params={"region": "south"})` from Python.
 
 To vary a value between runs without changing the file, give it an
-environment variable with a default, as `run_date` does above.
+environment variable with a default, as `region` does above.
+
+## The run date
+
+`${run_date}` is the day a run is for: today, unless you say otherwise.
+Use it for the dated folders and files that daily loads read and write:
+
+```yaml
+steps:
+  - id: events
+    type: read
+    connection: lake
+    path: events/${run_date}/*.json       # events/2026-10-17/*.json
+
+  - id: export
+    type: write
+    path: exports/events_${run_date}.csv
+    inputs: {data: events}
+```
+
+To load another day, such as one that failed, set it when you run:
+
+```bash
+dagcraft configs/events.yaml --run-date 2026-10-16
+```
+
+```python
+Pipeline.from_yaml("configs/events.yaml", run_date="2026-10-16")
+```
+
+- Inside text it's written as `2026-10-17`, like dates written in the file.
+  As a whole value, such as a `python` step's argument or a query's param,
+  it's a `datetime.date`.
+- It's fixed when the pipeline loads, so every step of a run agrees on the
+  day, even across midnight.
+- Today is the date on the machine that runs the pipeline.
+- Steps of your own get it as `context.run_date`.
 
 ## .env files
 

@@ -2,6 +2,7 @@
 The ``Pipeline`` class: load a pipeline file, then plan, check or run it.
 """
 
+from datetime import date
 from pathlib import Path
 from typing import Any, Self
 
@@ -12,6 +13,7 @@ from dagcraft.config import PipelineConfig, RunOptions, format_validation_error
 from dagcraft.core.checks import check_connection
 from dagcraft.core.compiler import CompiledPipeline, compile_pipeline
 from dagcraft.core.executor import Executor
+from dagcraft.core.params import run_date_from
 from dagcraft.core.results import ConnectionCheck, PipelineResult, PlannedStep
 from dagcraft.exceptions import ConfigError, RunError
 from dagcraft.yaml_loader import load_yaml
@@ -31,19 +33,23 @@ class Pipeline:
         config: PipelineConfig,
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
+        run_date: date | str | None = None,
     ) -> None:
         """
         Compile ``config``.
 
         ``base_dir`` is where relative paths in the config are resolved from;
         it defaults to the current directory, fixed when the pipeline is
-        created. ``params`` override the file's params.
+        created. ``params`` override the file's params. ``run_date`` is what
+        ``${run_date}`` stands for: a date or ``YYYY-MM-DD`` text, today if
+        unset, fixed when the pipeline is created.
         """
         self.config = config
         self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
         self.compiled: CompiledPipeline = compile_pipeline(
             config,
             self.base_dir,
+            run_date_from(run_date),
             params,
         )
 
@@ -53,6 +59,7 @@ class Pipeline:
         path: str | Path,
         params: dict[str, Any] | None = None,
         base_dir: str | Path | None = None,
+        run_date: date | str | None = None,
     ) -> Self:
         """
         Load and compile a pipeline file.
@@ -61,7 +68,8 @@ class Pipeline:
         ``root``, ...) are resolved like ``path`` itself: from the current
         directory, so write them from your project's root, where you run.
         Pass ``base_dir`` to resolve them from somewhere else, such as a
-        scheduled job that starts in another folder.
+        scheduled job that starts in another folder. ``params`` override the
+        file's params, and ``run_date`` sets ``${run_date}``, today if unset.
         """
         path = Path(path)
 
@@ -72,7 +80,12 @@ class Pipeline:
         except yaml.YAMLError as exc:
             raise ConfigError(f"Invalid YAML in pipeline file {path}: {exc}") from exc
 
-        return cls.from_dict(raw, base_dir=base_dir, params=params)
+        return cls.from_dict(
+            raw,
+            base_dir=base_dir,
+            params=params,
+            run_date=run_date,
+        )
 
     @classmethod
     def from_dict(
@@ -80,9 +93,12 @@ class Pipeline:
         config: dict[str, Any],
         base_dir: str | Path | None = None,
         params: dict[str, Any] | None = None,
+        run_date: date | str | None = None,
     ) -> Self:
         """
         Compile a pipeline from a dict shaped like a pipeline file.
+
+        ``base_dir``, ``params`` and ``run_date`` are as for ``from_yaml``.
         """
         try:
             parsed = PipelineConfig.model_validate(config)
@@ -91,7 +107,12 @@ class Pipeline:
                 f"Invalid pipeline: {format_validation_error(exc)}"
             ) from exc
 
-        return cls(parsed, base_dir=base_dir, params=params)
+        return cls(
+            parsed,
+            base_dir=base_dir,
+            params=params,
+            run_date=run_date,
+        )
 
     @property
     def name(self) -> str:
@@ -106,6 +127,13 @@ class Pipeline:
         The params in effect: the file's, with any overrides applied.
         """
         return self.compiled.params
+
+    @property
+    def run_date(self) -> date:
+        """
+        What ``${run_date}`` stands for: today, unless set when loading.
+        """
+        return self.compiled.run_date
 
     @property
     def max_workers(self) -> int:

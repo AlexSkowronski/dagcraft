@@ -66,6 +66,7 @@ class Executor:
         context = ExecutionContext(
             run_id=self.run_id,
             params=self.pipeline.params,
+            run_date=self.pipeline.run_date,
             connections=ConnectionManager(
                 self.pipeline.connections,
             ),
